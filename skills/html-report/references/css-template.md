@@ -1,6 +1,10 @@
 # HTML 报告 CSS 模板
 
-生成报告时使用以下 CSS。可根据内容微调，但整体风格保持一致。
+生成报告时使用以下样式和 JS。**默认只用基础样式 + 折叠 + 复制按钮**，其他组件仅在内容确实需要时才选入。
+
+---
+
+## 1. 基础样式（所有报告必备）
 
 ```html
 <style>
@@ -15,6 +19,7 @@
     --p2: #2563eb;
     --code-bg: #111827;
     --code: #e5e7eb;
+    --accent: #3b82f6;
   }
   body {
     margin: 0;
@@ -28,21 +33,12 @@
     margin: 0 auto;
     padding: 32px 24px 56px;
   }
-  h1 {
-    margin: 0 0 8px;
-    font-size: 30px;
-    line-height: 1.25;
-  }
+  h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.25; }
   h2 {
-    margin: 30px 0 14px;
-    font-size: 22px;
-    border-left: 5px solid #3b82f6;
-    padding-left: 10px;
+    margin: 30px 0 14px; font-size: 22px;
+    border-left: 5px solid var(--accent); padding-left: 10px;
   }
-  h3 {
-    margin: 0 0 10px;
-    font-size: 18px;
-  }
+  h3 { margin: 0 0 10px; font-size: 18px; }
   p { margin: 8px 0; }
   .summary, .issue {
     background: var(--card);
@@ -53,91 +49,394 @@
     margin: 16px 0;
   }
   .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 8px 0 12px;
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px;
   }
   .tag {
-    display: inline-block;
-    border-radius: 999px;
-    padding: 2px 10px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #fff;
+    display: inline-block; border-radius: 999px; padding: 2px 10px;
+    font-size: 12px; font-weight: 700; color: #fff;
   }
   .p0 { background: var(--p0); }
   .p1 { background: var(--p1); }
   .p2 { background: var(--p2); }
   .path {
-    display: inline-block;
-    background: #eef2ff;
-    color: #3730a3;
-    border-radius: 8px;
-    padding: 2px 8px;
+    display: inline-block; background: #eef2ff; color: #3730a3;
+    border-radius: 8px; padding: 2px 8px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 12px;
-    word-break: break-all;
+    font-size: 12px; word-break: break-all;
   }
   .line {
-    display: inline-block;
-    background: #ecfeff;
-    color: #155e75;
-    border-radius: 8px;
-    padding: 2px 8px;
+    display: inline-block; background: #ecfeff; color: #155e75;
+    border-radius: 8px; padding: 2px 8px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
   }
   .muted { color: var(--muted); }
+  .doc-header {
+    margin-bottom: 18px;
+    padding: 28px 30px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 58%, #60a5fa 100%);
+    color: #ffffff;
+    box-shadow: 0 14px 32px rgba(37, 99, 235, .22);
+  }
+  .doc-header h1 {
+    margin: 0 0 12px;
+    font-size: 30px;
+    line-height: 1.28;
+  }
+  .doc-subtitle {
+    margin: 0 0 18px;
+    color: rgba(255, 255, 255, .86);
+    font-size: 15px;
+  }
+  .doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .doc-chip {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 30px;
+    padding: 3px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .15);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+    word-break: break-word;
+  }
   ul { margin: 8px 0 8px 22px; padding: 0; }
   li { margin: 4px 0; }
   pre {
-    margin: 10px 0 14px;
-    padding: 14px 16px;
-    overflow: auto;
-    background: var(--code-bg);
-    color: var(--code);
-    border-radius: 12px;
-    font-size: 13px;
-    line-height: 1.5;
-    tab-size: 4;
+    margin: 10px 0 14px; padding: 14px 16px; overflow: auto;
+    background: var(--code-bg); color: var(--code);
+    border-radius: 12px; font-size: 13px; line-height: 1.5; tab-size: 4;
   }
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    background: #f1f5f9;
-    color: #334155;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 1px 5px;
-    font-size: .92em;
-    white-space: nowrap;
+    background: #f1f5f9; color: #334155;
+    border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 1px 5px; font-size: .92em; white-space: nowrap;
   }
   pre code {
-    background: transparent;
-    color: inherit;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    font-size: inherit;
-    white-space: pre;
+    background: transparent; color: inherit; border: 0;
+    border-radius: 0; padding: 0; font-size: inherit; white-space: pre;
   }
+  .ascii-diagram {
+    background: #f8fafc; color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .code-wrap pre { padding-top: 38px; }
+  .tok-key { color: #93c5fd; font-weight: 700; }
+  .tok-str { color: #86efac; }
+  .tok-num { color: #fca5a5; }
+  .tok-cmt { color: #94a3b8; font-style: italic; }
+  .tok-fn { color: #c4b5fd; }
+  .tok-var { color: #fcd34d; }
+  .tok-type { color: #67e8f9; }
+  .tok-add { color: #86efac; background: rgba(34, 197, 94, .12); display: inline-block; width: 100%; }
+  .tok-del { color: #fca5a5; background: rgba(239, 68, 68, .12); display: inline-block; width: 100%; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 12px;
   }
   .mini {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    background: #fbfdff;
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; background: #fbfdff;
   }
   .ok { color: #047857; font-weight: 700; }
   .warn { color: #b45309; font-weight: 700; }
 </style>
 ```
 
-## HTML 骨架
+---
+
+## 2. 必备交互：折叠 + 复制（所有报告默认加入）
+
+代码块必须使用上面的 `tok-*` class 做基础语法高亮；不能只放未分色的纯文本。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
+
+### 2.1 可折叠区域
+
+```html
+<style>
+  details {
+    margin: 12px 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  summary {
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    background: #f8fafc;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before {
+    content: "▸";
+    display: inline-block;
+    font-size: 10px;
+    transition: transform .2s;
+    color: var(--muted);
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  .details-body { padding: 12px 16px; }
+</style>
+```
+
+### 2.2 复制按钮
+
+所有多行代码块都使用 `.code-wrap` 包裹，并放置复制按钮。ASCII 架构图如果需要复制，也可以同样放入 `.code-wrap`；如果只是展示结构，可以只用 `.ascii-diagram`。
+
+```html
+<style>
+  .code-wrap { position: relative; }
+  .copy-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    background: rgba(255,255,255,.10);
+    color: #94a3b8;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .code-wrap:hover .copy-btn { opacity: 1; }
+  .copy-btn.copied { color: #4ade80; border-color: #4ade80; }
+</style>
+```
+
+### 2.3 Toast 通知
+
+```html
+<style>
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1f2937; color: #fff;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+</style>
+```
+
+### JavaScript（折叠不需要 JS，只有复制需要）
+
+```html
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.closest('.code-wrap').querySelector('pre').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '已复制';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+      });
+    });
+  });
+</script>
+```
+
+---
+
+## 3. 可选交互（仅在内容确实需要时选入）
+
+### 3.1 左侧目录 —— 长文档使用
+
+当报告章节超过 5 个、内容包含多组问题/方案/链路/验证结果，或读者需要频繁跨章节查阅时使用。目录固定在左侧，正文放在右侧；小屏幕下目录退化为顶部卡片。
+
+```html
+<style>
+  .layout-with-toc {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 24px;
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 32px 24px 56px;
+  }
+  .layout-with-toc main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .toc {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+    padding: 16px;
+  }
+  .toc-title {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .toc a {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: #334155;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .toc a:hover { background: #f1f5f9; color: var(--accent); }
+  html { scroll-behavior: smooth; }
+  section[id], h2[id] { scroll-margin-top: 24px; }
+
+  @media (max-width: 900px) {
+    .layout-with-toc {
+      display: block;
+      padding: 20px 16px 44px;
+    }
+    .toc {
+      position: static;
+      max-height: none;
+      margin-bottom: 16px;
+    }
+    .doc-header {
+      padding: 22px 20px;
+      border-radius: 14px;
+    }
+    .doc-header h1 { font-size: 24px; }
+  }
+</style>
+```
+
+目录结构示例：
+
+```html
+<div class="layout-with-toc">
+  <aside class="toc" aria-label="目录">
+    <p class="toc-title">目录</p>
+    <a href="#summary">最终结论</a>
+    <a href="#issue-1">问题 1：问题标题</a>
+    <a href="#architecture">架构视图</a>
+    <a href="#fix-order">建议修复顺序</a>
+  </aside>
+  <main>
+    <section id="summary" class="summary">...</section>
+    <h2 id="issue-1">问题 1：问题标题</h2>
+    <h2 id="architecture">架构视图</h2>
+    <h2 id="fix-order">建议修复顺序</h2>
+  </main>
+</div>
+```
+
+### 3.2 标签页 —— 纯 CSS，不需要 JS
+
+当报告天然有 2-3 个并列视角时使用。只有一个视角不要用。
+
+```html
+<style>
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab-label {
+    padding: 8px 18px; font-size: 14px; font-weight: 600;
+    cursor: pointer; color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+    user-select: none;
+  }
+  .tab-radio { display: none; }
+  .tab-panel { display: none; }
+
+  #tab1:checked ~ .tab-content #panel1,
+  #tab2:checked ~ .tab-content #panel2,
+  #tab3:checked ~ .tab-content #panel3 { display: block; }
+
+  #tab1:checked ~ .tabs .tab-label[for="tab1"],
+  #tab2:checked ~ .tabs .tab-label[for="tab2"],
+  #tab3:checked ~ .tabs .tab-label[for="tab3"] {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+</style>
+```
+
+### 3.3 可排序表格
+
+5 行以上的数据表才加。3-4 行的迷你表不需要。
+
+```html
+<style>
+  .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    cursor: pointer; user-select: none;
+    padding: 10px 14px; text-align: left;
+    background: #f1f5f9; border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  th:hover { background: #e2e8f0; }
+  th .sort-arrow { font-size: 10px; margin-left: 4px; }
+  td { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: #f8fafc; }
+</style>
+
+<script>
+  document.querySelectorAll('.sortable th').forEach((th, colIdx) => {
+    th.addEventListener('click', () => {
+      const table = th.closest('table');
+      const tbody = table.querySelector('tbody');
+      const rows = [...tbody.querySelectorAll('tr')];
+      const asc = th.dataset.sort !== 'asc';
+      table.querySelectorAll('th').forEach(h => { delete h.dataset.sort; });
+      th.dataset.sort = asc ? 'asc' : 'desc';
+      rows.sort((a, b) => {
+        const va = a.children[colIdx].innerText.trim();
+        const vb = b.children[colIdx].innerText.trim();
+        const na = parseFloat(va), nb = parseFloat(vb);
+        if (!isNaN(na) && !isNaN(nb)) return asc ? na - nb : nb - na;
+        return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+      th.querySelector('.sort-arrow').textContent = asc ? ' ▲' : ' ▼';
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+</script>
+```
+
+---
+
+## 4. HTML 骨架（默认版：折叠 + 复制）
+
+正式技术/业务文档或分析报告需要在 `<main>` 最前面加入 `.doc-header`。普通对话转 HTML 可以省略 `.doc-header`，直接使用 `<h1>` 和整理时间。
 
 ```html
 <!doctype html>
@@ -146,14 +445,32 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>报告标题</title>
-  <style>...</style>
+  <style>
+    {{ 基础样式 + 折叠样式 + 复制按钮样式 + Toast 样式 }}
+  </style>
 </head>
 <body>
 
-<main>
-  <h1>报告标题</h1>
-  <p class="muted">整理时间：YYYY-MM-DD。行号基于当前本地源码定位，若评审系统行号有偏移，以文件路径和代码上下文为准。</p>
+<div id="toast" class="toast">已复制到剪贴板</div>
 
+<main>
+  <!-- 正式技术/业务文档或分析报告使用；普通对话转 HTML 可省略 -->
+  <header class="doc-header">
+    <h1>文档标题</h1>
+    <p class="doc-subtitle">一句话说明文档主题、交付目的或核心结论。</p>
+    <div class="doc-meta">
+      <span class="doc-chip">技术详设</span>
+      <span class="doc-chip">FEEDADS-23545</span>
+      <span class="doc-chip">baidu/channel/im-android-sdk · master</span>
+      <span class="doc-chip">Android 端</span>
+      <span class="doc-chip">zhangzhen40</span>
+      <span class="doc-chip">2026-05-20 更新</span>
+    </div>
+  </header>
+
+  <p class="muted">整理时间：YYYY-MM-DD。行号基于当前本地源码定位，若行号有偏移以文件路径和代码上下文为准。</p>
+
+  <!-- 总结区 -->
   <section class="summary">
     <h2>最终结论</h2>
     <p>用 1-2 段概括根因、结论或整体风险。</p>
@@ -162,6 +479,7 @@
     </div>
   </section>
 
+  <!-- 问题卡片 -->
   <h2>问题 1：问题标题</h2>
   <section class="issue">
     <h3><span class="tag p0">P0</span> 问题说明</h3>
@@ -169,14 +487,43 @@
       <span class="path">/absolute/or/repo/path/File.kt</span>
       <span class="line">123-145</span>
     </div>
-    <p><b>问题：</b>说明当前代码行为，例如 <code>WebPanelAction.kt</code> 没有解析某个字段。</p>
-    <p><b>影响：</b>说明业务、稳定性、性能或转化影响。</p>
+    <p><b>问题：</b>说明当前代码行为。</p>
+    <p><b>影响：</b>说明业务、稳定性或性能影响。</p>
     <p><b>当前代码：</b></p>
-    <pre><code>// code snippet</code></pre>
-    <p><b>修复方案：</b>说明最小、安全、可编译的改法。</p>
-    <pre><code>// fixed code snippet</code></pre>
+    <div class="code-wrap">
+      <pre><code class="language-kotlin"><span class="tok-key">fun</span> <span class="tok-fn">loadUser</span>(<span class="tok-var">id</span>: <span class="tok-type">String</span>): <span class="tok-type">User</span> {
+  <span class="tok-cmt">// code snippet</span>
+  <span class="tok-key">return</span> <span class="tok-fn">repository.find</span>(<span class="tok-var">id</span>)
+}</code></pre>
+      <button class="copy-btn">复制</button>
+    </div>
+    <p><b>修复方案：</b>说明最小、安全的改法。</p>
+    <div class="code-wrap">
+      <pre><code class="language-kotlin"><span class="tok-key">fun</span> <span class="tok-fn">loadUser</span>(<span class="tok-var">id</span>: <span class="tok-type">String</span>): <span class="tok-type">User?</span> {
+  <span class="tok-key">return</span> <span class="tok-fn">repository.findOrNull</span>(<span class="tok-var">id</span>)
+}</code></pre>
+      <button class="copy-btn">复制</button>
+    </div>
   </section>
 
+  <!-- ASCII 架构图：保持原始缩进和连线 -->
+  <h2>架构视图</h2>
+  <section class="summary">
+    <pre class="ascii-diagram">入口
+ └─ 分支 A
+    ├─ 子节点 1
+    └─ 子节点 2</pre>
+  </section>
+
+  <!-- 折叠区 -->
+  <details>
+    <summary>相关日志（点击展开）</summary>
+    <div class="details-body">
+      <pre><code>// 日志内容</code></pre>
+    </div>
+  </details>
+
+  <!-- 建议修复顺序 -->
   <h2>建议修复顺序</h2>
   <section class="summary">
     <ol>
@@ -184,6 +531,89 @@
     </ol>
   </section>
 </main>
+
+<script>{{ 复制按钮 JS }}</script>
 </body>
 </html>
+```
+
+---
+
+## 5. 按需扩展：当报告内容较长时加入左侧目录
+
+在默认骨架的基础上：
+
+1. 在 `<style>` 中追加左侧目录 CSS
+2. 用 `.layout-with-toc` 包裹目录和正文
+3. 为主要章节设置稳定 `id`
+4. 目录链接只放主要章节，不要把每个小标题都塞进去
+
+```html
+<body>
+<div id="toast" class="toast">已复制到剪贴板</div>
+
+<div class="layout-with-toc">
+  <aside class="toc" aria-label="目录">
+    <p class="toc-title">目录</p>
+    <a href="#summary">最终结论</a>
+    <a href="#issue-1">问题 1：问题标题</a>
+    <a href="#architecture">架构视图</a>
+    <a href="#fix-order">建议修复顺序</a>
+  </aside>
+
+  <main>
+    <header class="doc-header">
+      <h1>文档标题</h1>
+      <p class="doc-subtitle">一句话说明文档主题、交付目的或核心结论。</p>
+      <div class="doc-meta">
+        <span class="doc-chip">文档类型</span>
+        <span class="doc-chip">任务号</span>
+        <span class="doc-chip">仓库/分支</span>
+        <span class="doc-chip">负责人</span>
+        <span class="doc-chip">更新时间</span>
+      </div>
+    </header>
+
+    <section id="summary" class="summary">
+      <h2>最终结论</h2>
+      <p>...</p>
+    </section>
+
+    <h2 id="issue-1">问题 1：问题标题</h2>
+    <section class="issue">...</section>
+
+    <h2 id="architecture">架构视图</h2>
+    <section class="summary">...</section>
+
+    <h2 id="fix-order">建议修复顺序</h2>
+    <section class="summary">...</section>
+  </main>
+</div>
+</body>
+```
+
+---
+
+## 6. 按需扩展：当报告内容需要标签页时
+
+在默认骨架的基础上：
+
+1. 在 `<style>` 中追加标签页 CSS
+2. 在 `<main>` 中用以下结构替换问题列表：
+
+```html
+<input type="radio" name="tab" class="tab-radio" id="tab1" checked />
+<input type="radio" name="tab" class="tab-radio" id="tab2" />
+<div class="tabs">
+  <label for="tab1" class="tab-label">问题清单</label>
+  <label for="tab2" class="tab-label">修复方案</label>
+</div>
+<div class="tab-content">
+  <div class="tab-panel" id="panel1">
+    <!-- 问题卡片 -->
+  </div>
+  <div class="tab-panel" id="panel2">
+    <!-- 修复内容 -->
+  </div>
+</div>
 ```

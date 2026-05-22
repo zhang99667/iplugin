@@ -1,8 +1,8 @@
 {
   "name": "iplugin",
-  "version": "0.1.0",
-  "description": "toolbox — 代码阅读、HTML 报告生成、SQL 实验替换",
+  "version": "0.4.2",
+  "description": "toolbox — 代码阅读、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档",
   "author": { "name": "markz" },
   "license": "MIT",
-  "keywords": ["code-reading", "html-report", "sql", "dev-toolkit"]
+  "keywords": ["code-reading", "html-report", "sql", "summary", "writing", "icafe", "delivery", "dev-toolkit"]
 }
