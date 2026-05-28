@@ -1,8 +1,8 @@
 ---
 name: mgit
-version: 0.1.0
+version: 0.1.1
 tags: [git, multi-repo, baidu, dev-tool]
-description: 百度 MGIT 多仓库管理工具助手。当用户提到"MGIT"、"mgit"、"多仓库管理"、"多仓库状态"、"多仓库同步"、"多仓库分支"、"批量提交/推送"、"mgit status/pull/push/sync/forall"，或在百度 App iOS/Android 壳工程中需要同时操作多个子仓库时触发此技能。帮助选择安全的 mgit 命令、限定仓库范围、解释输出、处理 pull/merge/rebase 中间态，并避免误用 clean/delete/reset 等高风险多仓库操作。
+description: 百度 MGIT 多仓库管理助手，仅当用户明确提到 MGIT/mgit、多仓库状态/同步/分支/批量提交推送，或需要同时操作多个子仓库时触发。不要因普通单仓 git status、git commit、分支解释或代码修改触发。
 ---
 
 # MGIT 多仓库管理助手
@@ -10,6 +10,20 @@ description: 百度 MGIT 多仓库管理工具助手。当用户提到"MGIT"、"
 MGIT 是基于 Git 的多仓库管理工具，用于在一个工作区内批量管理多个 Git 仓库。它适合百度 App iOS/Android 等由壳工程和多个业务/组件仓库组成的工程。
 
 使用本技能时，先确认当前目录是否处于 MGIT 工作区，再根据用户目标选择最小影响范围的命令。MGIT 命令会同时影响多个仓库，默认优先只读检查；涉及写入、推送、删除或清理时，先说明影响范围和风险。
+
+## 触发边界
+
+### 适用
+
+用户明确提到 `MGIT`、`mgit`、多仓库管理、多仓库状态、同步、分支、批量提交/推送，或位于百度 App iOS/Android 壳工程中并需要同时处理多个子仓库。
+
+### 不适用
+
+用户只是处理普通单仓 Git 操作、查看单个仓库状态、写 commit message、解释 Git 概念或修改代码时，不使用本技能。
+
+### 需要确认
+
+涉及写入、推送、清理、删除、跨仓自定义命令或无法确定 MGIT 工作区范围时，先展示影响范围并等用户确认。
 
 ## 工作区识别
 

@@ -1,8 +1,8 @@
 ---
 name: session-rename
-version: 0.1.0
+version: 0.1.1
 tags: [claude-code, session, hooks, productivity]
-description: Claude Code 会话自动命名助手。当用户说"重命名当前会话"、"rename 这个会话"、"给当前对话起个名字"、"更新会话标题"、"这个会话没命名"、"以后方便找会话"，或希望从第一轮用户问题自动生成可检索会话名时触发此技能。优先使用 UserPromptSubmit hook 返回 sessionTitle 实现自动命名，也支持手动为当前会话生成 kebab-case 标题。
+description: Claude Code 会话命名助手，仅当用户明确要求重命名当前会话、给当前对话起标题、自动命名 Claude Code 会话，或配置 UserPromptSubmit sessionTitle hook 时触发。不要因命名分支、PR、文件、项目或 Codex 对话触发。
 ---
 
 # Claude Code 会话命名助手
@@ -11,7 +11,9 @@ description: Claude Code 会话自动命名助手。当用户说"重命名当前
 
 优先方案是配置 `UserPromptSubmit` hook，在用户每次提交 prompt 时由本地脚本返回 `sessionTitle`。这是官方支持的会话标题设置方式，比直接修改 `~/.claude/sessions/*.json` 更安全。
 
-## 何时使用
+## 触发边界
+
+### 适用
 
 使用本技能处理这些请求：
 
@@ -20,7 +22,13 @@ description: Claude Code 会话自动命名助手。当用户说"重命名当前
 - 用户要求“根据第一轮对话给当前会话起名”。
 - 用户询问能否用 hook 或其他方式自动更新会话标题。
 
-不要用于给代码分支、PR、commit、文件或业务项目改名。
+### 不适用
+
+不要用于给代码分支、PR、commit、文件、业务项目或普通文档改名。非 Claude Code 环境里不要建议编辑 `.claude` 配置。
+
+### 需要确认
+
+如果当前平台不是 Claude Code，先说明该技能只适用于 Claude Code；如果用户只是要一个标题建议，可以只给标题，不修改本地配置。
 
 ## 推荐实现：UserPromptSubmit hook
 

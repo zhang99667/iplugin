@@ -1,7 +1,7 @@
 ---
 name: ask-user-question
-version: 0.1.1
-description: 手动调用的结构化询问助手，仅供 /ask-user-question 命令调用；不要因普通需求主动触发。
+version: 0.1.2
+description: 手动调用的结构化询问助手，仅在用户调用 /ask-user-question，或明确要求“用 AskUserQuestion/request_user_input 问我”“让我选一下”时触发。不要因普通需求里存在轻微不确定性主动触发。
 tags: [ask-user-question, clarification, user-input, command]
 ---
 
@@ -11,7 +11,9 @@ tags: [ask-user-question, clarification, user-input, command]
 
 这个技能不是主动触发型建议器。它只服务用户显式调用的场景，避免因为普通需求里有一点不确定就频繁打断。
 
-## 使用场景
+## 触发边界
+
+### 适用
 
 使用本技能处理这些请求：
 
@@ -19,7 +21,13 @@ tags: [ask-user-question, clarification, user-input, command]
 - 用户明确说“交给 AskUserQuestion”“用 request_user_input 问我”“让我选一下”。
 - 用户要求在 UI、交互、实现方案、风险操作存在不确定时先弹选择。
 
-不用于普通闲聊、无需选择的事实回答，或已经可以安全直接执行的简单任务。
+### 不适用
+
+不用于普通闲聊、无需选择的事实回答、已经可以安全直接执行的简单任务，或执行助手自己可以合理判断的低风险取舍。
+
+### 需要确认
+
+如果用户没有显式调用本技能，只是问题本身有多个实现方向，优先继续推进并在普通对话中说明取舍；只有选择会阻塞后续文件修改、风险操作或用户明确要求“让我选”时才使用本技能。
 
 ## 工作方式
 

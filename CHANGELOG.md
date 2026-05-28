@@ -1,3 +1,9 @@
+## [0.8.4] - 2026-05-29
+### Changed
+- skills: 为所有 skill 补充“适用 / 不适用 / 需要确认”触发边界，减少轻量问答误触发
+- code-reading: 进一步收窄触发条件，避免“这个方法在哪里调用”等局部代码问题升级为深度导读
+- README: 更新 code-reading 触发示例，强调完整执行链路场景
+
 ## [0.8.3] - 2026-05-29
 ### Added
 - html-report: 新增 `/htmlreport` slash command，补齐 README 和 skill 中已声明的 HTML 报告命令入口

@@ -1,8 +1,8 @@
 ---
 name: lite-diff-marker
-version: 0.1.0
+version: 0.1.1
 tags: [android, lite, diff, marker]
-description: 矩阵产品差异化标记助手。当用户要求“添加差异化标记”“补 Lite 标记”“按矩阵差异化规范处理 diff”“给手百/极速版/矩阵改动加 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit”时触发。根据 Android Java/Kotlin、XML 和脚本配置改动类型，选择新增、修改、删除标记并直接修改代码或输出可应用 patch。
+description: 矩阵产品差异化标记助手，仅当用户明确要求添加差异化标记、补 Lite 标记、按矩阵差异化规范处理 diff，或使用 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 时触发。不要因普通 Android 代码修改、diff 查看或代码 review 触发。
 user_invocable: true
 ---
 
@@ -17,6 +17,20 @@ user_invocable: true
 - Java / Kotlin 文件、类、方法、字段、属性和局部代码片段
 - XML 文件和 XML 代码片段
 - Gradle、ProGuard、脚本配置等使用 `#` 注释的文本片段
+
+## 触发边界
+
+### 适用
+
+用户明确要求“添加差异化标记”“补 Lite 标记”“按矩阵差异化规范处理 diff”，或点名 `@LiteAdd`、`@LiteModified`、`@LiteDelete`、`@BaseSplit` 等标记。
+
+### 不适用
+
+用户只是要求普通 Android 修改、查看 diff、解释代码、修 bug、review 代码，且没有提到矩阵差异化或 Lite 标记时，不使用本技能。
+
+### 需要确认
+
+如果用户给了文件路径或 diff，但没有说明这是矩阵差异化改动，先确认是否需要实际加标记；如果只要求预览，不要直接编辑文件。
 
 ## 输入识别
 

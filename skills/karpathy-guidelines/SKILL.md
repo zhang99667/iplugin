@@ -1,8 +1,8 @@
 ---
 name: karpathy-guidelines
-version: 0.1.0
+version: 0.1.1
 tags: [coding, review, refactoring, engineering, simplicity]
-description: 用于减少 LLM 常见编码错误的行为准则。当写代码、审查代码或重构代码时使用，以避免过度复杂化、进行外科手术式改动、暴露假设并定义可验证的成功标准。
+description: Karpathy 风格工程准则，仅当用户明确要求按 Karpathy 准则、做代码修改、重构或 code review 时用于约束实现。不要因普通代码解释、闲聊、文档整理或无需改代码的问答单独触发。
 license: MIT
 source: https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md
 user_invocable: true
@@ -13,6 +13,20 @@ user_invocable: true
 用于减少 LLM 常见编码错误的行为准则，源自 Andrej Karpathy 对 LLM 编码陷阱的观察。
 
 **取舍：** 这些准则偏向谨慎而不是速度。对于琐碎任务，请自行判断。
+
+## 触发边界
+
+### 适用
+
+用户明确要求“按 Karpathy 准则”，或任务是实际写代码、修 bug、重构、review，需要避免过度设计、无关改动和不可验证实现。
+
+### 不适用
+
+用户只是问代码含义、查资料、写普通文档、做总结或讨论方案时，不单独触发本技能。
+
+### 需要确认
+
+如果任务可能需要大范围重构、删除旧代码或改变既有架构，先暴露假设和取舍；没有用户确认前只做最小必要改动。
 
 ## 1. 编码前先思考
 

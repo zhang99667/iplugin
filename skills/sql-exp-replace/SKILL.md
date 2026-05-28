@@ -1,8 +1,8 @@
 ---
 name: sql-exp-replace
-version: 0.1.0
+version: 0.1.1
 tags: [sql, data, experiment]
-description: 替换SQL中的实验号和日期。当用户提供SQL并要求修改实验分组（ovl_exp/ovl_id/ovid_eid_list等实验号）或日期范围时触发。支持批量替换CASE分组逻辑、WHERE过滤条件中的实验号，以及所有event_day日期。
+description: SQL 实验号与日期替换助手，仅当用户提供 SQL 并要求替换实验分组编号、ovl_exp/ovl_id/ovid_eid_list 等实验号，或 event_day 日期范围时触发。不要因普通 SQL 解释、SQL 优化、跑数或数据分析触发。
 user_invocable: true
 ---
 
@@ -14,12 +14,22 @@ user_invocable: true
 1. **实验号**：ovl_exp / ovl_id / ovid_eid_list 等字段中的实验分组编号
 2. **日期范围**：所有 event_day 的 between 日期
 
-## 使用方式
+## 触发边界
+
+### 适用
 
 用户提供：
 - 原始 SQL
 - 新的实验号分组（实验组+对照组）
 - 新的日期范围
+
+### 不适用
+
+用户只是要求解释 SQL、优化 SQL、跑数、生成报表、分析实验结果，或没有提供需要替换的实验号/日期时，不使用本技能。
+
+### 需要确认
+
+如果新旧实验组和对照组对应关系不明确，或用户只给了一个实验号但 SQL 中有多组分组逻辑，先确认映射关系再替换。
 
 ## 替换规则
 

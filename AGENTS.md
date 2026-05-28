@@ -62,6 +62,7 @@
 
 ## 提交前检查
 
+- 运行 `python3 scripts/validate-plugin.py`，确认插件结构、版本记录、manifest、README、skill 和 command 引用一致
 - `.claude-plugin/plugin.json` 与 `.codex-plugin/plugin.json` 的插件级版本、描述、关键词已同步
 - CHANGELOG.md 已更新
 - versions/vX.Y.Z.md 已写好（如果是新版本）
