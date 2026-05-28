@@ -1,3 +1,7 @@
+## [0.8.1] - 2026-05-28
+### Changed
+- ask-user-question: 仅保留 `/ask-user-question` 一个 slash command 入口，删除 `/askuserquestion` 别名，避免命令列表重复
+
 ## [0.8.0] - 2026-05-28
 ### Added
 - ask-user-question: 新增手动调用的结构化询问助手和 `/askuserquestion`、`/ask-user-question` 命令，用于把 UI 方案、实现分支、风险操作等不确定点交给 AskUserQuestion / request_user_input

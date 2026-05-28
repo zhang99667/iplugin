@@ -1,7 +1,7 @@
 ---
 name: ask-user-question
-version: 0.1.0
-description: 手动调用的结构化询问助手，仅供 /askuserquestion 命令调用；不要因普通需求主动触发。
+version: 0.1.1
+description: 手动调用的结构化询问助手，仅供 /ask-user-question 命令调用；不要因普通需求主动触发。
 tags: [ask-user-question, clarification, user-input, command]
 ---
 
@@ -15,7 +15,7 @@ tags: [ask-user-question, clarification, user-input, command]
 
 使用本技能处理这些请求：
 
-- 用户通过 `/askuserquestion` 或 `/ask-user-question` 调用。
+- 用户通过 `/ask-user-question` 调用。
 - 用户明确说“交给 AskUserQuestion”“用 request_user_input 问我”“让我选一下”。
 - 用户要求在 UI、交互、实现方案、风险操作存在不确定时先弹选择。
 
