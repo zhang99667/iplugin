@@ -1,8 +1,8 @@
 {
   "name": "iplugin",
-  "version": "0.7.0",
-  "description": "toolbox — 代码阅读、广域检索委派、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档、差异化标记、Karpathy 编码准则",
+  "version": "0.8.0",
+  "description": "toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档、差异化标记、Karpathy 编码准则",
   "author": { "name": "markz" },
   "license": "MIT",
-  "keywords": ["code-reading", "html-report", "sql", "summary", "writing", "icafe", "delivery", "lite", "diff-marker", "android", "karpathy", "guidelines", "code-review", "refactoring", "delegated-search", "search", "delegation", "investigation", "dev-toolkit"]
+  "keywords": ["code-reading", "html-report", "sql", "summary", "writing", "icafe", "delivery", "lite", "diff-marker", "android", "karpathy", "guidelines", "code-review", "refactoring", "delegated-search", "search", "delegation", "investigation", "askuserquestion", "ask-user-question", "clarification", "user-input", "dev-toolkit"]
 }

@@ -7,6 +7,7 @@
 - `.claude-plugin/plugin.json` — Claude Code 插件 manifest
 - `.codex-plugin/plugin.json` — Codex 插件 manifest
 - `skills/<name>/SKILL.md` — 技能定义，两边共用，目录名必须与 `SKILL.md` 中的 `name` 字段一致
+- `commands/<name>.md` — slash command 入口，优先调用 `skills/` 中的通用能力，不承载大段重复逻辑
 - `versions/vX.Y.Z.md` — 每个版本的规划和决策记录
 - `scripts/` — 共享脚本（需要确定性执行的代码）
 - `hooks/` — 全局钩子（横切关注点）
@@ -14,6 +15,7 @@
 ## 兼容原则
 
 - `skills/` 是唯一真源，不为 Claude Code 和 Codex 分别复制 skill
+- `CLAUDE.md` 与 `AGENTS.md` 是同源维护指南；修改其中一个时必须同步另一个，除非差异有明确平台原因并在文中说明
 - 插件级信息变更时，同时检查 `.claude-plugin/plugin.json` 和 `.codex-plugin/plugin.json`
 - 版本号、描述、关键词应尽量在两个 manifest 中保持一致
 - Codex 插件刷新使用 `codex plugin marketplace upgrade iplugin`
@@ -33,6 +35,14 @@
 5. 更新 `CHANGELOG.md`（Add 条目）
 6. 记录 `versions/vX.Y.Z.md`
 7. `git commit`
+
+## 添加 Command
+
+1. `mkdir -p commands`
+2. 编写 `commands/<command-name>.md`，YAML frontmatter 至少包含 `description`
+3. 命令正文只做参数解析和编排，通用能力沉淀到 `skills/<name>/SKILL.md`
+4. 如新增用户可见能力，更新 README、CHANGELOG 和 `versions/vX.Y.Z.md`
+5. 需要改变插件定位时，同步检查 `.claude-plugin/plugin.json` 与 `.codex-plugin/plugin.json`
 
 ## 版本号
 
@@ -56,3 +66,5 @@
 - CHANGELOG.md 已更新
 - versions/vX.Y.Z.md 已写好（如果是新版本）
 - `skills/*/SKILL.md` 的 `name` 与目录名一致
+- `commands/*.md` 只保留轻量编排逻辑，未复制大段 skill 正文
+- 每次完成文件改动并做完必要校验后，必须通过 `/ask-user-question` 询问用户是否要把本次改动提交；用户确认前不要主动执行 `git commit`

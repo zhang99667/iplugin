@@ -1,3 +1,10 @@
+## [0.8.0] - 2026-05-28
+### Added
+- ask-user-question: 新增手动调用的结构化询问助手和 `/askuserquestion`、`/ask-user-question` 命令，用于把 UI 方案、实现分支、风险操作等不确定点交给 AskUserQuestion / request_user_input
+### Changed
+- 开发准则：完成文件改动并校验后，通过 `/ask-user-question` 询问用户是否提交本次改动，确认前不主动执行 `git commit`
+- 开发准则：明确 `CLAUDE.md` 与 `AGENTS.md` 为同源维护指南，修改时必须同步
+
 ## [0.7.0] - 2026-05-28
 ### Added
 - delegated-search: 新增通用广域检索委派助手，用于在代码、文档、日志、配置、网页资料等发散搜索任务中优先拆给 explorer/subagent 收集证据，主线程负责验证、整合和交付
