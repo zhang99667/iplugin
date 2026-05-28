@@ -1,3 +1,16 @@
+## [0.8.6] - 2026-05-29
+### Added
+- sql-exp-replace: 新增 `scripts/sql_exp_replace.py`，用确定性脚本替换实验号和 event_day 日期范围，并输出替换计数
+### Changed
+- sql-exp-replace: 升级为脚本优先流程，模型负责解析映射和检查结果，机械替换交给脚本执行
+- README: 标注 SQL 实验替换使用确定性脚本
+
+## [0.8.5] - 2026-05-29
+### Changed
+- html-report: 将内容规则、视觉规则和 CSS 模板拆成 references，SKILL.md 只保留触发边界、导航和最短执行流程
+- mgit: 将命令手册、配置与中间态处理拆成 references，SKILL.md 只保留触发边界、安全底线和命令路由
+- 开发准则：补充 `skills/<name>/references/` 目录约定，要求长规则和长示例优先按需披露
+
 ## [0.8.4] - 2026-05-29
 ### Changed
 - skills: 为所有 skill 补充“适用 / 不适用 / 需要确认”触发边界，减少轻量问答误触发

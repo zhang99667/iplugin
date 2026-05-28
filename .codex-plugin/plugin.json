@@ -1,6 +1,6 @@
 {
   "name": "iplugin",
-  "version": "0.8.4",
+  "version": "0.8.6",
   "description": "toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档、差异化标记、Karpathy 编码准则",
   "author": {
     "name": "markz"

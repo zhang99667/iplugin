@@ -7,6 +7,7 @@
 - `.claude-plugin/plugin.json` — Claude Code 插件 manifest
 - `.codex-plugin/plugin.json` — Codex 插件 manifest
 - `skills/<name>/SKILL.md` — 技能定义，两边共用，目录名必须与 `SKILL.md` 中的 `name` 字段一致
+- `skills/<name>/references/` — 按需读取的长规则、示例和模板，用于 progressive disclosure，避免 `SKILL.md` 过长
 - `commands/<name>.md` — slash command 入口，优先调用 `skills/` 中的通用能力，不承载大段重复逻辑
 - `versions/vX.Y.Z.md` — 每个版本的规划和决策记录
 - `scripts/` — 共享脚本（需要确定性执行的代码）
@@ -67,5 +68,6 @@
 - CHANGELOG.md 已更新
 - versions/vX.Y.Z.md 已写好（如果是新版本）
 - `skills/*/SKILL.md` 的 `name` 与目录名一致
+- 长规则和长示例优先放到 `skills/<name>/references/`，`SKILL.md` 只保留触发、导航和核心流程
 - `commands/*.md` 只保留轻量编排逻辑，未复制大段 skill 正文
 - 每次完成文件改动并做完必要校验后，必须通过 `/ask-user-question` 询问用户是否要把本次改动提交；用户确认前不要主动执行 `git commit`

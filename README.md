@@ -21,7 +21,8 @@ iplugin/
 │   ├── lite-diff-marker/   # 矩阵产品差异化标记
 │   ├── karpathy-guidelines/ # Karpathy 风格编码准则
 │   ├── mgit/               # 百度 MGIT 多仓库管理
-│   └── session-rename/     # Claude Code 会话自动命名
+│   ├── session-rename/     # Claude Code 会话自动命名
+│   └── <name>/references/  # 按需读取的长规则、示例和模板
 ├── commands/               # slash command 入口
 ├── versions/               # 版本规划与决策文档
 ├── scripts/                # 共享脚本和提交前校验
@@ -40,7 +41,7 @@ iplugin/
 | `ask-user-question` | 手动把不确定点整理成结构化选择题，交给 AskUserQuestion / request_user_input | `/ask-user-question 这个 UI 改动应该怎么做` |
 | `delegated-search` | 将发散搜索、证据收集、多来源核验任务拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来" |
 | `html-report` | 生成独立 HTML 报告；正式技术/业务文档会加文档抬头，普通对话整理保持轻量页面 | "整理成 HTML 报告"、"/htmlreport" |
-| `sql-exp-replace` | 批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
+| `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
@@ -91,6 +92,7 @@ ln -s /Users/markz/code/tools/iplugin ~/.claude/plugins/marketplaces/iplugin/ipl
 ```bash
 mkdir -p skills/new-skill-name
 # 编写 SKILL.md，包含 YAML frontmatter（name + version + description + tags）
+# 长规则、模板和示例优先放到 skills/new-skill-name/references/
 # git commit
 # 自动生效
 ```
