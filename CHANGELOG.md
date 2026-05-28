@@ -1,3 +1,11 @@
+## [0.8.3] - 2026-05-29
+### Added
+- html-report: 新增 `/htmlreport` slash command，补齐 README 和 skill 中已声明的 HTML 报告命令入口
+- scripts: 新增 `scripts/validate-plugin.py`，将 manifest、skills、README、CHANGELOG、versions 和 command 引用一致性纳入提交前校验
+### Changed
+- 开发准则：提交前检查增加 `python3 scripts/validate-plugin.py`
+- manifest: 补齐所有 skill 名称和拆分关键词，提升能力清单一致性
+
 ## [0.8.2] - 2026-05-28
 ### Changed
 - code-reading: 收紧触发边界，仅在明确需要深度代码导读、完整链路或 HTML 报告时触发，避免轻量代码问答误用该 skill

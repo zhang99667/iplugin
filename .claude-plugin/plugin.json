@@ -1,8 +1,8 @@
 {
   "name": "iplugin",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档、差异化标记、Karpathy 编码准则",
   "author": { "name": "markz" },
   "license": "MIT",
-  "keywords": ["code-reading", "html-report", "sql", "summary", "writing", "icafe", "delivery", "lite", "diff-marker", "android", "karpathy", "guidelines", "code-review", "refactoring", "delegated-search", "search", "delegation", "investigation", "ask-user-question", "clarification", "user-input", "dev-toolkit"]
+  "keywords": ["code-reading", "code", "reading", "html-report", "html", "report", "sql-exp-replace", "sql", "exp", "replace", "project-summary", "project", "summary", "writing", "retrospective", "icafe-delivery-archive", "icafe", "delivery", "archive", "documentation", "requirement", "lite-diff-marker", "lite", "diff", "marker", "android", "karpathy-guidelines", "karpathy", "guidelines", "code-review", "refactoring", "delegated-search", "search", "delegation", "investigation", "context", "ask-user-question", "ask", "user", "question", "clarification", "user-input", "mgit", "git", "multi-repo", "baidu", "dev-tool", "session-rename", "session", "rename", "hooks", "productivity", "validation", "dev-toolkit"]
 }

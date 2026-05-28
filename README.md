@@ -24,7 +24,7 @@ iplugin/
 │   └── session-rename/     # Claude Code 会话自动命名
 ├── commands/               # slash command 入口
 ├── versions/               # 版本规划与决策文档
-├── scripts/                # 共享脚本（按需添加）
+├── scripts/                # 共享脚本和提交前校验
 ├── hooks/                  # 全局横切 hooks（按需添加）
 ├── CLAUDE.md               # 插件维护指南（Claude 在此目录下生效）
 ├── README.md
@@ -47,6 +47,13 @@ iplugin/
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |
 | `mgit` | 百度 MGIT 多仓库状态、同步、分支和批量操作辅助 | "看一下 mgit 多仓库状态" |
 | `session-rename` | 为 Claude Code 会话生成可检索标题 | "重命名当前会话" |
+
+## Commands
+
+| 命令 | 用途 |
+|------|------|
+| `/ask-user-question` | 手动把当前不确定点交给结构化询问机制，让用户选择后再继续执行 |
+| `/htmlreport` | 把当前回答、上一轮回答或提供的上下文整理成独立 HTML 报告 |
 
 ## 安装
 
@@ -91,3 +98,13 @@ mkdir -p skills/new-skill-name
 ### Skill 准入标准
 
 只纳入**通用、可复用**的能力。一次性任务脚本、特定项目/文件的补丁式 skill 不适合放在这里。
+
+## 提交前校验
+
+改动插件结构、manifest、skills、commands、README、CHANGELOG 或版本记录后，运行：
+
+```bash
+python3 scripts/validate-plugin.py
+```
+
+校验会检查 manifest JSON 合法性、两个 manifest 公共字段一致性、skill 目录名与 frontmatter name 一致性、README 与实际 skills 清单一致性、CHANGELOG 版本记录完整性，以及 command 引用的 skill 是否存在。
