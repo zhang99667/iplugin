@@ -1,7 +1,7 @@
 {
   "name": "iplugin",
-  "version": "0.4.2",
-  "description": "toolbox — 代码阅读、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档",
+  "version": "0.7.0",
+  "description": "toolbox — 代码阅读、广域检索委派、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档、差异化标记、Karpathy 编码准则",
   "author": {
     "name": "markz"
   },
@@ -14,17 +14,36 @@
     "writing",
     "icafe",
     "delivery",
+    "lite",
+    "diff-marker",
+    "android",
+    "karpathy",
+    "guidelines",
+    "code-review",
+    "refactoring",
+    "delegated-search",
+    "search",
+    "delegation",
+    "investigation",
     "dev-toolkit"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "iPlugin",
     "shortDescription": "个人开发工作流工具箱",
-    "longDescription": "面向个人研发工作流的 Codex 插件，提供代码链路阅读、HTML 报告生成、SQL 实验替换、项目总结、iCafe 交付归档等可复用技能。",
+    "longDescription": "面向个人研发工作流的通用插件，提供代码链路阅读、广域检索委派、HTML 报告生成、SQL 实验替换、项目总结、iCafe 交付归档、矩阵差异化标记、Karpathy 风格编码约束等可复用技能。",
     "developerName": "markz",
     "category": "Productivity",
     "capabilities": [
       "Write"
+    ],
+    "defaultPrompt": [
+      "带我读这段代码并输出链路",
+      "把这个发散检索任务拆给 explorer 子 agent 收集证据",
+      "把这份结论整理成 HTML 报告",
+      "替换 SQL 里的实验号和日期",
+      "给这次 Android 改动添加差异化标记",
+      "按 Karpathy 准则帮我改这段代码"
     ]
   }
 }

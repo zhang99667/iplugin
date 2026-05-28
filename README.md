@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、HTML 报告生成、SQL 实验替换、项目/需求总结的个人专属 Claude Code Plugin。
+toolbox — 代码阅读、广域检索委派、HTML 报告生成、SQL 实验替换、项目/需求总结的个人研发工作流通用插件。
 
 ## 目录结构
 
@@ -10,6 +10,7 @@ iplugin/
 │   └── plugin.json
 ├── skills/
 │   ├── code-reading/       # 带我读代码，追踪执行链路
+│   ├── delegated-search/   # 广域检索任务委派与证据收集
 │   ├── html-report/        # 生成带内容类型判断的独立 HTML 工程报告
 │   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
 │   └── project-summary/    # 项目/需求总结整理
@@ -27,11 +28,14 @@ iplugin/
 | 名称 | 用途 | 触发示例 |
 |------|------|---------|
 | `code-reading` | 逐步详解代码执行链路，追踪创建→初始化→注册→触发→分发全过程 | "带我读代码"、"梳理一下这个方法的调用链路" |
+| `delegated-search` | 将发散搜索、证据收集、多来源核验任务拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来" |
 | `html-report` | 生成独立 HTML 报告；正式技术/业务文档会加文档抬头，普通对话整理保持轻量页面 | "整理成 HTML 报告"、"/htmlreport" |
 | `sql-exp-replace` | 批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
 
 ## 安装
+
+下面是 Claude Code 的本地市场安装示例。Codex 侧复用同一份 `skills/` 与 `.codex-plugin/plugin.json`。
 
 1. 创建市场目录并软链接 git 仓库：
 
