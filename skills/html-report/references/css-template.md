@@ -63,6 +63,16 @@
     border-radius: 8px; padding: 2px 8px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px; word-break: break-all;
+    text-decoration: none;
+  }
+  a.path.file-link {
+    cursor: pointer;
+    transition: background .15s, color .15s, box-shadow .15s;
+  }
+  a.path.file-link:hover {
+    background: #e0e7ff;
+    color: #312e81;
+    box-shadow: inset 0 0 0 1px rgba(67, 56, 202, .18);
   }
   .line {
     display: inline-block; background: #ecfeff; color: #155e75;
@@ -157,6 +167,12 @@
   .ok { color: #047857; font-weight: 700; }
   .warn { color: #b45309; font-weight: 700; }
 </style>
+```
+
+文件定位 chip 优先使用可跳转 IDEA 的链接，展示文本遵循 `{path}:{line}` 或 `{path}:{line}:{column}`：
+
+```html
+<a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82&amp;column=7">/abs/path/File.java:82:7</a>
 ```
 
 ---

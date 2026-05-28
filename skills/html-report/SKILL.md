@@ -1,7 +1,10 @@
 ---
 name: html-report
-version: 0.2.4
-tags: [report, html, output]
+version: 0.2.5
+tags:
+  - report
+  - html
+  - output
 description: 当用户要求整理成HTML、生成HTML报告、写成HTML放到桌面，或使用 /htmlreport 命令要求把当前回答/最近结论整理成一个整洁、可视化的独立 HTML 文档时使用。基于 Claude Code HTML-first 理念，用卡片、网格、颜色编码、SVG 图表等可视化手段替代纯 Markdown 文本堆砌；生成前需要判断内容是正式技术/业务文档、分析报告，还是普通对话转 HTML，正式文档必须加入包含文档类型、仓库、任务、负责人、日期等信息的抬头，拿不准时先交给用户确认；ASCII 架构图必须用等宽样式完整渲染，代码块必须有语法高亮和复制按钮；长文档必须在左侧加入目录。默认输出到桌面。
 ---
 
@@ -85,6 +88,26 @@ HTML 相比 Markdown 的核心优势不是"能加 JS 交互"，而是**可视化
 - 长日志、次要章节用 `<details><summary>` 默认折叠。
 - 长文档使用左侧目录固定导航，快速跳转到各章节。
 - 中文说明简洁准确，突出问题、影响和修复方案。
+
+## 文件定位链接规范
+
+当报告里出现源码文件位置、`rg` 搜索结果、代码评审问题定位或堆栈归因时，文件路径应该既能被人读懂，也能一键跳转到 IDE。
+
+- 位置文本统一展示为 `{path}:{line}` 或 `{path}:{line}:{column}`；`path` 优先使用 `rg` 搜到的文件绝对路径，`line` 和 `column` 使用 1-based 数字。没有列号时省略 `column`。
+- 有绝对路径时，文件位置必须渲染成 IDEA 协议链接：`idea://open?file={encodedPath}&line={line}&column={column}`。HTML 属性里的 `&` 写成 `&amp;`，路径参数做 URL 编码，展示文本仍保留原始可读路径。
+- 推荐使用同一个 chip 同时承载路径和行列号，避免把文件路径、行号、列号拆成多个相隔较远的元素。示例：
+
+```html
+<a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82&amp;column=7">/abs/path/File.java:82:7</a>
+```
+
+- 如果只有行号，链接和展示文本写成：
+
+```html
+<a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82">/abs/path/File.java:82</a>
+```
+
+- 如果只能拿到仓库相对路径且无法可靠还原绝对路径，可以先按 `{path}:{line}:{column}` 展示为 `.path` chip，但不要编造不可用的 `idea://open` 链接。
 
 ## 长文档目录导航
 
@@ -185,6 +208,7 @@ HTML 相比 Markdown 的核心优势不是"能加 JS 交互"，而是**可视化
 
 - 用户使用中文时，报告默认中文。
 - 每个问题建议包含：优先级、文件路径、行号范围、问题说明、影响、当前代码、修复方案。
+- 文件位置按 `{path}:{line}` 或 `{path}:{line}:{column}` 展示；有绝对路径时使用 `<a class="path file-link" href="idea://open?...">...</a>` 生成可跳转 IDEA 的链接。
 - 行内代码标识用 `<code>...</code>` 包起来。
 - 多行代码用 `<pre><code class="language-xxx">...</code></pre>`，放在 `.code-wrap` 容器中并加复制按钮；代码块必须有深色背景和可读的语法高亮层级，关键 token 要包高亮 span。
 - 行号可能不准确时，说明基于当前本地源码。
@@ -202,7 +226,7 @@ HTML 相比 Markdown 的核心优势不是"能加 JS 交互"，而是**可视化
 - 行内代码用灰色反引号样式，多行代码用深色背景块，且每个代码块都有复制按钮。
 - 代码块有可见语法高亮，不是纯色纯文本；关键字、字符串、数字、注释等至少有基础颜色区分。
 - 代码块有复制按钮，hover 可见。
-- 文件路径和行号以 chip 展示。
+- 文件路径和行号以 `{path}:{line}` 或 `{path}:{line}:{column}` chip 展示；有绝对路径时已加 `idea://open` 超链接。
 - ASCII 架构图在浏览器中保持缩进、连线和横向滚动，不出现自动换行导致的错位。
 - 长内容已折叠，首屏清爽。
 - 长文档已加入左侧目录，目录链接能跳转到对应章节。

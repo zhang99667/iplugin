@@ -1,3 +1,8 @@
+## [0.8.2] - 2026-05-28
+### Changed
+- code-reading: 收紧触发边界，仅在明确需要深度代码导读、完整链路或 HTML 报告时触发，避免轻量代码问答误用该 skill
+- code-reading: 强化执行链路输出结构，补充数据来源、对象创建、触发入口、动态分发、状态变化和流程图要求
+
 ## [0.8.1] - 2026-05-28
 ### Changed
 - ask-user-question: 仅保留 `/ask-user-question` 一个 slash command 入口，删除 `/askuserquestion` 别名，避免命令列表重复

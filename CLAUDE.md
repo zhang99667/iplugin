@@ -1,6 +1,6 @@
 # iPlugin 维护指南
 
-这是一个 Claude Code Plugin 仓库，同时通过 `.codex-plugin/plugin.json` 兼容 Codex。当你在这个目录下工作时，遵循以下规则。
+这是一个面向个人研发工作流的通用插件仓库，同时维护 Claude Code 与 Codex 的插件 manifest。当你在这个目录下工作时，遵循以下规则。
 
 ## 目录约定
 
