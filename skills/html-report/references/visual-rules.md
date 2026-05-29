@@ -43,9 +43,10 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 
 当报告里出现源码文件位置、`rg` 搜索结果、代码评审问题定位或堆栈归因时，文件路径应该既能被人读懂，也能一键跳转到 IDE。
 
-- 位置文本统一展示为 `{path}:{line}` 或 `{path}:{line}:{column}`；`path` 优先使用 `rg` 搜到的文件绝对路径，`line` 和 `column` 使用 1-based 数字。没有列号时省略 `column`。
-- 有绝对路径时，文件位置必须渲染成 IDEA 协议链接：`idea://open?file={encodedPath}&line={line}&column={column}`。HTML 属性里的 `&` 写成 `&amp;`，路径参数做 URL 编码，展示文本仍保留原始可读路径。
-- 推荐使用同一个 chip 同时承载路径和行列号，避免把文件路径、行号、列号拆成多个相隔较远的元素。
+- 位置文本统一展示为单个 chip：`{displayPath}:{line}`、`{displayPath}:{start}-{end}` 或 `{displayPath}:{line}:{column}`；`line` 和 `column` 使用 1-based 数字。
+- `displayPath` 优先使用仓库相对路径或从工作区根目录开始的短路径，便于阅读，例如 `browser-android/searchbox-lite/repos/business/ad_business/.../FlowVideoLandscapeHelper.kt:43-50`；如果无法可靠缩短，再展示绝对路径。
+- 有绝对路径时，文件位置必须渲染成 IDEA 协议链接：`idea://open?file={encodedAbsolutePath}&line={startLine}&column={column}`。行号范围用起始行作为跳转行，展示文本保留完整范围。HTML 属性里的 `&` 写成 `&amp;`，路径参数做 URL 编码，展示文本保留可读路径。
+- 必须使用同一个 `<a class="path file-link">` 同时承载路径和行号/行号范围。不要把文件路径和行号拆成 `<span class="path">...</span>` + `<span class="line">...</span>`，这种写法不能表达完整定位，也容易丢失跳转能力。
 
 ```html
 <a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82&amp;column=7">/abs/path/File.java:82:7</a>
@@ -57,7 +58,65 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 <a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82">/abs/path/File.java:82</a>
 ```
 
+如果是行号范围，链接跳到起始行，展示保留范围：
+
+```html
+<a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50</a>
+```
+
+如果路径包含空格、`#`、`?`、`&` 或中文等非 ASCII 字符，`href` 里的 `file=` 参数必须做 URL 编码；展示文本仍用原始可读路径。
+
 如果只能拿到仓库相对路径且无法可靠还原绝对路径，可以先按 `{path}:{line}:{column}` 展示为 `.path` chip，但不要编造不可用的 `idea://open` 链接。
+
+## 代码变更标识
+
+当报告包含代码新增、删除、修改、修复方案或 patch 说明时，必须让读者不用对照上下文也能看出哪里变了。不要只展示一段“修复后代码”，也不要把旧代码混在方案里却不标注。
+
+优先级：
+
+1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。用绿色 `+` 表示新增，红色 `-` 表示删除，黄色或蓝色 `~` 表示修改提示，灰色空白表示上下文。
+2. **Before / After 双栏**：适合结构变化较大、需要对比旧方案和新方案。左栏标题写“修改前”，右栏标题写“修改后”，两栏都必须只保留必要片段。
+3. **新增代码块**：适合纯新增文件、纯新增方法或纯新增配置。标题和 badge 必须写“新增”，左侧使用绿色竖线，不要让它看起来像普通代码摘录。
+4. **删除代码块**：适合删除旧逻辑。标题和 badge 必须写“删除”，左侧使用红色竖线，并说明删除原因或替代逻辑。
+
+每个变更块应包含：
+
+- 文件 chip：`{path}:{line}` 或 `{path}:{line}:{column}`。
+- 状态 badge：`新增` / `删除` / `修改` / `建议变更` / `上下文`。
+- 变更摘要：一句话说明为什么改。
+- 代码区域：带行号或 `+/-/~` 标记；上下文行保留 3 到 5 行即可。
+
+行级规则：
+
+- 新增行：绿色背景、左侧 `+`、可用 `<ins>` 或 `.diff-mark-add` 标记新增 token。
+- 删除行：红色背景、左侧 `-`、可用 `<del>` 或 `.diff-mark-del` 标记删除 token。
+- 修改行：优先拆成相邻的删除行和新增行；如果只是行内小改，可用 `~` 行配合 `<del>` / `<ins>` 做 token 级标记。
+- 上下文行：中性背景、左侧空白或 `·`，避免用强颜色。
+- 如果没有真实旧代码，只能展示新增方案，明确标成“建议新增”，不要写成“修改”。
+
+示例结构：
+
+```html
+<section class="diff-card">
+  <div class="diff-header">
+    <span class="change-chip change-mod">修改</span>
+    <a class="path file-link" href="idea://open?file=/abs/path/SKILL.md&amp;line=5">/abs/path/SKILL.md:5</a>
+    <span class="muted">收窄/放宽触发描述，避免模型误判。</span>
+  </div>
+  <table class="diff-table" aria-label="代码变更">
+    <tr class="diff-line diff-del">
+      <td class="diff-gutter">-</td><td class="diff-num">5</td>
+      <td class="diff-code"><del>description: 仅当用户明确要求...</del></td>
+    </tr>
+    <tr class="diff-line diff-add">
+      <td class="diff-gutter">+</td><td class="diff-num">5</td>
+      <td class="diff-code"><ins>description: 当任务上下文显示...</ins></td>
+    </tr>
+  </table>
+</section>
+```
+
+如果报告里同时有很多改动，先用一个“变更总览”表列出文件、类型、影响，再把长 diff 放进 `<details>`。
 
 ## 长文档目录导航
 

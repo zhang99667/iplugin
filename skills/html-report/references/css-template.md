@@ -155,6 +155,96 @@
   .tok-type { color: #67e8f9; }
   .tok-add { color: #86efac; background: rgba(34, 197, 94, .12); display: inline-block; width: 100%; }
   .tok-del { color: #fca5a5; background: rgba(239, 68, 68, .12); display: inline-block; width: 100%; }
+  .change-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+    border: 1px solid transparent;
+  }
+  .change-add { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+  .change-del { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+  .change-mod { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .change-ctx { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+  .diff-card {
+    margin: 14px 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #ffffff;
+  }
+  .diff-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+  }
+  .diff-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .diff-table td {
+    padding: 0;
+    border: 0;
+    vertical-align: top;
+  }
+  .diff-gutter, .diff-num {
+    width: 42px;
+    user-select: none;
+    text-align: right;
+    color: #64748b;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+  }
+  .diff-gutter {
+    width: 26px;
+    text-align: center;
+    font-weight: 800;
+  }
+  .diff-code {
+    padding: 1px 12px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .diff-add .diff-gutter, .diff-add .diff-code { background: #ecfdf5; color: #166534; }
+  .diff-del .diff-gutter, .diff-del .diff-code { background: #fef2f2; color: #991b1b; }
+  .diff-mod .diff-gutter, .diff-mod .diff-code { background: #fffbeb; color: #92400e; }
+  .diff-context .diff-code { background: #ffffff; color: #334155; }
+  .diff-mark-add, ins {
+    background: #bbf7d0;
+    color: #14532d;
+    text-decoration: none;
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+  .diff-mark-del, del {
+    background: #fecaca;
+    color: #7f1d1d;
+    text-decoration: line-through;
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+  .change-block {
+    margin: 12px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-left: 5px solid #38bdf8;
+    border-radius: 12px;
+    background: #ffffff;
+  }
+  .change-block.add { border-left-color: #22c55e; background: #f0fdf4; }
+  .change-block.del { border-left-color: #ef4444; background: #fef2f2; }
+  .change-block.mod { border-left-color: #f59e0b; background: #fffbeb; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -169,10 +259,16 @@
 </style>
 ```
 
-文件定位 chip 优先使用可跳转 IDEA 的链接，展示文本遵循 `{path}:{line}` 或 `{path}:{line}:{column}`：
+文件定位 chip 优先使用可跳转 IDEA 的链接，展示文本遵循 `{displayPath}:{line}`、`{displayPath}:{start}-{end}` 或 `{displayPath}:{line}:{column}`。必须把路径和行号放在同一个 `<a class="path file-link">` 中，不要拆成 `.path` + `.line` 两个 chip：
 
 ```html
 <a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82&amp;column=7">/abs/path/File.java:82:7</a>
+```
+
+行号范围链接跳到起始行，展示保留范围；可用 `title` 放完整绝对路径，正文展示更短的仓库相对路径：
+
+```html
+<a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50</a>
 ```
 
 ---
@@ -180,6 +276,8 @@
 ## 2. 必备交互：折叠 + 复制（所有报告默认加入）
 
 代码块必须使用上面的 `tok-*` class 做基础语法高亮；不能只放未分色的纯文本。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
+
+涉及代码变更时，优先使用 `.diff-card` + `.diff-table` 展示聚焦 diff。新增、删除、修改、上下文必须有不同视觉状态；行内 token 变化可使用 `<ins>` / `<del>` 或 `.diff-mark-add` / `.diff-mark-del`。
 
 ### 2.1 可折叠区域
 
@@ -500,8 +598,7 @@
   <section class="issue">
     <h3><span class="tag p0">P0</span> 问题说明</h3>
     <div class="meta">
-      <span class="path">/absolute/or/repo/path/File.kt</span>
-      <span class="line">123-145</span>
+      <a class="path file-link" href="idea://open?file=/absolute/or/repo/path/File.kt&amp;line=123" title="/absolute/or/repo/path/File.kt:123-145">repo/path/File.kt:123-145</a>
     </div>
     <p><b>问题：</b>说明当前代码行为。</p>
     <p><b>影响：</b>说明业务、稳定性或性能影响。</p>

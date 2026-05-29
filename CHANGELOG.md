@@ -1,3 +1,9 @@
+## [0.8.9] - 2026-05-29
+### Changed
+- html-report: 增加代码变更标识规范，要求新增、删除、修改和上下文行在报告中可视区分
+- html-report: CSS 模板补充 diff card、change chip、行级 `+/-/~` 和 `<ins>/<del>` 行内变化样式
+- html-report: 修正文件定位模板，要求路径和行号范围合并为一个可跳转 IDEA chip，避免拆成不可点击的路径/行号两段
+
 ## [0.8.8] - 2026-05-29
 ### Changed
 - karpathy-guidelines: 放宽触发边界，在实际写代码、修 bug、重构、code review 或实现方案落地时自动作为工程约束使用，不再要求用户必须点名 Karpathy

@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.2.7
+version: 0.2.8
 tags:
   - report
   - html
@@ -17,7 +17,7 @@ description: HTML 报告生成助手，仅当用户明确要求“生成 HTML/HT
 SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读取：
 
 - `references/content-rules.md`：HTML vs Markdown 决策、文档类型、正式抬头、输出要求、写作规范、完成前检查。
-- `references/visual-rules.md`：视觉原则、文件定位链接、目录导航、ASCII/代码块、交互组件、场景速查。
+- `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 模板、交互组件样式、复制按钮 JS 和 HTML 骨架。只有开始写 HTML 文件时再读取。
 
 ## 触发边界
@@ -59,4 +59,5 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 首屏给结论，详情和证据往下排。
 - 颜色、卡片、表格、目录、折叠都服务于阅读和定位。
 - 代码块必须有可读层次；文件位置必须尽量可跳转。
+- 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文。
 - 如果用户指定其他视觉风格，以用户的新要求为准。
