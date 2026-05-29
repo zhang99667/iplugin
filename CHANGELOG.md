@@ -1,3 +1,9 @@
+## [0.8.7] - 2026-05-29
+### Changed
+- mgit: 放宽触发边界，允许模型在多仓库工程上下文中主动使用只读 MGIT 诊断，不再要求用户必须点名 mgit
+- mgit: 明确写入、同步、推送、清理、reset 和跨仓自定义命令仍需先确认影响范围
+- README: 更新 mgit 触发示例，强调多仓任务意图而非手动命令名
+
 ## [0.8.6] - 2026-05-29
 ### Added
 - scripts: 新增 `scripts/text_replace.py` 通用替换引擎，支持 literal/token/regex 替换计划、计数和 0 命中失败

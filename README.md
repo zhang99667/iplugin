@@ -46,7 +46,7 @@ iplugin/
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |
-| `mgit` | 百度 MGIT 多仓库状态、同步、分支和批量操作辅助 | "看一下 mgit 多仓库状态" |
+| `mgit` | 百度 MGIT 多仓库状态、分支、仓库范围和中间态诊断；多仓写操作需确认 | "整体看一下这套工程状态"、"这些改动在哪些仓" |
 | `session-rename` | 为 Claude Code 会话生成可检索标题 | "重命名当前会话" |
 
 ## Commands
