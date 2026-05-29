@@ -1,8 +1,10 @@
 ## [0.8.6] - 2026-05-29
 ### Added
-- sql-exp-replace: 新增 `scripts/sql_exp_replace.py`，用确定性脚本替换实验号和 event_day 日期范围，并输出替换计数
+- scripts: 新增 `scripts/text_replace.py` 通用替换引擎，支持 literal/token/regex 替换计划、计数和 0 命中失败
+- sql-exp-replace: 新增 `scripts/sql_exp_replace.py`，作为 SQL 领域 wrapper 扫描候选字段并调用通用替换引擎
 ### Changed
-- sql-exp-replace: 升级为脚本优先流程，模型负责解析映射和检查结果，机械替换交给脚本执行
+- sql-exp-replace: 升级为“模型判断语义 + 脚本执行替换”的混合流程，字段名不再固定为 `event_day`
+- scripts: token 替换改为同轮匹配，支持实验号互换映射，并收紧连字符边界与按字段计数
 - README: 标注 SQL 实验替换使用确定性脚本
 
 ## [0.8.5] - 2026-05-29

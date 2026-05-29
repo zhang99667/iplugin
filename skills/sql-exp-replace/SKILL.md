@@ -2,7 +2,7 @@
 name: sql-exp-replace
 version: 0.2.0
 tags: [sql, data, experiment]
-description: SQL 实验号与日期替换助手，仅当用户提供 SQL 并要求替换实验分组编号、ovl_exp/ovl_id/ovid_eid_list 等实验号，或 event_day 日期范围时触发。明确映射和日期后，优先使用 scripts/sql_exp_replace.py 做确定性替换；不要靠大模型手工改 SQL。
+description: SQL 实验号与日期替换助手，仅当用户提供 SQL 并要求替换实验分组编号、实验相关字段或日期范围时触发。先由模型理解 SQL 语义并确认字段/映射，再用 scripts/sql_exp_replace.py 扫描候选项和执行确定性替换；不要靠大模型手工改 SQL。
 user_invocable: true
 ---
 
@@ -11,10 +11,12 @@ user_invocable: true
 ## 功能
 
 帮助用户快速替换广告投放实验SQL中的：
-1. **实验号**：ovl_exp / ovl_id / ovid_eid_list 等字段中的实验分组编号
-2. **日期范围**：所有 event_day 的 between 日期
+1. **实验号**：实验相关字段中的分组编号，例如 `ovl_exp` / `ovl_id` / `ovid_eid_list`，但字段名不固定
+2. **日期范围**：日期分区或日期条件字段，例如 `event_day` / `dt` / `log_date`，但字段名不固定
 
-核心原则：模型负责理解用户意图、确认映射关系和检查结果；机械替换必须交给 `scripts/sql_exp_replace.py`，避免漏替、误替或格式漂移。
+核心原则：模型负责理解用户意图、识别 SQL 里的真实实验字段/日期字段、确认映射关系和检查结果；脚本负责扫描候选项和执行已经确认的机械替换，避免漏替、误替或格式漂移。不要让脚本假装理解业务语义，也不要让模型手工逐处替换。
+
+脚本分两层：`scripts/text_replace.py` 是可复用的通用替换引擎，只接受明确替换计划；`scripts/sql_exp_replace.py` 是 SQL 领域 wrapper，负责扫描实验号、日期字段候选项，并把确认后的替换交给通用引擎。
 
 ## 触发边界
 
@@ -35,11 +37,25 @@ user_invocable: true
 
 ## 脚本优先流程
 
-明确拿到 SQL、实验号映射和日期后，优先运行：
+先用 SQL 领域 wrapper 扫描 SQL，列出候选实验号和日期字段：
+
+```bash
+python3 scripts/sql_exp_replace.py input.sql --scan
+```
+
+模型需要根据扫描结果和 SQL 语义判断：
+
+- 哪些 token 是本次要替换的实验号。
+- 哪些字段是本次要替换的日期字段；不要默认所有日期字段都该改。
+- CASE 标签、实验组名、图上/图外等业务文案是否需要同步改。
+- 是否存在脚本不覆盖的复杂日期表达式，例如 `>=` / `<=`、`in (...)` 或拼接日期。
+
+明确拿到 SQL、实验号映射、日期字段和日期后，再运行 SQL wrapper：
 
 ```bash
 python3 scripts/sql_exp_replace.py input.sql \
   --map OLD_ID=NEW_ID \
+  --date-field event_day \
   --date-start 20260508 \
   --date-end 20260513
 ```
@@ -47,20 +63,22 @@ python3 scripts/sql_exp_replace.py input.sql \
 规则：
 
 - `--map OLD_ID=NEW_ID` 支持重复传入多组映射。
-- 如果传入基础实验号，例如 `162159=162160`，脚本会同步替换 `162159-0`、`162159-dz` 和独立出现的 `162159`，并保留 `-0` / `-dz` 后缀。
+- 如果传入基础实验号，例如 `162159=162160`，SQL wrapper 会通过通用替换引擎同步替换 `162159-0`、`162159-dz` 和独立出现的 `162159`，并保留 `-0` / `-dz` 后缀；多组实验号会按同一轮原文匹配同时替换，避免 `A=B, B=A` 这类互换映射串联污染。
 - 如果只想替换完整 token，也可以传 `162159-0=162160-0`。
-- 日期支持 `YYYYMMDD`；如果用户只给 `MMDD`，调用脚本时必须同时传 `--year 2026` 之类明确年份。
-- 脚本只替换 `event_day between "YYYYMMDD" and "YYYYMMDD"` / 单引号 / 无引号这类确定格式。
-- 脚本会在 stderr 输出替换计数；任一映射或日期范围 0 命中时默认失败，除非明确使用 `--allow-zero`。
+- `--date-field FIELD` 支持重复传入多个字段，例如 `--date-field event_day --date-field dt`。如果不传，脚本只按历史默认处理 `event_day`；基础字段名会匹配带表别名的写法，例如 `event_day` 可匹配 `a.event_day`，需要限制别名时传 `a.event_day`。
+- 日期支持 `YYYYMMDD`；如果用户只给 `MMDD`，调用脚本时必须同时传 `--year 2026` 之类明确的四位年份。
+- 脚本只替换指定字段的 `FIELD between "YYYYMMDD" and "YYYYMMDD"` / 单引号 / 无引号这类确定格式。
+- 脚本会在 stderr 输出替换计数；任一映射或任一指定日期字段 0 命中时默认失败，除非明确使用 `--allow-zero`。
 
 当用户直接贴 SQL 时，可以把 SQL 临时保存到 `/private/tmp` 后运行脚本；最终仍按用户要求输出完整 SQL 代码块，不默认写回原文件。
 
 ## 模型仍需负责的事
 
-- 从用户自然语言中提取新旧实验号映射，但不猜不明确的映射。
+- 从用户自然语言和 SQL 结构中提取新旧实验号映射，但不猜不明确的映射。
+- 通过 `--scan`、SQL 上下文和字段用途判断日期字段；字段不固定时必须传 `--date-field`。
 - 判断 `图上`、`图外`、`实验组`、`对照组` 等业务标签是否需要同步改 CASE 标签；如果标签映射不明确，先确认。
-- 运行脚本后阅读替换计数，确认每个映射和日期范围都有命中。
-- 对脚本覆盖不到的复杂 CASE 文案，只做最小必要修改，并在输出前再次检查旧实验号是否残留。
+- 运行脚本后阅读替换计数，确认每个实验号映射和每个指定日期字段都有命中。
+- 对脚本覆盖不到的复杂 CASE 文案或日期表达式，只做最小必要修改，并在输出前再次检查旧实验号和旧日期是否残留。
 
 ## 替换规则
 
@@ -85,9 +103,9 @@ python3 scripts/sql_exp_replace.py input.sql \
 
 ### 日期替换
 
-替换所有 `event_day between "YYYYMMDD" and "YYYYMMDD"` 中的日期，包括：
-- 主查询的 event_day
-- 所有子查询中的 event_day
+替换确认日期字段的 `FIELD between "YYYYMMDD" and "YYYYMMDD"` 中的日期，包括：
+- 主查询中的日期字段
+- 所有子查询中同一语义的日期字段
 - 注意保留日期格式（带引号的 "YYYYMMDD"）
 
 ## 注意事项
