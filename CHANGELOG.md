@@ -1,3 +1,13 @@
+## [0.10.2] - 2026-05-31
+### Added
+- hooks/codex-hooks.json: 新增 Codex 专用 hook 配置，继续使用 `${PLUGIN_ROOT}` 和脚本内过滤
+
+### Changed
+- hooks/hooks.json: 改为 Claude Code 默认扫描专用配置，使用 `${CLAUDE_PLUGIN_ROOT}` 和 `matcher: "Skill"`，避免 Claude Code 将 `${PLUGIN_ROOT}` 展开为空导致 `/hooks/skill-telemetry.py` 路径错误
+- manifest: 插件版本升级到 `0.10.2`，Codex manifest 改为指向 `hooks/codex-hooks.json`
+- validate-plugin.py: hook 配置校验覆盖 Claude 默认 hooks 与 Codex manifest hooks 两条路径
+- README / 维护指南: 明确 Claude Code 与 Codex hook 变量名和配置文件分离
+
 ## [0.10.1] - 2026-05-31
 ### Added
 - hooks/hooks.json: 新增 Codex 插件内置 PostToolUse hook 配置，启用插件后可通过 `/hooks` trust 并运行 telemetry

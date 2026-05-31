@@ -27,7 +27,7 @@ iplugin/
 ├── commands/               # slash command 入口
 ├── versions/               # 版本规划与决策文档
 ├── scripts/                # 共享脚本和提交前校验
-├── hooks/                  # 全局横切 hooks，含 Codex hooks/hooks.json
+├── hooks/                  # 全局横切 hooks，区分 Claude/Codex 配置
 ├── CLAUDE.md               # 插件维护指南（Claude 在此目录下生效）
 ├── README.md
 ├── CHANGELOG.md
@@ -96,7 +96,7 @@ Codex 侧刷新本地插件：
 codex plugin marketplace upgrade iplugin
 ```
 
-Codex 启用插件后会通过 `.codex-plugin/plugin.json` 读取 `hooks/hooks.json`，加载 `hooks/skill-telemetry.py`。首次启用或脚本变更后，在 Codex CLI 中执行 `/hooks` 并 trust 该 hook。
+Claude Code 会默认扫描 `hooks/hooks.json`，其中使用 `${CLAUDE_PLUGIN_ROOT}` 和 `matcher: "Skill"`。Codex 启用插件后会通过 `.codex-plugin/plugin.json` 读取 `hooks/codex-hooks.json`，其中使用 `${PLUGIN_ROOT}` 并由脚本过滤可识别的 skill 事件。首次启用或脚本变更后，在对应 CLI 中执行 `/hooks` 并 trust 该 hook。
 
 Telemetry 默认日志：
 

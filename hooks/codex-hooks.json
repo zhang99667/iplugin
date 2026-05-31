@@ -2,11 +2,11 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Skill",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-telemetry.py\"",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/skill-telemetry.py\"",
             "timeout": 5
           }
         ]

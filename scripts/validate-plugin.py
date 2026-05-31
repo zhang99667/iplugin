@@ -226,7 +226,7 @@ def check_manifest_common_fields(claude: dict[str, Any] | None, codex: dict[str,
 
 
 def check_hooks_object(value: Any, label: str) -> list[str]:
-    """检查 Codex hooks JSON / inline object 的最外层结构。"""
+    """检查 hooks JSON / inline object 的最外层结构。"""
 
     if not isinstance(value, dict):
         return [f"{label} must be a JSON object"]
@@ -236,48 +236,86 @@ def check_hooks_object(value: Any, label: str) -> list[str]:
     return []
 
 
-def check_codex_hooks_config(codex: dict[str, Any] | None) -> CheckResult:
-    """检查 Codex manifest 中声明的 hooks 配置是否可加载。"""
+def check_hook_variable_scope(value: Any, label: str) -> list[str]:
+    """检查 Claude / Codex hook 配置是否误用了对方的平台变量。"""
 
-    result = CheckResult("Codex hooks config is valid")
+    text = stringify_for_check(value)
+    details: list[str] = []
+    if label == "hooks/hooks.json":
+        if "${PLUGIN_ROOT}" in text:
+            details.append(f"{label} is loaded by Claude Code and must not use Codex-only ${{PLUGIN_ROOT}}")
+        if "skill-telemetry.py" in text and "${CLAUDE_PLUGIN_ROOT}" not in text:
+            details.append(f"{label} telemetry command should use ${{CLAUDE_PLUGIN_ROOT}}")
+    elif label == "hooks/codex-hooks.json":
+        if "${CLAUDE_PLUGIN_ROOT}" in text:
+            details.append(f"{label} is loaded by Codex and must not use Claude-only ${{CLAUDE_PLUGIN_ROOT}}")
+        if "skill-telemetry.py" in text and "${PLUGIN_ROOT}" not in text:
+            details.append(f"{label} telemetry command should use ${{PLUGIN_ROOT}}")
+    return details
+
+
+def stringify_for_check(value: Any) -> str:
+    try:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    except TypeError:
+        return str(value)
+
+
+def check_hook_entry(result: CheckResult, entry: Any, label: str) -> None:
+    if isinstance(entry, str):
+        if not entry.startswith("./"):
+            result.details.append(f"{label} path must start with './', got {entry!r}")
+            return
+        hook_path = (ROOT / entry).resolve()
+        try:
+            hook_path.relative_to(ROOT.resolve())
+        except ValueError:
+            result.details.append(f"{label} path must stay inside plugin root, got {entry!r}")
+            return
+        data, error = load_json(hook_path)
+        if error:
+            result.details.append(error)
+            return
+        hook_label = rel(hook_path)
+        result.details.extend(check_hooks_object(data, hook_label))
+        result.details.extend(check_hook_variable_scope(data, hook_label))
+    elif isinstance(entry, dict):
+        result.details.extend(check_hooks_object(entry, label))
+        result.details.extend(check_hook_variable_scope(entry, label))
+    else:
+        result.details.append(f"{label} must be a './' path or inline hooks object")
+
+
+def check_hooks_configs(codex: dict[str, Any] | None) -> CheckResult:
+    """检查 Claude 默认 hooks 和 Codex manifest hooks 配置是否可加载。"""
+
+    result = CheckResult("Hook configs are valid")
+
+    default_hooks = HOOKS_DIR / "hooks.json"
+    if not default_hooks.is_file():
+        result.details.append(f"{rel(default_hooks)} does not exist")
+    else:
+        data, error = load_json(default_hooks)
+        if error:
+            result.details.append(error)
+        else:
+            label = rel(default_hooks)
+            result.details.extend(check_hooks_object(data, label))
+            result.details.extend(check_hook_variable_scope(data, label))
+
     if codex is None:
-        result.details.append("Skipped because Codex manifest could not be loaded")
+        result.details.append("Skipped Codex hooks because Codex manifest could not be loaded")
         return result
 
     hooks = codex.get("hooks")
     if hooks is None:
-        default_hooks = HOOKS_DIR / "hooks.json"
-        if default_hooks.is_file():
-            data, error = load_json(default_hooks)
-            if error:
-                result.details.append(error)
-            else:
-                result.details.extend(check_hooks_object(data, rel(default_hooks)))
+        result.details.append(f"{rel(CODEX_MANIFEST)} is missing 'hooks'")
         return result
 
     entries = hooks if isinstance(hooks, list) else [hooks]
     for index, entry in enumerate(entries):
         label = f"{rel(CODEX_MANIFEST)} hooks[{index}]"
-        if isinstance(entry, str):
-            if not entry.startswith("./"):
-                result.details.append(f"{label} path must start with './', got {entry!r}")
-                continue
-            hook_path = (ROOT / entry).resolve()
-            try:
-                hook_path.relative_to(ROOT.resolve())
-            except ValueError:
-                result.details.append(f"{label} path must stay inside plugin root, got {entry!r}")
-                continue
-            data, error = load_json(hook_path)
-            if error:
-                result.details.append(error)
-            else:
-                result.details.extend(check_hooks_object(data, rel(hook_path)))
-        elif isinstance(entry, dict):
-            result.details.extend(check_hooks_object(entry, label))
-        else:
-            result.details.append(f"{label} must be a './' path or inline hooks object")
-
+        check_hook_entry(result, entry, label)
     return result
 
 
@@ -552,7 +590,7 @@ def main() -> int:
     results = [
         json_result,
         check_manifest_common_fields(claude_manifest, codex_manifest),
-        check_codex_hooks_config(codex_manifest),
+        check_hooks_configs(codex_manifest),
         frontmatter_result,
         check_readme_skills(skills),
         check_manifest_keywords(claude_manifest, codex_manifest, skills),
