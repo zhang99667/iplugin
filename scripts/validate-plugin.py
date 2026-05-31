@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -19,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # 仓库内需要共同参与一致性检查的核心文件和目录。
 CLAUDE_MANIFEST = ROOT / ".claude-plugin" / "plugin.json"
 CODEX_MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
+CLAUDE_MD = ROOT / "CLAUDE.md"
+AGENTS_MD = ROOT / "AGENTS.md"
 README = ROOT / "README.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
 SKILLS_DIR = ROOT / "skills"
@@ -421,6 +424,47 @@ def check_commands(skill_names: set[str]) -> CheckResult:
     return result
 
 
+def check_claude_agents_sync() -> CheckResult:
+    """检查 CLAUDE.md 与 AGENTS.md 内容是否完全一致（SHA-256 哈希对比）。"""
+
+    result = CheckResult("CLAUDE.md and AGENTS.md are in sync")
+    for path in (CLAUDE_MD, AGENTS_MD):
+        if not path.is_file():
+            result.details.append(f"{rel(path)} does not exist")
+    if result.details:
+        return result
+
+    hash_claude = hashlib.sha256(CLAUDE_MD.read_bytes()).hexdigest()
+    hash_agents = hashlib.sha256(AGENTS_MD.read_bytes()).hexdigest()
+    if hash_claude != hash_agents:
+        result.details.append(
+            f"CLAUDE.md and AGENTS.md differ — update both files to keep them in sync"
+        )
+    return result
+
+
+def check_no_hardcoded_homedir(skills: list[Path]) -> CheckResult:
+    """检查 skills/ 下的 SKILL.md 主文件是否存在硬编码的绝对用户主目录路径。
+
+    只检查 SKILL.md 主文件，跳过 references/ 子目录（示例文档中的路径是合法内容）。
+    """
+
+    result = CheckResult("No hardcoded absolute home paths in skills/")
+    pattern = re.compile(r"/Users/[^/\s'\"]+")
+    for skill_dir in skills:
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.is_file():
+            continue
+        text = read_text(skill_md)
+        matches = pattern.findall(text)
+        if matches:
+            unique = sorted(set(matches))
+            result.details.append(
+                f"{rel(skill_md)} contains hardcoded path(s): {', '.join(unique)}"
+            )
+    return result
+
+
 def print_results(results: list[CheckResult]) -> None:
     """按固定格式输出所有检查项，便于提交前快速扫一眼。"""
 
@@ -456,6 +500,8 @@ def main() -> int:
         check_manifest_keywords(claude_manifest, codex_manifest, skills),
         check_changelog_versions(),
         check_commands(skill_names),
+        check_claude_agents_sync(),
+        check_no_hardcoded_homedir(skills),
     ]
 
     print_results(results)

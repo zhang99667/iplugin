@@ -1,3 +1,28 @@
+## [0.10.0] - 2026-05-31
+### Added
+- hooks/skill-telemetry.py: 新增 PostToolUse hook 脚本，监听 Skill 调用并写入 ~/.claude/skill-usage.jsonl，完全离线，支持 `jq` 统计各 skill 使用频次
+
+### Changed
+- delegated-search: 不适用补充互斥说明，明确互联网搜索请用 best-of-web
+- best-of-web: 不适用互斥说明更精准，明确本地多源检索/子 agent 请用 delegated-search
+- icafe-delivery-archive: 修复 5 处 /Users/markz/ 硬编码路径为 Path.home()，依赖说明补注百度内网限制
+- session-rename: 修复 2 处硬编码路径，description 补注"仅适用 Claude Code 环境"，主文件 236→65 行
+- lite-diff-marker: Progressive Disclosure 拆分，主文件 291→90 行，规则细节移入 references/marking-rules.md
+- project-summary: Progressive Disclosure 拆分，主文件 291→64 行，写作规范移入 references/writing-guide.md
+- validate-plugin.py: 新增 CLAUDE.md/AGENTS.md 哈希同步校验和 SKILL.md 硬编码路径检测，校验项从 7 增至 9
+
+## [0.9.0] - 2026-05-31
+### Added
+- best-of-web: 新增联网精选 skill，用于让模型根据语境主动触发“结合互联网上最优秀内容”的搜索与综合能力
+- commands: 新增 `/best-of-web` slash command，作为手动强制触发 `best-of-web` skill 的入口
+- README: 补充 `best-of-web` skill 与 `/best-of-web` 命令说明，并在插件能力描述中加入联网精选
+
+## [0.8.10] - 2026-05-29
+### Changed
+- html-report: 强化源码定位 chip 规则，行号范围必须合并到同一个可跳转链接中，不再另起独立行号 badge
+- html-report: 从 CSS 模板移除 `.line` 示例样式，避免生成不可跳转的路径/行号分离展示
+- html-report: 明确源码定位由 HTML 结构驱动，CSS 只负责视觉样式
+
 ## [0.8.9] - 2026-05-29
 ### Changed
 - html-report: 增加代码变更标识规范，要求新增、删除、修改和上下文行在报告中可视区分

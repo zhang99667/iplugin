@@ -43,10 +43,12 @@ user_invocable: true
 
 ## 必要依赖
 
-本技能需要使用 iCafe 客户端：
+本技能需要使用 iCafe 客户端（需要百度内网 iCafe 访问权限）：
 
 ```python
-sys.path.insert(0, '/Users/markz/.claude/skills/icafe-card-assistant')
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path.home() / '.claude/skills/icafe-card-assistant'))
 from scripts.icafe_client import ICafeClient
 ```
 
@@ -101,7 +103,7 @@ card = client.get_card_by_id(
 默认目录根为：
 
 ```text
-/Users/markz/Desktop/需求交付
+~/Desktop/需求交付
 ```
 
 子目录命名：
@@ -230,7 +232,7 @@ card = client.get_card_by_id(
 完成后用简短结果说明：
 
 ```markdown
-已归档到：`/Users/markz/Desktop/需求交付/FEEDADS-23545 私信欢迎语二期（支持微信名片，表单交互优化）`
+已归档到：`~/Desktop/需求交付/FEEDADS-23545 私信欢迎语二期（支持微信名片，表单交互优化）`
 
 包含：
 - `需求描述 · FEEDADS-23545.html`
@@ -254,7 +256,7 @@ card = client.get_card_by_id(
 import json, html, shutil, re
 from pathlib import Path
 import sys
-sys.path.insert(0, '/Users/markz/.claude/skills/icafe-card-assistant')
+sys.path.insert(0, str(Path.home() / '.claude/skills/icafe-card-assistant'))
 from scripts.icafe_client import ICafeClient
 
 source_design = Path('/path/to/design.html')
@@ -275,7 +277,7 @@ def safe_name(s):
     return s or '未命名需求'
 
 title = card.get('title') or f'{space_id}-{sequence}'
-out_dir = Path('/Users/markz/Desktop/需求交付') / f'{space_id}-{sequence} {safe_name(title)}'
+out_dir = Path.home() / 'Desktop/需求交付' / f'{space_id}-{sequence} {safe_name(title)}'
 out_dir.mkdir(parents=True, exist_ok=True)
 
 url = f'https://console.cloud.baidu-int.com/devops/icafe/issue/{space_id}-{sequence}/show'
