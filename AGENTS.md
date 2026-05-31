@@ -11,7 +11,7 @@
 - `commands/<name>.md` — slash command 入口，优先调用 `skills/` 中的通用能力，不承载大段重复逻辑
 - `versions/vX.Y.Z.md` — 每个版本的规划和决策记录
 - `scripts/` — 共享脚本（需要确定性执行的代码）
-- `hooks/` — 全局钩子（横切关注点）
+- `hooks/` — 全局钩子（横切关注点），Codex 默认读取 `hooks/hooks.json`
 
 ## 兼容原则
 
@@ -20,7 +20,7 @@
 - 插件级信息变更时，同时检查 `.claude-plugin/plugin.json` 和 `.codex-plugin/plugin.json`
 - 版本号、描述、关键词应尽量在两个 manifest 中保持一致
 - Codex 插件刷新使用 `codex plugin marketplace upgrade iplugin`
-- 如果未来加入 hooks，Claude Code 和 Codex 的 hooks 配置需要分别验证；不要默认认为两边 1:1 兼容
+- hooks 已用于 telemetry；Claude Code 的 settings 注册方式与 Codex 的 `hooks/hooks.json` / manifest 注册方式需要分别验证，不要默认认为两边 1:1 兼容
 
 ## Skill 准入标准
 

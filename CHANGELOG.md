@@ -1,3 +1,13 @@
+## [0.10.1] - 2026-05-31
+### Added
+- hooks/hooks.json: 新增 Codex 插件内置 PostToolUse hook 配置，启用插件后可通过 `/hooks` trust 并运行 telemetry
+
+### Changed
+- hooks/skill-telemetry.py: 兼容 Claude Code `Skill` tool 事件与 Codex hook 事件，Codex 侧从 `skills/<name>/SKILL.md` 访问痕迹提取 skill 名称并写入 `~/.codex/skill-usage.jsonl`
+- manifest: 插件版本升级到 `0.10.1`，Codex manifest 显式声明 `hooks/hooks.json`
+- validate-plugin.py: 新增 Codex hooks 配置校验，检查 manifest hooks 路径和 hooks JSON 结构
+- README / 维护指南: 补充 Codex hook 刷新、trust、日志路径和双端验证说明
+
 ## [0.10.0] - 2026-05-31
 ### Added
 - hooks/skill-telemetry.py: 新增 PostToolUse hook 脚本，监听 Skill 调用并写入 ~/.claude/skill-usage.jsonl，完全离线，支持 `jq` 统计各 skill 使用频次

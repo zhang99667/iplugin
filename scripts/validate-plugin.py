@@ -27,6 +27,7 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 SKILLS_DIR = ROOT / "skills"
 COMMANDS_DIR = ROOT / "commands"
 VERSIONS_DIR = ROOT / "versions"
+HOOKS_DIR = ROOT / "hooks"
 
 # 两个平台 manifest 中必须保持一致的公共字段。
 PRIMARY_COMMON_FIELDS = ("name", "version", "description", "keywords")
@@ -220,6 +221,62 @@ def check_manifest_common_fields(claude: dict[str, Any] | None, codex: dict[str,
                 f"Field {field_name!r} differs between manifests: "
                 f"claude={claude[field_name]!r}, codex={codex[field_name]!r}"
             )
+
+    return result
+
+
+def check_hooks_object(value: Any, label: str) -> list[str]:
+    """检查 Codex hooks JSON / inline object 的最外层结构。"""
+
+    if not isinstance(value, dict):
+        return [f"{label} must be a JSON object"]
+    hooks = value.get("hooks")
+    if not isinstance(hooks, dict):
+        return [f"{label} must contain a 'hooks' object"]
+    return []
+
+
+def check_codex_hooks_config(codex: dict[str, Any] | None) -> CheckResult:
+    """检查 Codex manifest 中声明的 hooks 配置是否可加载。"""
+
+    result = CheckResult("Codex hooks config is valid")
+    if codex is None:
+        result.details.append("Skipped because Codex manifest could not be loaded")
+        return result
+
+    hooks = codex.get("hooks")
+    if hooks is None:
+        default_hooks = HOOKS_DIR / "hooks.json"
+        if default_hooks.is_file():
+            data, error = load_json(default_hooks)
+            if error:
+                result.details.append(error)
+            else:
+                result.details.extend(check_hooks_object(data, rel(default_hooks)))
+        return result
+
+    entries = hooks if isinstance(hooks, list) else [hooks]
+    for index, entry in enumerate(entries):
+        label = f"{rel(CODEX_MANIFEST)} hooks[{index}]"
+        if isinstance(entry, str):
+            if not entry.startswith("./"):
+                result.details.append(f"{label} path must start with './', got {entry!r}")
+                continue
+            hook_path = (ROOT / entry).resolve()
+            try:
+                hook_path.relative_to(ROOT.resolve())
+            except ValueError:
+                result.details.append(f"{label} path must stay inside plugin root, got {entry!r}")
+                continue
+            data, error = load_json(hook_path)
+            if error:
+                result.details.append(error)
+            else:
+                result.details.extend(check_hooks_object(data, rel(hook_path)))
+        elif isinstance(entry, dict):
+            result.details.extend(check_hooks_object(entry, label))
+        else:
+            result.details.append(f"{label} must be a './' path or inline hooks object")
 
     return result
 
@@ -495,6 +552,7 @@ def main() -> int:
     results = [
         json_result,
         check_manifest_common_fields(claude_manifest, codex_manifest),
+        check_codex_hooks_config(codex_manifest),
         frontmatter_result,
         check_readme_skills(skills),
         check_manifest_keywords(claude_manifest, codex_manifest, skills),

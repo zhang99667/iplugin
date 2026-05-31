@@ -1,6 +1,6 @@
 {
   "name": "iplugin",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、联网精选、SQL 实验替换、项目/需求总结、iCafe 交付归档、差异化标记、Karpathy 编码准则",
   "author": {
     "name": "markz"
@@ -73,6 +73,7 @@
     "dev-toolkit"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "iPlugin",
     "shortDescription": "个人开发工作流工具箱",

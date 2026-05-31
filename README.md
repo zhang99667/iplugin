@@ -26,7 +26,7 @@ iplugin/
 ├── commands/               # slash command 入口
 ├── versions/               # 版本规划与决策文档
 ├── scripts/                # 共享脚本和提交前校验
-├── hooks/                  # 全局横切 hooks（按需添加）
+├── hooks/                  # 全局横切 hooks，含 Codex hooks/hooks.json
 ├── CLAUDE.md               # 插件维护指南（Claude 在此目录下生效）
 ├── README.md
 ├── CHANGELOG.md
@@ -58,7 +58,7 @@ iplugin/
 
 ## 安装
 
-下面是 Claude Code 的本地市场安装示例。Codex 侧复用同一份 `skills/` 与 `.codex-plugin/plugin.json`。
+下面是 Claude Code 的本地市场安装示例。Codex 侧复用同一份 `skills/`、`hooks/` 与 `.codex-plugin/plugin.json`。
 
 1. 创建市场目录并软链接 git 仓库：
 
@@ -86,6 +86,21 @@ ln -s /Users/markz/code/tools/iplugin ~/.claude/plugins/marketplaces/iplugin/ipl
 ```
 
 软链接指向 git 仓库，修改 SKILL.md 后下次对话自动生效。
+
+Codex 侧刷新本地插件：
+
+```bash
+codex plugin marketplace upgrade iplugin
+```
+
+Codex 启用插件后会通过 `.codex-plugin/plugin.json` 读取 `hooks/hooks.json`，加载 `hooks/skill-telemetry.py`。首次启用或脚本变更后，在 Codex CLI 中执行 `/hooks` 并 trust 该 hook。
+
+Telemetry 默认日志：
+
+- Claude Code: `~/.claude/skill-usage.jsonl`
+- Codex: `~/.codex/skill-usage.jsonl`
+
+可用 `IPPLUGIN_SKILL_USAGE_LOG` 覆盖日志路径。
 
 ## 添加新 Skill
 
