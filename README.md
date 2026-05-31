@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、SQL 实验替换、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则的个人研发工作流通用插件。
+toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、联网精选、SQL 实验替换、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则的个人研发工作流通用插件。
 
 ## 目录结构
 
@@ -13,6 +13,7 @@ iplugin/
 ├── skills/
 │   ├── code-reading/       # 带我读代码，追踪执行链路
 │   ├── ask-user-question/   # 手动结构化询问，把不确定点交给 AskUserQuestion
+│   ├── best-of-web/        # 联网精选，结合高质量公开资料综合回答
 │   ├── delegated-search/   # 广域检索任务委派与证据收集
 │   ├── html-report/        # 生成带内容类型判断的独立 HTML 工程报告
 │   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
@@ -39,6 +40,7 @@ iplugin/
 |------|------|---------|
 | `code-reading` | 逐步详解代码执行链路，追踪创建→初始化→注册→触发→分发全过程 | "带我读代码"、"从入口到触发完整讲一遍" |
 | `ask-user-question` | 手动把不确定点整理成结构化选择题，交给 AskUserQuestion / request_user_input | `/ask-user-question 这个 UI 改动应该怎么做` |
+| `best-of-web` | 联网搜索并精选高质量公开资料，再综合成可引用、可执行的回答 | "结合互联网上最优秀的内容"、"找权威资料和最佳实践"、"/best-of-web" |
 | `delegated-search` | 将发散搜索、证据收集、多来源核验任务拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来" |
 | `html-report` | 生成独立 HTML 报告；正式技术/业务文档会加文档抬头，普通对话整理保持轻量页面 | "整理成 HTML 报告"、"/htmlreport" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
@@ -54,6 +56,7 @@ iplugin/
 | 命令 | 用途 |
 |------|------|
 | `/ask-user-question` | 手动把当前不确定点交给结构化询问机制，让用户选择后再继续执行 |
+| `/best-of-web` | 显式要求联网搜索并精选整合互联网上的高质量内容 |
 | `/htmlreport` | 把当前回答、上一轮回答或提供的上下文整理成独立 HTML 报告 |
 
 ## 安装
