@@ -74,12 +74,6 @@
     color: #312e81;
     box-shadow: inset 0 0 0 1px rgba(67, 56, 202, .18);
   }
-  .line {
-    display: inline-block; background: #ecfeff; color: #155e75;
-    border-radius: 8px; padding: 2px 8px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 12px;
-  }
   .muted { color: var(--muted); }
   .doc-header {
     margin-bottom: 18px;
@@ -259,13 +253,13 @@
 </style>
 ```
 
-文件定位 chip 优先使用可跳转 IDEA 的链接，展示文本遵循 `{displayPath}:{line}`、`{displayPath}:{start}-{end}` 或 `{displayPath}:{line}:{column}`。必须把路径和行号放在同一个 `<a class="path file-link">` 中，不要拆成 `.path` + `.line` 两个 chip：
+文件定位 chip 优先使用可跳转 IDEA 的链接，展示文本遵循 `{displayPath}:{line}`、`{displayPath}:{start}-{end}` 或 `{displayPath}:{line}:{column}`。这里由 HTML 结构驱动：先生成单个 `<a class="path file-link">`，CSS 只负责样式。必须把路径和行号放在同一个链接中，不要拆成 `.path` + `.line` 两个 chip，也不要把行号范围另起一行：
 
 ```html
 <a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82&amp;column=7">/abs/path/File.java:82:7</a>
 ```
 
-行号范围链接跳到起始行，展示保留范围；可用 `title` 放完整绝对路径，正文展示更短的仓库相对路径：
+行号范围链接跳到起始行，展示保留完整范围；可用 `title` 放完整绝对路径，正文展示更短的仓库相对路径。不要额外生成独立的 `43-50` 或 `106-111` 行号 badge：
 
 ```html
 <a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50</a>
