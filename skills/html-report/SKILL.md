@@ -1,11 +1,11 @@
 ---
 name: html-report
-version: 0.2.9
+version: 0.2.11
 tags:
   - report
   - html
   - output
-description: HTML 报告生成助手，仅当用户明确要求“生成 HTML/HTML 报告/写成 HTML 放到桌面”或调用 /htmlreport 时触发。不要因普通“总结一下”“整理一下”“直接给我结论”触发；这类默认用 Markdown，除非内容复杂且用户确认要 HTML。
+description: HTML 报告生成助手，仅当用户明确要求“生成 HTML/HTML 报告/写成 HTML 放到桌面”或调用 /htmlreport 时触发；也可被其他 skill 在复杂内容明显适合可视化交付时调用。不要因普通“总结一下”“整理一下”“直接给我结论”触发；这类默认用 Markdown。
 ---
 
 # HTML 报告
@@ -17,8 +17,10 @@ description: HTML 报告生成助手，仅当用户明确要求“生成 HTML/HT
 SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读取：
 
 - `references/content-rules.md`：HTML vs Markdown 决策、文档类型、正式抬头、输出要求、写作规范、完成前检查。
+- `references/artifact-patterns.md`：按报告类型选择结构模板。当前只覆盖技术方案和技术调研两个高频场景，其他场景先按通用报告规则处理。
 - `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 模板、交互组件样式、复制按钮 JS 和 HTML 骨架。只有开始写 HTML 文件时再读取。
+- `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码块时优先用它生成可嵌入的 `.code-wrap` 片段；展示 unified diff 修改点时使用 `--diff-view`。
 
 ## 触发边界
 
@@ -41,9 +43,10 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
    - 明确要求终端输出或不用 HTML：直接输出 Markdown。
    - 模糊请求：内容简单用 Markdown；内容复杂先确认输出格式。
 2. 决定要生成 HTML 后，读取 `references/content-rules.md`，判断正式技术/业务文档、分析报告或普通对话转 HTML。
-3. 读取 `references/visual-rules.md`，选择必要的视觉结构和交互。保持克制，不为装饰添加复杂交互。
-4. 写 HTML 文件前读取 `references/css-template.md`，使用内嵌 CSS/JS 生成单文件 HTML。
-5. 完成后只回复文件路径和一句话概要，不复述报告全文。
+3. 如果报告属于技术方案、技术调研、问题排查或修复方案，读取 `references/artifact-patterns.md`，选择对应结构。
+4. 读取 `references/visual-rules.md`，选择必要的视觉结构和交互。保持克制，不为装饰添加复杂交互。
+5. 写 HTML 文件前读取 `references/css-template.md`，使用内嵌 CSS/JS 生成单文件 HTML。
+6. 完成后只回复文件路径和一句话概要，不复述报告全文。
 
 ## 输出契约
 
@@ -58,6 +61,6 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - HTML 的价值是可视化表达力，不是花哨交互。
 - 首屏给结论，详情和证据往下排。
 - 颜色、卡片、表格、目录、折叠都服务于阅读和定位。
-- 代码块必须有可读层次；文件位置必须尽量可跳转。
+- 代码块必须先转义再高亮，优先使用 `scripts/highlight_code.py` 生成；文件位置必须尽量可跳转。
 - 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文。
 - 如果用户指定其他视觉风格，以用户的新要求为准。

@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、联网精选、SQL 实验替换、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则的个人研发工作流通用插件。
+toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则的个人研发工作流通用插件。
 
 ## 目录结构
 
@@ -16,6 +16,7 @@ iplugin/
 │   ├── best-of-web/        # 联网精选，结合高质量公开资料综合回答
 │   ├── delegated-search/   # 广域检索任务委派与证据收集
 │   ├── html-report/        # 生成带内容类型判断的独立 HTML 工程报告
+│   ├── html2md/             # 将本地 HTML 或 file:// 页面转换成 Markdown
 │   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
 │   ├── project-summary/    # 项目/需求总结整理
 │   ├── icafe-delivery-archive/ # iCafe 需求交付材料归档
@@ -43,6 +44,7 @@ iplugin/
 | `best-of-web` | 联网搜索并精选高质量公开资料，再综合成可引用、可执行的回答 | "结合互联网上最优秀的内容"、"找权威资料和最佳实践"、"/best-of-web" |
 | `delegated-search` | 将发散搜索、证据收集、多来源核验任务拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来" |
 | `html-report` | 生成独立 HTML 报告；正式技术/业务文档会加文档抬头，普通对话整理保持轻量页面 | "整理成 HTML 报告"、"/htmlreport" |
+| `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |

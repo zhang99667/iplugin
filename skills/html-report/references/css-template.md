@@ -1,6 +1,6 @@
 # HTML 报告 CSS 模板
 
-生成报告时使用以下样式和 JS。**默认只用基础样式 + 折叠 + 复制按钮**，其他组件仅在内容确实需要时才选入。
+生成报告时使用以下样式和 JS。**默认只用基础样式 + 折叠 + 复制按钮**，其他组件仅在内容确实需要时才选入。代码块优先用 `scripts/highlight_code.py` 生成，它会先转义 HTML，再输出匹配本模板的 `.code-wrap` 和 `tok-*` class。
 
 ---
 
@@ -214,6 +214,44 @@
   .diff-del .diff-gutter, .diff-del .diff-code { background: #fef2f2; color: #991b1b; }
   .diff-mod .diff-gutter, .diff-mod .diff-code { background: #fffbeb; color: #92400e; }
   .diff-context .diff-code { background: #ffffff; color: #334155; }
+  .diff-scroll {
+    overflow-x: auto;
+  }
+  .diff-viewer .diff-table {
+    min-width: 760px;
+  }
+  .diff-viewer .diff-num {
+    width: 52px;
+    padding: 1px 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .diff-viewer .diff-code {
+    min-width: 0;
+    padding: 1px 12px;
+  }
+  .diff-viewer .diff-add .diff-gutter {
+    border-left: 5px solid #16a34a;
+  }
+  .diff-viewer .diff-del .diff-gutter {
+    border-left: 5px solid #dc2626;
+  }
+  .diff-viewer .diff-context .diff-gutter {
+    border-left: 5px solid transparent;
+  }
+  .diff-viewer .diff-add .diff-num,
+  .diff-viewer .diff-add .diff-code {
+    background: #e8f5e9;
+  }
+  .diff-viewer .diff-del .diff-num,
+  .diff-viewer .diff-del .diff-code {
+    background: #fde8e8;
+  }
+  .diff-viewer .diff-hunk .diff-code,
+  .diff-viewer .diff-meta .diff-code {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+  }
   .diff-mark-add, ins {
     background: #bbf7d0;
     color: #14532d;
@@ -269,7 +307,17 @@
 
 ## 2. 必备交互：折叠 + 复制（所有报告默认加入）
 
-代码块必须使用上面的 `tok-*` class 做基础语法高亮；不能只放未分色的纯文本。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
+代码块优先通过脚本生成：
+
+```bash
+python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
+python3 skills/html-report/scripts/highlight_code.py --lang diff patch.diff
+python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
+```
+
+脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
+
+展示修改点时优先使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。脚本不可用时，只手工高亮确定 token，且必须先转义 HTML。
 
 涉及代码变更时，优先使用 `.diff-card` + `.diff-table` 展示聚焦 diff。新增、删除、修改、上下文必须有不同视觉状态；行内 token 变化可使用 `<ins>` / `<del>` 或 `.diff-mark-add` / `.diff-mark-del`。
 

@@ -1,3 +1,31 @@
+## [0.11.2] - 2026-06-03
+### Added
+- html-report: 新增 `scripts/highlight_code.py`，用标准库生成已转义、基础高亮、可复制的 HTML 代码块
+- html-report: `highlight_code.py` 新增 `--diff-view`，可把 unified diff 渲染成带 old/new 行号、红绿背景和左侧变更轨道的修改点视图
+- html-report: `artifact-patterns.md` 新增“问题排查/修复方案”模板，覆盖现象、影响、根因、证据、修复、验证和回归
+
+### Changed
+- html-report: 代码高亮规范改为优先使用脚本生成，脚本不可用时才手工高亮确定 token，降低 HTML 转义和 `tok-*` span 出错风险
+- manifest: 插件版本升级到 `0.11.2`
+
+## [0.11.1] - 2026-06-02
+### Added
+- html-report: 新增 `references/artifact-patterns.md`，先沉淀技术方案和技术调研两个高频 HTML 报告结构模板
+
+### Changed
+- html-report: 增加 HTML 价值信号，明确复杂对比、diff、架构图、时间线、长报告和交付物场景更适合 HTML
+- html-report: 强化正式报告的首屏 TL;DR、证据来源区和生成后 Review/Improve 自查要求
+- html-report: 补充响应式、打印友好、可访问性和语义 HTML 底线
+- manifest: 插件版本升级到 `0.11.1`
+
+## [0.11.0] - 2026-06-02
+### Added
+- html2md: 新增 HTML 转 Markdown skill，支持本地 `.html`、`file://` URL 和粘贴 HTML 内容，默认输出同名 `.md`
+- html2md: 新增 bundled script `skills/html2md/scripts/html2md.py`，使用 Python 标准库保留标题、列表、表格、代码块、链接和 diff 表格
+
+### Changed
+- manifest / README: 插件能力清单加入 HTML 转 Markdown，版本升级到 `0.11.0`
+
 ## [0.10.2] - 2026-05-31
 ### Added
 - hooks/codex-hooks.json: 新增 Codex 专用 hook 配置，继续使用 `${PLUGIN_ROOT}` 和脚本内过滤
