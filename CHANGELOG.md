@@ -1,3 +1,8 @@
+## [0.11.3] - 2026-06-04
+### Changed
+- html-report: 优化触发边界，支持显式 HTML 请求、复杂交付物自动判断和其他 skill 调用，同时保留普通短总结默认 Markdown
+- manifest: 插件版本升级到 `0.11.3`
+
 ## [0.11.2] - 2026-06-03
 ### Added
 - html-report: 新增 `scripts/highlight_code.py`，用标准库生成已转义、基础高亮、可复制的 HTML 代码块
