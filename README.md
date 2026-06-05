@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则的个人研发工作流通用插件。
+toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
 
 ## 目录结构
 
@@ -52,7 +52,7 @@ iplugin/
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |
-| `mgit` | 百度 MGIT 多仓库状态、分支、仓库范围和中间态诊断；多仓写操作需确认 | "整体看一下这套工程状态"、"这些改动在哪些仓" |
+| `mgit` | 百度 MGIT 多仓状态、分支、仓库范围和中间态诊断；支持结合 EasyBox/xbuild `overlay` / `local` 配置判断开发分支上车和 master 合入时的源码模式范围；多仓写操作需确认 | "整体看一下这套工程状态"、"根据这些改动更新 EasyBox overlay/local" |
 | `session-rename` | 为 Claude Code 会话生成可检索标题 | "重命名当前会话" |
 
 ## Commands

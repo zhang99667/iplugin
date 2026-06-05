@@ -1,8 +1,8 @@
 ---
 name: mgit
-version: 0.1.3
+version: 0.1.4
 tags: [git, multi-repo, baidu, dev-tool]
-description: 百度 MGIT 多仓库管理助手。当任务上下文显示当前工作区可能是 MGIT/多仓库工程，或用户需要查看、同步、比较、提交、推送多个子仓库时触发，即使用户没有明确说 mgit。优先用于只读诊断多仓状态、分支、仓库范围和中间态；普通单仓 git 操作不触发。涉及写入、同步、推送、清理、reset 或跨仓自定义命令时必须先确认影响范围。
+description: 百度 MGIT 多仓库管理助手。当任务上下文显示当前工作区可能是 MGIT/多仓库工程，或用户需要查看、同步、比较、提交、推送多个子仓库时触发，即使用户没有明确说 mgit；涉及百度 EasyBox/xbuild modules 配置、overlay/local、modules-local*.gradle、syncSource、本地源码模式或多仓模块范围判断时也触发。优先用于只读诊断多仓状态、分支、仓库范围和中间态；普通单仓 git 操作不触发。涉及写入、同步、推送、清理、reset 或跨仓自定义命令时必须先确认影响范围。
 ---
 
 # MGIT 多仓库管理助手
@@ -17,6 +17,7 @@ SKILL.md 只保留触发、安全边界和命令路由。需要细节时按场�
 
 - `references/command-guide.md`：工作区识别、常用诊断、仓库范围控制、状态/同步/分支/拉取/提交/推送/forall 等命令。
 - `references/config-troubleshooting.md`：manifest、本地配置、中间态处理、输出风格和常见意图映射。
+- `references/easybox-overlay-local.md`：百度 EasyBox/xbuild `modules*.gradle`、`syncSource`、开发分支 `overlay` 与 master 合入 `local` 的上车配置流程。
 
 ## 触发边界
 
@@ -25,6 +26,7 @@ SKILL.md 只保留触发、安全边界和命令路由。需要细节时按场�
 - 用户明确提到 `MGIT`、`mgit`、多仓库管理、多仓库状态、同步、分支、批量提交/推送。
 - 用户没有点名 MGIT，但任务需要同时判断多个子仓库状态、分支、远端差异、中间态、冲突、依赖仓库位置或壳工程内的仓库范围。
 - 当前目录位于百度 App iOS/Android 壳工程，用户的问题明显跨业务/组件仓库，例如“整体看一下状态”“这些改动在哪些仓”“同步一下这套工程”“为什么这个模块分支不对”。
+- 当前目录位于百度 EasyBox/xbuild 工程，用户提到 `modules-local*.gradle`、`modules-overlay*.gradle`、`syncSource`、源码模式、本地模块配置、开发分支上车、master 合入或某组模块对应哪些仓库。
 
 ### 不适用
 
@@ -38,9 +40,10 @@ SKILL.md 只保留触发、安全边界和命令路由。需要细节时按场�
 
 1. 先判断是否真的是多仓 MGIT 任务；用户没有点名 mgit 也可以触发，但普通单仓 Git 不使用本技能。
 2. 优先只读建立上下文：`mgit -w`、`mgit -l`、`mgit branch --compact`、`mgit status`。
-3. 能限定仓库范围就限定，优先使用 `--mrepo`；不确定仓库名时先查 `mgit -l` 或 `mgit info <repo>`。
-4. 写入、推送、清理、删除、`mgit forall -c` 自定义命令执行前，说明影响范围和风险，等待用户确认。
-5. 需要具体命令时读取 `references/command-guide.md`；遇到 manifest、锁定仓库、中间态或冲突时读取 `references/config-troubleshooting.md`。
+3. 在 EasyBox/xbuild 场景中，如果用户提到 `syncSource`、`overlay/local` 或上车配置，读取 `references/easybox-overlay-local.md`，先用实际改动仓库推断需要开启源码模式的模块范围。
+4. 能限定仓库范围就限定，优先使用 `--mrepo`；不确定仓库名时先查 `mgit -l` 或 `mgit info <repo>`。
+5. 写入、推送、清理、删除、`mgit forall -c` 自定义命令执行前，说明影响范围和风险，等待用户确认。
+6. 需要具体命令时读取 `references/command-guide.md`；遇到 manifest、锁定仓库、中间态或冲突时读取 `references/config-troubleshooting.md`。
 
 ## 安全底线
 

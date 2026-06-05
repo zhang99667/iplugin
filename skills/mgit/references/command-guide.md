@@ -50,6 +50,7 @@ mgit status --el-mrepo repoA repoB
 - `--el-mrepo`：排除指定仓库，其余仓库执行。
 - 不确定仓库名时先 `mgit -l` 或 `mgit info <repo>`。
 - 不要混用 `--mrepo` 和 `--el-mrepo`，避免作用范围不清晰。
+- 在百度 EasyBox/xbuild 工程中，如果用户提到 `modules*.gradle`、`overlay/local`、`syncSource`、源码模式、开发分支上车或 master 合入，先读取 `references/easybox-overlay-local.md`，用实际改动仓库推断候选模块路径和基础配置文件，并通过 `mgit -l` / `mgit info` 验证后再用于 `--mrepo` 或 EasyBox 配置编辑。
 
 ## 查看多仓库状态
 

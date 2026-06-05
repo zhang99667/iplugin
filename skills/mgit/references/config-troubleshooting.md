@@ -29,6 +29,12 @@ mgit config -u <path_to>/local_manifest.json
 mgit config -m manifest.json
 ```
 
+## EasyBox/xbuild 覆盖配置
+
+百度 EasyBox/xbuild 工程还会通过 `xbuild/modules/default/*.gradle`、`xbuild/modules/overlay/*.gradle`、`xbuild/modules/local/*.gradle` 描述组件、源码模式和分支/本地覆盖范围。这类文件可辅助判断候选模块/仓库范围，但不能代替 MGIT manifest 或当前 Git 状态。
+
+当用户提到 `syncSource`、`modules-local-demo-dev.gradle`、`modules-overlay*.gradle`、源码模式、开发分支上车、master 合入或 overlay 不能带上时，读取 `references/easybox-overlay-local.md`。先从实际改动仓库建立“仓库 -> EasyBox 模块路径 -> default 配置文件 -> overlay/local 目标文件”的映射，再决定编辑哪个覆盖文件。
+
 ## 中间态处理
 
 `pull`、`merge`、`rebase` 可能进入 MGIT 中间态。不要重复启动新的同类操作。

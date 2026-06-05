@@ -1,3 +1,12 @@
+## [0.12.1] - 2026-06-05
+### Added
+- mgit: 新增 EasyBox/xbuild `overlay` / `local` 上车配置参考，覆盖 `syncSource`、开发分支上车、master 合入和 overlay 不能带上的判断流程
+- mgit: 补充仓库、EasyBox 模块路径、`xbuild/modules/default` 基础配置文件和 overlay/local 目标文件的映射规则
+
+### Changed
+- mgit: 触发边界扩展到 EasyBox modules 配置、源码模式和多仓模块范围判断
+- README / manifest: 插件版本升级到 `0.12.1`
+
 ## [0.12.0] - 2026-06-04
 ### Added
 - commercial-sql-writer: 新增商业广告 SQL 写作 skill，用于编写、改写和检查商业/NAD 广告分析 SQL
