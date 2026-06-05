@@ -1,6 +1,6 @@
 # HTML 报告 CSS 模板
 
-生成报告时使用以下样式和 JS。**默认只用基础样式 + 折叠 + 复制按钮**，其他组件仅在内容确实需要时才选入。代码块优先用 `scripts/highlight_code.py` 生成，它会先转义 HTML，再输出匹配本模板的 `.code-wrap` 和 `tok-*` class。
+生成报告时使用以下样式和 JS。**默认只用基础样式 + 折叠 + 复制按钮**，其他组件仅在内容确实需要时才选入。本文件只提供样式和示例；代码片段由 `scripts/highlight_code.py` 生成，并由 `scripts/check_html_report.py` 校验。
 
 ---
 
@@ -17,8 +17,8 @@
     --p0: #dc2626;
     --p1: #ea580c;
     --p2: #2563eb;
-    --code-bg: #111827;
-    --code: #e5e7eb;
+    --code-bg: #10231f;
+    --code: #a9b5af;
     --accent: #3b82f6;
   }
   body {
@@ -140,15 +140,15 @@
     overflow-x: auto;
   }
   .code-wrap pre { padding-top: 38px; }
-  .tok-key { color: #93c5fd; font-weight: 700; }
-  .tok-str { color: #86efac; }
-  .tok-num { color: #fca5a5; }
-  .tok-cmt { color: #94a3b8; font-style: italic; }
-  .tok-fn { color: #c4b5fd; }
-  .tok-var { color: #fcd34d; }
-  .tok-type { color: #67e8f9; }
-  .tok-add { color: #86efac; background: rgba(34, 197, 94, .12); display: inline-block; width: 100%; }
-  .tok-del { color: #fca5a5; background: rgba(239, 68, 68, .12); display: inline-block; width: 100%; }
+  .tok-key { color: #d955a2; font-weight: 700; }
+  .tok-str { color: #83b986; }
+  .tok-num { color: #d7c96f; }
+  .tok-cmt { color: #5f947d; font-style: italic; }
+  .tok-fn { color: #6fa0ff; }
+  .tok-var { color: #8f79bd; }
+  .tok-type { color: #d2d66f; font-weight: 700; }
+  .tok-add { color: #83b986; background: rgba(90, 137, 75, .18); display: inline-block; width: 100%; }
+  .tok-del { color: #d955a2; background: rgba(139, 66, 86, .20); display: inline-block; width: 100%; }
   .change-chip {
     display: inline-flex;
     align-items: center;
@@ -307,7 +307,7 @@
 
 ## 2. 必备交互：折叠 + 复制（所有报告默认加入）
 
-代码块优先通过脚本生成：
+代码块必须通过脚本生成：
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
@@ -317,7 +317,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
 
-展示修改点时优先使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。脚本不可用时，只手工高亮确定 token，且必须先转义 HTML。
+展示修改点时必须使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。脚本不可用时先修复并重试；确实无法运行时，才手工高亮确定 token，且必须先转义 HTML。
 
 涉及代码变更时，优先使用 `.diff-card` + `.diff-table` 展示聚焦 diff。新增、删除、修改、上下文必须有不同视觉状态；行内 token 变化可使用 `<ins>` / `<del>` 或 `.diff-mark-add` / `.diff-mark-del`。
 
@@ -368,15 +368,15 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     padding: 4px 10px;
     font-size: 12px;
     background: rgba(255,255,255,.10);
-    color: #94a3b8;
-    border: 1px solid rgba(255,255,255,.12);
+    color: #8fa59c;
+    border: 1px solid rgba(143,165,156,.22);
     border-radius: 6px;
     cursor: pointer;
     opacity: 0;
     transition: opacity .15s;
   }
   .code-wrap:hover .copy-btn { opacity: 1; }
-  .copy-btn.copied { color: #4ade80; border-color: #4ade80; }
+  .copy-btn.copied { color: #83b986; border-color: #83b986; }
 </style>
 ```
 
@@ -674,7 +674,10 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
   <details>
     <summary>相关日志（点击展开）</summary>
     <div class="details-body">
-      <pre><code>// 日志内容</code></pre>
+      <div class="code-wrap">
+        <pre><code class="language-text"><span class="tok-cmt">// 日志内容</span></code></pre>
+        <button class="copy-btn">复制</button>
+      </div>
     </div>
   </details>
 

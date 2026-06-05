@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则的个人研发工作流通用插件。
+toolbox — 代码阅读、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则的个人研发工作流通用插件。
 
 ## 目录结构
 
@@ -18,6 +18,7 @@ iplugin/
 │   ├── html-report/        # 生成带内容类型判断的独立 HTML 工程报告
 │   ├── html2md/             # 将本地 HTML 或 file:// 页面转换成 Markdown
 │   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
+│   ├── commercial-sql-writer/ # 商业广告 SQL 写作、改写与检查
 │   ├── project-summary/    # 项目/需求总结整理
 │   ├── icafe-delivery-archive/ # iCafe 需求交付材料归档
 │   ├── lite-diff-marker/   # 矩阵产品差异化标记
@@ -46,6 +47,7 @@ iplugin/
 | `html-report` | 生成独立 HTML 报告；正式技术/业务文档会加文档抬头，普通对话整理保持轻量页面 | "整理成 HTML 报告"、"/htmlreport" |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
+| `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |

@@ -27,7 +27,7 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 - 优先级、状态用彩色胶囊标签（P0 红 / P1 橙 / P2 蓝）。
 - 文件路径和行号用 chip 样式（缩进色块 + 等宽字体）。
 - 行内代码用灰色小反引号样式（`<code>` 标签，`#f1f5f9` 底 + `#334155` 字色）。
-- 多行代码用深色背景块（`#111827`），旁边放 copy 按钮，并对关键字、字符串、数字、注释等做颜色区分。
+- 多行代码用接近 IDE 的深绿色背景块（`#10231f`），旁边放 copy 按钮，并对关键字、字符串、数字、注释等做颜色区分；默认采用 JetBrains 深色主题观感，关键字偏玫红、类型/常量偏黄绿、注释偏低饱和绿色。
 - 长日志、次要章节用 `<details><summary>` 默认折叠。
 - 长文档使用左侧目录固定导航，快速跳转到各章节。
 - 中文说明简洁准确，突出问题、影响和修复方案。
@@ -151,7 +151,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 ## ASCII 架构图与代码块
 
-代码块不能只是深色背景加纯文本，但也不要靠手工包大量 `tok-*` span。报告中的多行代码优先使用 `scripts/highlight_code.py` 生成安全的 `.code-wrap` 片段：
+代码块不能只是深色背景加纯文本，也不要靠模型手工包大量 `tok-*` span。报告中的多行代码、SQL、XML、JSON、配置片段和 diff 必须使用 `scripts/highlight_code.py` 生成安全的 `.code-wrap` 片段：
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
@@ -159,9 +159,9 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff patch.diff
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
-脚本会先转义 HTML，再做基础 token 高亮，并输出可直接嵌入报告的 `<div class="code-wrap">...</div>`。支持 `kotlin`、`java`、`js`、`python`、`xml`、`diff`、`text`。当输入是真实 unified diff 且需要展示修改点时，优先使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。
+脚本会先转义 HTML，再做基础 token 高亮，并输出可直接嵌入报告的 `<div class="code-wrap">...</div>`。支持 `kotlin`、`java`、`js`、`python`、`xml`、`diff`、`text`。当输入是真实 unified diff 且需要展示修改点时，必须使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。
 
-脚本不可用时，才手工使用以下规则：
+脚本不可用时，不要直接交付未高亮代码块；先修正脚本路径、临时文件或语言参数并重试。确实无法运行脚本时，才手工使用以下规则：
 
 - 优先用 `<span class="tok-key">`、`tok-str`、`tok-num`、`tok-cmt`、`tok-fn`、`tok-var` 等 class 标出关键字、字符串、数字、注释、函数名和变量名。
 - 不需要完整编译级语法分析，但至少要让读者一眼区分注释、字符串、关键逻辑和普通标识符。
@@ -169,6 +169,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 - 短代码块只高亮确定的核心 token；如果不确定，保持转义后的纯文本更好。
 - 代码内容必须先转义 HTML，再包高亮 span，避免 `<`、`>`、`&` 破坏页面。
 - 多行代码块必须放在 `.code-wrap` 容器中，使用 `<pre><code class="language-xxx">...</code></pre>`，右上角提供复制按钮。
+- 完成前运行 `scripts/check_html_report.py`。支持高亮的语言应包含至少一种 `tok-*` token；`text`、日志和纯文本只要求已转义并包在 `.code-wrap` 中。
 
 ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让浏览器自动换行破坏结构。ASCII 图使用专用浅色容器，例如 `<pre class="ascii-diagram">...</pre>`，样式必须包含等宽字体、`white-space: pre`、`overflow-x: auto`、合适行高和横向滚动。
 

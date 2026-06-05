@@ -1,3 +1,18 @@
+## [0.12.0] - 2026-06-04
+### Added
+- commercial-sql-writer: 新增商业广告 SQL 写作 skill，用于编写、改写和检查商业/NAD 广告分析 SQL
+- commercial-sql-writer: 新增表与字段指南、指标口径、查询模板、场景路由和输出前自查 5 份 reference
+- commercial-sql-writer: 根据 KU 文档补充 `nativeads_feed_asp_view` 使用要点、计费单位和 CPM 曝光对账排查经验
+- commercial-sql-writer: 补充商业大盘展点消转母版优先原则，要求覆盖/命中部分优先在母版 `t1` 上内联并复用原 `t2` 转化目标成本逻辑
+- commercial-sql-writer: 补充高频 `cmatch` 与 `event_type` 绑定，特别是 719 默认 `event_type = 'browser'`
+
+### Changed
+- manifest / README: 插件能力清单加入商业 SQL 写作，版本升级到 `0.12.0`
+- html-report: 强化代码块高亮为离线单文件静态预高亮，包含代码、SQL、XML、JSON、配置或 diff 时必须使用 `highlight_code.py`
+- html-report: 增加生成后检查，避免报告中遗留未高亮的裸 `<pre>` / `<code>` 代码块
+- html-report: 调整代码块 CSS token 配色为接近 IDE 的深绿色主题，保持单文件离线输出
+- html-report: 新增 `scripts/check_html_report.py`，将外部依赖、裸代码块和缺失高亮 token 的检查脚本化，并收敛重复文案
+
 ## [0.11.3] - 2026-06-04
 ### Changed
 - html-report: 优化触发边界，支持显式 HTML 请求、复杂交付物自动判断和其他 skill 调用，同时保留普通短总结默认 Markdown
