@@ -39,14 +39,13 @@ class ReportParser(HTMLParser):
         self.style_chunks: list[str] = []
         self.has_viewport_meta = False
         self.has_toc = False
+        self.has_toc_title = False
+        self.has_toc_toggle = False
         self.has_toc_details = False
-        self.has_open_toc_details = False
-        self.has_toc_summary = False
         self.toc_link_count = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attr_map = {name.lower(): value or "" for name, value in attrs}
-        attr_names = {name.lower() for name, _value in attrs}
         classes = class_set(attr_map.get("class", ""))
         inside_toc = "toc" in classes or any("toc" in frame.classes for frame in self.stack)
 
@@ -63,12 +62,12 @@ class ReportParser(HTMLParser):
 
         if "toc" in classes:
             self.has_toc = True
+        if inside_toc and "toc-title" in classes:
+            self.has_toc_title = True
+        if inside_toc and tag == "button" and "toc-toggle" in classes:
+            self.has_toc_toggle = True
         if tag == "details" and (inside_toc or "toc-details" in classes):
             self.has_toc_details = True
-            if "open" in attr_names:
-                self.has_open_toc_details = True
-        if tag == "summary" and inside_toc:
-            self.has_toc_summary = True
         if tag == "a" and inside_toc and attr_map.get("href", "").startswith("#"):
             self.toc_link_count += 1
 
@@ -144,12 +143,14 @@ def check_document_chrome(parser: ReportParser) -> list[str]:
             errors.append(message)
 
     if parser.has_toc:
-        if not parser.has_toc_details:
-            errors.append("目录 .toc 必须使用 <details class=\"toc-details\" open>，支持点击折叠/展开")
-        if not parser.has_open_toc_details:
-            errors.append("目录默认必须展开：<details class=\"toc-details\" open>")
-        if not parser.has_toc_summary:
-            errors.append("目录缺少 <summary>，无法通过点击标题折叠/展开")
+        if parser.has_toc_details:
+            errors.append("目录不要使用 <details class=\"toc-details\">；应保持旧版浮动侧栏，并用 .toc-toggle 收起/展开整个侧栏")
+        if not parser.has_toc_title:
+            errors.append("目录缺少 .toc-title，无法保持旧版浮动目录标题样式")
+        if not parser.has_toc_toggle:
+            errors.append("目录缺少 .toc-toggle 按钮，无法收起/展开整个目录侧栏")
+        if "toc-collapsed" not in css:
+            errors.append("目录缺少 .toc-collapsed 样式，无法收起整个目录侧栏")
         if parser.toc_link_count == 0:
             errors.append("目录缺少指向章节 id 的锚点链接")
 

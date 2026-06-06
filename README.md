@@ -46,7 +46,7 @@ iplugin/
 | `ask-user-question` | 把阻塞性决策、提交前确认、风险操作确认整理成结构化选择题，交给 AskUserQuestion / request_user_input | `/ask-user-question 这个 UI 改动应该怎么做`、"提交前让我确认" |
 | `best-of-web` | 仅通过 `/best-of-web` 命令触发；联网搜索并按来源质量分层核验公开资料，再综合成可引用、可执行的回答 | `/best-of-web 结合互联网上最优秀的内容梳理这个主题` |
 | `delegated-search` | 将发散搜索、证据收集、多来源核验任务拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来" |
-| `html-report` | 生成独立 HTML 报告；正式文档加抬头，代码块离线高亮，可选 Pygments 静态预渲染，长文档目录默认展开且可折叠 | "整理成 HTML 报告"、"/htmlreport" |
+| `html-report` | 生成独立 HTML 报告；正式文档加抬头，代码块离线高亮，可选 Pygments 静态预渲染，长文档目录为浮动侧栏且可整体收起 | "整理成 HTML 报告"、"/htmlreport" |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |

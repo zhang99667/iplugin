@@ -1,3 +1,9 @@
+## [0.13.6] - 2026-06-06
+### Changed
+- html-report: 长文档目录恢复旧版浮动侧栏视觉，不再使用 `<details>` 折叠目录内部链接
+- html-report: 目录新增 `.toc-toggle` 和 `.toc-collapsed`，支持整体收起/展开侧栏，并同步更新生成后校验
+- README / manifest: 插件版本升级到 `0.13.6`
+
 ## [0.13.5] - 2026-06-06
 ### Changed
 - mgit: 执行 MGIT 只读诊断前增加 Ruby/gem 启动依赖预检，覆盖 `colored2`、`peach`、`tty-pager` 和 `logger`

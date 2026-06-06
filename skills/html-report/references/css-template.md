@@ -471,10 +471,26 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 </style>
 ```
 
-### JavaScript（折叠不需要 JS，只有复制需要）
+### JavaScript（复制按钮 + 目录侧栏收起）
 
 ```html
 <script>
+  document.querySelectorAll('.layout-with-toc').forEach(layout => {
+    const btn = layout.querySelector('.toc-toggle');
+    if (!btn) return;
+    const icon = btn.querySelector('.toc-toggle-icon');
+    const setCollapsed = collapsed => {
+      layout.classList.toggle('toc-collapsed', collapsed);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', collapsed ? '展开目录' : '收起目录');
+      btn.title = collapsed ? '展开目录' : '收起目录';
+      if (icon) icon.textContent = collapsed ? '›' : '‹';
+    };
+    btn.addEventListener('click', () => {
+      setCollapsed(!layout.classList.contains('toc-collapsed'));
+    });
+  });
+
   document.querySelectorAll('.copy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const code = btn.closest('.code-wrap').querySelector('pre').innerText;
@@ -492,9 +508,9 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 ## 3. 可选交互（仅在内容确实需要时选入）
 
-### 3.1 左侧目录 —— 长文档使用，默认展开且可折叠
+### 3.1 左侧目录 —— 长文档使用，浮动侧栏，可整体收起
 
-当报告章节超过 5 个、内容包含多组问题/方案/链路/验证结果，或读者需要频繁跨章节查阅时使用。目录固定在左侧，正文放在右侧；目录必须用 `<details class="toc-details" open>`，默认展开，读者可以点击“目录”折叠；小屏幕下目录退化为顶部卡片，不遮挡正文。
+当报告章节超过 5 个、内容包含多组问题/方案/链路/验证结果，或读者需要频繁跨章节查阅时使用。目录沿用旧版浮动卡片样式：固定在左侧，正文放在右侧；默认展开，读者点击按钮时收起/展开整个目录侧栏。不要把目录包进 `<details>`，那只会隐藏目录里的链接，不是侧栏级收起。小屏幕下目录退化为顶部卡片，不遮挡正文。
 
 ```html
 <style>
@@ -505,6 +521,10 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     max-width: 1360px;
     margin: 0 auto;
     padding: 32px 24px 56px;
+    transition: grid-template-columns .2s ease;
+  }
+  .layout-with-toc.toc-collapsed {
+    grid-template-columns: 52px minmax(0, 1fr);
   }
   .layout-with-toc main {
     max-width: none;
@@ -523,47 +543,40 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
     padding: 16px;
   }
-  .toc-details {
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    overflow: visible;
-  }
-  .toc-summary {
-    padding: 0 0 10px;
-    background: transparent;
-    list-style: none;
+  .toc-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    margin: 0 0 10px;
+  }
+  .toc-title {
+    margin: 0;
     font-size: 14px;
-    font-weight: 800;
-    color: var(--muted);
-    cursor: pointer;
-    user-select: none;
-  }
-  .toc-summary::-webkit-details-marker { display: none; }
-  .toc-summary::before {
-    content: "▸";
-    display: inline-block;
-    font-size: 10px;
-    transition: transform .2s;
-    color: var(--muted);
-  }
-  .toc-details[open] .toc-summary::before { transform: rotate(90deg); }
-  .toc-summary::after {
-    content: "收起";
-    margin-left: auto;
-    font-size: 12px;
     font-weight: 700;
-    color: #94a3b8;
+    color: var(--muted);
   }
-  .toc-details:not([open]) .toc-summary::after { content: "展开"; }
-  .toc-links {
-    display: grid;
-    gap: 2px;
+  .toc-toggle {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 700;
+    line-height: 1;
+    transition: background .15s, color .15s, border-color .15s;
   }
+  .toc-toggle:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: var(--accent);
+  }
+  .toc-toggle-icon { font-size: 18px; line-height: 1; }
   .toc a {
     display: block;
     padding: 7px 10px;
@@ -574,6 +587,22 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     line-height: 1.35;
   }
   .toc a:hover { background: #f1f5f9; color: var(--accent); }
+  .layout-with-toc.toc-collapsed .toc {
+    padding: 10px;
+    overflow: visible;
+  }
+  .layout-with-toc.toc-collapsed .toc-header {
+    justify-content: center;
+    margin-bottom: 0;
+  }
+  .layout-with-toc.toc-collapsed .toc-title,
+  .layout-with-toc.toc-collapsed .toc a {
+    display: none;
+  }
+  .layout-with-toc.toc-collapsed .toc-toggle {
+    width: 32px;
+    height: 32px;
+  }
   section[id], h2[id] { scroll-margin-top: 24px; }
 
   @media (max-width: 900px) {
@@ -585,6 +614,17 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
       position: static;
       max-height: none;
       margin-bottom: 16px;
+      overflow: visible;
+    }
+    .layout-with-toc.toc-collapsed .toc {
+      padding: 16px;
+    }
+    .layout-with-toc.toc-collapsed .toc-header {
+      justify-content: space-between;
+      margin-bottom: 0;
+    }
+    .layout-with-toc.toc-collapsed .toc-title {
+      display: block;
     }
     .doc-header {
       padding: 22px 20px;
@@ -600,15 +640,16 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 ```html
 <div class="layout-with-toc">
   <aside class="toc" aria-label="目录">
-    <details class="toc-details" open>
-      <summary class="toc-summary">目录</summary>
-      <nav class="toc-links" aria-label="章节">
-        <a href="#summary">最终结论</a>
-        <a href="#issue-1">问题 1：问题标题</a>
-        <a href="#architecture">架构视图</a>
-        <a href="#fix-order">建议修复顺序</a>
-      </nav>
-    </details>
+    <div class="toc-header">
+      <p class="toc-title">目录</p>
+      <button class="toc-toggle" type="button" aria-label="收起目录" aria-expanded="true" title="收起目录">
+        <span class="toc-toggle-icon" aria-hidden="true">‹</span>
+      </button>
+    </div>
+    <a href="#summary">最终结论</a>
+    <a href="#issue-1">问题 1：问题标题</a>
+    <a href="#architecture">架构视图</a>
+    <a href="#fix-order">建议修复顺序</a>
   </aside>
   <main>
     <section id="summary" class="summary">...</section>
@@ -799,7 +840,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
   </section>
 </main>
 
-<script>{{ 复制按钮 JS }}</script>
+<script>{{ 复制按钮 JS；使用左侧目录时同时加入目录侧栏收起 JS }}</script>
 </body>
 </html>
 ```
@@ -811,7 +852,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 在默认骨架的基础上：
 
 1. 在 `<style>` 中追加左侧目录 CSS
-2. 用 `.layout-with-toc` 包裹目录和正文，目录结构必须是 `<details class="toc-details" open>`
+2. 用 `.layout-with-toc` 包裹目录和正文，目录结构沿用旧版浮动 `<aside class="toc">`，只额外加入 `.toc-toggle`
 3. 为主要章节设置稳定 `id`
 4. 目录链接只放主要章节，不要把每个小标题都塞进去
 
@@ -821,15 +862,16 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 <div class="layout-with-toc">
   <aside class="toc" aria-label="目录">
-    <details class="toc-details" open>
-      <summary class="toc-summary">目录</summary>
-      <nav class="toc-links" aria-label="章节">
-        <a href="#summary">最终结论</a>
-        <a href="#issue-1">问题 1：问题标题</a>
-        <a href="#architecture">架构视图</a>
-        <a href="#fix-order">建议修复顺序</a>
-      </nav>
-    </details>
+    <div class="toc-header">
+      <p class="toc-title">目录</p>
+      <button class="toc-toggle" type="button" aria-label="收起目录" aria-expanded="true" title="收起目录">
+        <span class="toc-toggle-icon" aria-hidden="true">‹</span>
+      </button>
+    </div>
+    <a href="#summary">最终结论</a>
+    <a href="#issue-1">问题 1：问题标题</a>
+    <a href="#architecture">架构视图</a>
+    <a href="#fix-order">建议修复顺序</a>
   </aside>
 
   <main>
