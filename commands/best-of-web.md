@@ -1,5 +1,5 @@
 ---
-description: Search the web for excellent sources and synthesize the best available content.
+description: Explicitly invoke the best-of-web skill to search excellent public sources and synthesize the best available content.
 argument-hint: [topic-or-question]
 user_invocable: true
 arguments:
@@ -18,8 +18,8 @@ The user invoked this command with: `$ARGUMENTS`
 
 When this command is invoked:
 
-1. Read and follow `skills/best-of-web/SKILL.md`.
-2. Treat the command invocation as an explicit `best-of-web` request.
+1. Treat this slash command as the explicit activation path for the `best-of-web` skill.
+2. Use the `best-of-web` skill and execute its research workflow; do not merely summarize, display, or inspect `skills/best-of-web/SKILL.md`.
 3. Use `$ARGUMENTS` as the primary topic, question, or output requirement.
 4. If `$ARGUMENTS` is empty, infer the research target from the immediately preceding user request or conversation context.
 5. If the target is still unclear, ask one concise clarification question before searching.

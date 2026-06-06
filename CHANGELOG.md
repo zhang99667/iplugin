@@ -1,3 +1,30 @@
+## [0.13.2] - 2026-06-06
+### Changed
+- best-of-web: 收窄触发边界，仅允许通过 `/best-of-web` slash command 显式触发，避免普通自然语言联网请求误触发
+- commands/best-of-web: 改为“命令即 skill 激活入口”的表述，避免模型只读取或总结 `SKILL.md` 而不执行联网精选流程
+- README / manifest: 插件版本升级到 `0.13.2`
+
+## [0.13.1] - 2026-06-06
+### Changed
+- best-of-web: 强化联网精选流程，补充研究强度、查询设计、来源分层、证据标准和冲突处理
+- best-of-web: 增加公开网页 prompt-injection 防护与公开/私有资料分阶段处理边界
+- README / manifest: 插件版本升级到 `0.13.1`
+
+## [0.13.0] - 2026-06-05
+### Added
+- aidisheng-xueba: 新增爱迪生学霸答题 skill，用于按题干和选项语义快速回答爱迪生考试单选/多选题
+- aidisheng-xueba: 新增题库 reference，收录灰度实验、D 平台、eid、pv 不平、实验切走、资源评估、参数同步等高频题
+- aidisheng-xueba: 新增题库自我更新流程，用户给出未见过题目或标准答案后直接沉淀到基础题库
+
+### Changed
+- README / manifest: 插件能力清单加入爱迪生答题题库，版本升级到 `0.13.0`
+
+## [0.12.2] - 2026-06-05
+### Changed
+- ask-user-question: 放宽触发描述，覆盖仓库/流程规则要求询问、提交前确认、风险操作确认和阻塞性方案选择
+- ask-user-question: 更新 command 与 README 文案，弱化“只能手动调用”的误导，保留轻微不确定性不主动打断的边界
+- manifest: 补充 confirmation/choice/risky-action 等触发关键词
+
 ## [0.12.1] - 2026-06-05
 ### Added
 - mgit: 新增 EasyBox/xbuild `overlay` / `local` 上车配置参考，覆盖 `syncSource`、开发分支上车、master 合入和 overlay 不能带上的判断流程

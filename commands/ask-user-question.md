@@ -1,5 +1,5 @@
 ---
-description: Manually hand the current uncertainty to AskUserQuestion.
+description: Ask a structured user question for blocking decisions, required confirmations, or risky actions.
 argument-hint: [question-or-context]
 user_invocable: true
 arguments:
