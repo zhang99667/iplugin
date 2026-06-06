@@ -9,16 +9,18 @@ from __future__ import annotations
 
 import argparse
 import html
+import importlib.util
 import re
 import sys
 from pathlib import Path
 
 
-SUPPORTED_LANGS = {"kotlin", "java", "js", "python", "xml", "diff", "text"}
+SUPPORTED_LANGS = {"kotlin", "java", "js", "python", "xml", "sql", "json", "yaml", "bash", "diff", "text"}
 
 # 让常见文件后缀或语言别名映射到模板支持的语言名。
 LANG_ALIASES = {
     "kt": "kotlin",
+    "kts": "kotlin",
     "javascript": "js",
     "jsx": "js",
     "ts": "js",
@@ -27,6 +29,17 @@ LANG_ALIASES = {
     "html": "xml",
     "xhtml": "xml",
     "svg": "xml",
+    "mysql": "sql",
+    "hive": "sql",
+    "spark": "sql",
+    "jsonc": "json",
+    "yml": "yaml",
+    "conf": "yaml",
+    "config": "yaml",
+    "properties": "yaml",
+    "shell": "bash",
+    "sh": "bash",
+    "zsh": "bash",
     "patch": "diff",
 }
 
@@ -207,6 +220,76 @@ KEYWORDS = {
         "with",
         "yield",
     },
+    "sql": {
+        "ADD",
+        "ALTER",
+        "AND",
+        "AS",
+        "ASC",
+        "BETWEEN",
+        "BY",
+        "CASE",
+        "CAST",
+        "COUNT",
+        "CREATE",
+        "CROSS",
+        "DELETE",
+        "DESC",
+        "DISTINCT",
+        "DROP",
+        "ELSE",
+        "END",
+        "FROM",
+        "FULL",
+        "GROUP",
+        "HAVING",
+        "IF",
+        "IN",
+        "INNER",
+        "INSERT",
+        "INTO",
+        "IS",
+        "JOIN",
+        "LEFT",
+        "LIKE",
+        "LIMIT",
+        "NOT",
+        "NULL",
+        "ON",
+        "OR",
+        "ORDER",
+        "OUTER",
+        "OVER",
+        "PARTITION",
+        "RIGHT",
+        "SELECT",
+        "SET",
+        "SUM",
+        "THEN",
+        "UNION",
+        "UPDATE",
+        "VALUES",
+        "WHEN",
+        "WHERE",
+        "WITH",
+    },
+    "json": {"true", "false", "null"},
+    "bash": {
+        "case",
+        "do",
+        "done",
+        "elif",
+        "else",
+        "esac",
+        "fi",
+        "for",
+        "function",
+        "if",
+        "in",
+        "then",
+        "until",
+        "while",
+    },
 }
 
 TYPES = {
@@ -241,6 +324,15 @@ def token_pattern(lang: str) -> re.Pattern[str]:
     if lang == "python":
         comment = r"#[^\n]*"
         string = r"'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"|(?:r|R|f|F|fr|FR|rf|RF)?'(?:\\.|[^'\\])*'|(?:r|R|f|F|fr|FR|rf|RF)?\"(?:\\.|[^\"\\])*\""
+    elif lang == "bash":
+        comment = r"#[^\n]*"
+        string = r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`'
+    elif lang == "sql":
+        comment = r"--[^\n]*|/\*[\s\S]*?\*/"
+        string = r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`'
+    elif lang == "json":
+        comment = r"(?!)"
+        string = r'"(?:\\.|[^"\\])*"'
     else:
         comment = r"//[^\n]*|/\*[\s\S]*?\*/"
         string = r'"""[\s\S]*?"""|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`'
@@ -271,13 +363,14 @@ def highlight_general(source: str, lang: str) -> str:
         pieces.append(html.escape(source[last : match.start()]))
         text = match.group(0)
         kind = match.lastgroup
+        keyword_text = text.upper() if lang == "sql" else text
         if kind == "comment":
             pieces.append(css_span("tok-cmt", text))
         elif kind == "string":
             pieces.append(css_span("tok-str", text))
         elif kind == "number":
             pieces.append(css_span("tok-num", text))
-        elif text in keywords:
+        elif keyword_text in keywords:
             pieces.append(css_span("tok-key", text))
         elif text in types:
             pieces.append(css_span("tok-type", text))
@@ -288,6 +381,56 @@ def highlight_general(source: str, lang: str) -> str:
         last = match.end()
 
     pieces.append(html.escape(source[last:]))
+    return "".join(pieces)
+
+
+YAML_KEY_RE = re.compile(r"^(\s*)([A-Za-z0-9_.-]+)(\s*:)", re.MULTILINE)
+
+
+def highlight_yaml(source: str) -> str:
+    """高亮 YAML/配置片段里的 key、注释、字符串和数字。"""
+
+    pieces: list[str] = []
+    last = 0
+    for match in YAML_KEY_RE.finditer(source):
+        pieces.append(html.escape(source[last : match.start()]))
+        pieces.append(html.escape(match.group(1)))
+        pieces.append(css_span("tok-var", match.group(2)))
+        pieces.append(html.escape(match.group(3)))
+        last = match.end()
+
+    tail = html.escape(source[last:])
+    tail = re.sub(r"(#.*)$", lambda m: css_span("tok-cmt", html.unescape(m.group(1))), tail, flags=re.MULTILINE)
+    pieces.append(tail)
+    return "".join(pieces)
+
+
+def highlight_bash(source: str) -> str:
+    """高亮 shell 片段，并把每行第一个命令标成函数 token。"""
+
+    pieces: list[str] = []
+    for line in source.splitlines(keepends=True):
+        newline = "\n" if line.endswith("\n") else ""
+        body = line[:-1] if newline else line
+        stripped = body.lstrip()
+        if not stripped:
+            pieces.append(html.escape(body) + newline)
+            continue
+        if stripped.startswith("#"):
+            pieces.append(css_span("tok-cmt", body) + newline)
+            continue
+
+        match = re.match(r"(\s*)([A-Za-z0-9_./:-]+)([\s\S]*)", body)
+        if not match:
+            pieces.append(highlight_general(body, "bash") + newline)
+            continue
+
+        indent, command, rest = match.groups()
+        command_class = "tok-key" if command in KEYWORDS["bash"] else "tok-fn"
+        pieces.append(html.escape(indent))
+        pieces.append(css_span(command_class, command))
+        pieces.append(highlight_general(rest, "bash"))
+        pieces.append(newline)
     return "".join(pieces)
 
 
@@ -452,13 +595,69 @@ def highlight(source: str, lang: str) -> str:
         return highlight_diff(source)
     if lang == "xml":
         return highlight_xml(source)
+    if lang == "yaml":
+        return highlight_yaml(source)
+    if lang == "bash":
+        return highlight_bash(source)
     return highlight_general(source, lang)
 
 
-def render_code_wrap(source: str, lang: str, copy_button: bool = True) -> str:
+def can_use_pygments() -> bool:
+    """检查当前 Python 环境是否可用 Pygments，不触发安装或联网。"""
+
+    return importlib.util.find_spec("pygments") is not None
+
+
+def highlight_pygments(source: str, lang: str) -> str:
+    """使用本地 Pygments 生成静态 HTML；不可用时由调用方回退。"""
+
+    from pygments import highlight as pygments_highlight
+    from pygments.formatters import HtmlFormatter
+    from pygments.lexers import get_lexer_by_name
+    from pygments.util import ClassNotFound
+
+    lexer_name = {
+        "js": "javascript",
+        "xml": "html",
+        "yaml": "yaml",
+        "bash": "bash",
+    }.get(lang, lang)
+
+    try:
+        lexer = get_lexer_by_name(lexer_name)
+    except ClassNotFound:
+        lexer = get_lexer_by_name("text")
+
+    formatter = HtmlFormatter(nowrap=True, noclasses=True, style="monokai")
+    return pygments_highlight(source, lexer, formatter)
+
+
+def select_engine(requested: str, lang: str, mode: str) -> str:
+    """选择高亮引擎。默认 builtin；增强引擎只用于普通代码块。"""
+
+    if mode != "code" or lang in {"text", "diff"}:
+        return "builtin"
+    if requested == "builtin":
+        return "builtin"
+    if requested == "pygments":
+        if not can_use_pygments():
+            raise SystemExit("--engine pygments 需要本机 Python 环境已安装 Pygments")
+        return "pygments"
+    if requested == "auto":
+        return "pygments" if can_use_pygments() else "builtin"
+    raise SystemExit(f"Unsupported engine: {requested}")
+
+
+def highlight_with_engine(source: str, lang: str, engine: str) -> str:
+    if engine == "pygments":
+        return highlight_pygments(source, lang)
+    return highlight(source, lang)
+
+
+def render_code_wrap(source: str, lang: str, copy_button: bool = True, engine: str = "builtin") -> str:
     """输出可直接嵌入报告正文的 .code-wrap 片段。"""
 
-    highlighted = highlight(source, lang)
+    highlighted = highlight_with_engine(source, lang, engine)
     button = '\n  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>' if copy_button else ""
     return (
         '<div class="code-wrap">\n'
@@ -471,9 +670,10 @@ def render_code_wrap(source: str, lang: str, copy_button: bool = True) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="生成已转义、轻量高亮的 HTML 代码块。")
     parser.add_argument("input", nargs="?", help="输入文件路径；省略或传 '-' 时从 stdin 读取。")
-    parser.add_argument("--lang", required=True, help="语言：kotlin、java、js、python、xml、diff 或 text。")
+    parser.add_argument("--lang", required=True, help="语言：kotlin、java、js、python、xml、sql、json、yaml、bash、diff 或 text。")
     parser.add_argument("--mode", choices=["code", "diff-viewer"], default="code", help="输出模式；diff-viewer 用于带 old/new 行号的差异视图。")
     parser.add_argument("--diff-view", action="store_true", help="等同于 --mode diff-viewer，仅支持 --lang diff。")
+    parser.add_argument("--engine", choices=["builtin", "auto", "pygments"], default="builtin", help="高亮引擎：builtin 为零依赖默认值；auto/pygments 可使用本机 Pygments 预渲染。")
     parser.add_argument("--no-copy", action="store_true", help="不生成复制按钮。")
     return parser.parse_args()
 
@@ -488,7 +688,8 @@ def main() -> None:
             raise SystemExit("--mode diff-viewer 只支持 --lang diff")
         sys.stdout.write(render_diff_viewer(source))
     else:
-        sys.stdout.write(render_code_wrap(source, lang, copy_button=not args.no_copy))
+        engine = select_engine(args.engine, lang, mode)
+        sys.stdout.write(render_code_wrap(source, lang, copy_button=not args.no_copy, engine=engine))
     if source and not source.endswith("\n"):
         sys.stdout.write("\n")
 

@@ -29,15 +29,15 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 - 行内代码用灰色小反引号样式（`<code>` 标签，`#f1f5f9` 底 + `#334155` 字色）。
 - 多行代码用接近 IDE 的深绿色背景块（`#10231f`），旁边放 copy 按钮，并对关键字、字符串、数字、注释等做颜色区分；默认采用 JetBrains 深色主题观感，关键字偏玫红、类型/常量偏黄绿、注释偏低饱和绿色。
 - 长日志、次要章节用 `<details><summary>` 默认折叠。
-- 长文档使用左侧目录固定导航，快速跳转到各章节。
+- 长文档使用左侧目录固定导航，快速跳转到各章节；目录默认展开，并且必须能通过点击目录标题折叠/展开。
 - 中文说明简洁准确，突出问题、影响和修复方案。
 
 ## 响应式、打印与可访问性
 
 HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足这些底线：
 
-- 小屏幕下正文单列展示；左侧目录改成顶部普通导航，不遮挡正文。
-- 宽表格、代码块、ASCII 图必须 `overflow-x: auto`，不能撑破页面。
+- 小屏幕、浏览器分屏和窄窗口下正文单列展示；左侧目录改成顶部普通导航，不遮挡正文，也不能让正文被挤出视口。
+- 宽表格、代码块、ASCII 图必须 `overflow-x: auto`，不能撑破页面；卡片、网格和正文容器要有 `min-width: 0` 或等价约束，避免在分屏模式下显示不全。
 - 卡片网格在窄屏降为单列；长路径 chip 允许换行或横向滚动，不能覆盖旁边文本。
 - 打印样式去掉粘性定位、强阴影和无意义 hover 效果；链接文本、标题、表格和代码在黑白打印下仍可读。
 - 状态和优先级不能只靠颜色表达，必须同时有文字，例如 `P1 高风险`、`已验证`、`待确认`。
@@ -144,6 +144,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 生成长文档时：
 
 - 使用固定在左侧的 `<aside class="toc">` 展示目录，正文放入 `<main class="content">`。
+- 目录必须使用 `<details class="toc-details" open>` 包住 `<summary class="toc-summary">目录</summary>` 和目录链接，默认展开，读者点击 summary 可折叠；不要用自定义 JS 重写这个基础行为。
 - 目录项对应正文主要 `<h2>` 章节，每个章节设置稳定的 `id`，目录用锚点跳转。
 - 当前不需要复杂 JS 高亮；保持目录常驻、简洁、可点击即可。
 - 小屏幕下目录改为顶部普通卡片，不遮挡正文。
@@ -151,15 +152,18 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 ## ASCII 架构图与代码块
 
-代码块不能只是深色背景加纯文本，也不要靠模型手工包大量 `tok-*` span。报告中的多行代码、SQL、XML、JSON、配置片段和 diff 必须使用 `scripts/highlight_code.py` 生成安全的 `.code-wrap` 片段：
+代码块不能只是深色背景加纯文本，也不要靠模型手工包大量 `tok-*` span。报告中的多行代码、SQL、XML、JSON、配置片段和 diff 必须使用 `scripts/highlight_code.py` 生成安全的 `.code-wrap` 片段。最终 HTML 必须是静态离线输出，不在浏览器运行 highlight.js、Prism、Shiki 或从 CDN 拉取高亮资源：
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
+python3 skills/html-report/scripts/highlight_code.py --lang sql query.sql
+python3 skills/html-report/scripts/highlight_code.py --lang json payload.json
+python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin snippet.kt
 python3 skills/html-report/scripts/highlight_code.py --lang diff patch.diff
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
-脚本会先转义 HTML，再做基础 token 高亮，并输出可直接嵌入报告的 `<div class="code-wrap">...</div>`。支持 `kotlin`、`java`、`js`、`python`、`xml`、`diff`、`text`。当输入是真实 unified diff 且需要展示修改点时，必须使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。
+脚本会先转义 HTML，再做静态高亮，并输出可直接嵌入报告的 `<div class="code-wrap">...</div>`。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认 `--engine builtin` 零依赖输出 `tok-*` class；`--engine auto` 会在本机可用 Pygments 时改用 Pygments inline style 预渲染，否则自动回退 builtin；`--engine pygments` 则要求 Pygments 可用。Shiki、highlight.js、Prism 如需使用，也必须只在生成阶段本地预渲染，不能把外部 JS/CSS 依赖带进最终报告。当输入是真实 unified diff 且需要展示修改点时，必须使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。
 
 脚本不可用时，不要直接交付未高亮代码块；先修正脚本路径、临时文件或语言参数并重试。确实无法运行脚本时，才手工使用以下规则：
 
@@ -169,7 +173,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 - 短代码块只高亮确定的核心 token；如果不确定，保持转义后的纯文本更好。
 - 代码内容必须先转义 HTML，再包高亮 span，避免 `<`、`>`、`&` 破坏页面。
 - 多行代码块必须放在 `.code-wrap` 容器中，使用 `<pre><code class="language-xxx">...</code></pre>`，右上角提供复制按钮。
-- 完成前运行 `scripts/check_html_report.py`。支持高亮的语言应包含至少一种 `tok-*` token；`text`、日志和纯文本只要求已转义并包在 `.code-wrap` 中。
+- 完成前运行 `scripts/check_html_report.py`。支持高亮的语言应包含至少一种 `tok-*` token 或 Pygments inline style；`text`、日志和纯文本只要求已转义并包在 `.code-wrap` 中。
 
 ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让浏览器自动换行破坏结构。ASCII 图使用专用浅色容器，例如 `<pre class="ascii-diagram">...</pre>`，样式必须包含等宽字体、`white-space: pre`、`overflow-x: auto`、合适行高和横向滚动。
 
@@ -182,7 +186,7 @@ ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让�
 
 视情况使用：
 
-- 左侧目录：当报告较长、章节超过 5 个或需要频繁跨章节查阅时使用。
+- 左侧目录：当报告较长、章节超过 5 个或需要频繁跨章节查阅时使用；默认展开，可点击目录标题折叠。
 - 标签页：当报告天然有 2 到 3 个并列视角时用，如“问题/修复/验证”“方案 A/B/C”。用纯 CSS 实现，不引入 JS。
 - 可排序表格：5 行以上数据表才加表头点击排序。3 到 4 行的迷你表不需要。
 

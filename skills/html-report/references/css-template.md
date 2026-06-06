@@ -21,14 +21,19 @@
     --code: #a9b5af;
     --accent: #3b82f6;
   }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     line-height: 1.65;
+    overflow-x: hidden;
   }
+  img, svg, canvas, video { max-width: 100%; height: auto; }
   main {
+    width: min(100%, 1180px);
     max-width: 1180px;
     margin: 0 auto;
     padding: 32px 24px 56px;
@@ -47,6 +52,7 @@
     box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
     padding: 18px 20px;
     margin: 16px 0;
+    min-width: 0;
   }
   .meta {
     display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px;
@@ -115,6 +121,7 @@
   ul { margin: 8px 0 8px 22px; padding: 0; }
   li { margin: 4px 0; }
   pre {
+    max-width: 100%;
     margin: 10px 0 14px; padding: 14px 16px; overflow: auto;
     background: var(--code-bg); color: var(--code);
     border-radius: 12px; font-size: 13px; line-height: 1.5; tab-size: 4;
@@ -139,7 +146,15 @@
     white-space: pre;
     overflow-x: auto;
   }
-  .code-wrap pre { padding-top: 38px; }
+  .code-wrap {
+    position: relative;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .code-wrap pre {
+    padding-top: 38px;
+    overflow-x: auto;
+  }
   .tok-key { color: #d955a2; font-weight: 700; }
   .tok-str { color: #83b986; }
   .tok-num { color: #d7c96f; }
@@ -282,12 +297,55 @@
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 12px;
   }
+  .grid > * { min-width: 0; }
   .mini {
     border: 1px solid var(--border); border-radius: 12px;
     padding: 12px 14px; background: #fbfdff;
   }
   .ok { color: #047857; font-weight: 700; }
   .warn { color: #b45309; font-weight: 700; }
+
+  @media (max-width: 720px) {
+    main { padding: 20px 14px 42px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 19px; }
+    .summary, .issue { padding: 14px 14px; border-radius: 12px; }
+    .doc-header { padding: 22px 18px; border-radius: 14px; }
+    .doc-header h1 { font-size: 23px; }
+    .doc-chip { font-size: 12px; }
+    .grid { grid-template-columns: 1fr; }
+    .copy-btn { opacity: 1; }
+  }
+
+  @media print {
+    body { background: #ffffff; color: #111827; }
+    main, .layout-with-toc { width: 100%; max-width: none; padding: 0; }
+    .summary, .issue, .toc, .doc-header {
+      box-shadow: none;
+      break-inside: avoid;
+    }
+    .doc-header {
+      background: #ffffff;
+      color: #111827;
+      border: 1px solid #d1d5db;
+    }
+    .doc-subtitle, .muted { color: #374151; }
+    .doc-chip {
+      background: #f3f4f6;
+      color: #111827;
+      border: 1px solid #d1d5db;
+    }
+    .toc { position: static; max-height: none; }
+    .copy-btn, .toast { display: none !important; }
+    pre, .ascii-diagram {
+      white-space: pre-wrap;
+      overflow: visible;
+      color: #111827;
+      background: #f9fafb;
+      border: 1px solid #d1d5db;
+    }
+    a { color: #111827; text-decoration: underline; }
+  }
 </style>
 ```
 
@@ -311,11 +369,16 @@
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
+python3 skills/html-report/scripts/highlight_code.py --lang sql query.sql
+python3 skills/html-report/scripts/highlight_code.py --lang json payload.json
+python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin snippet.kt
 python3 skills/html-report/scripts/highlight_code.py --lang diff patch.diff
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
-脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
+脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`，常见后缀/别名会映射到这些语言。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
+
+需要更准确语法覆盖时，使用 `--engine auto` 尝试本机 Pygments 静态预渲染；如果 Pygments 不可用，脚本会回退到 `builtin`。最终报告仍然只包含静态 HTML/CSS/JS，不引入 highlight.js、Prism、Shiki CDN 或外部文件。
 
 展示修改点时必须使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。脚本不可用时先修复并重试；确实无法运行时，才手工高亮确定 token，且必须先转义 HTML。
 
@@ -361,7 +424,11 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 ```html
 <style>
-  .code-wrap { position: relative; }
+  .code-wrap {
+    position: relative;
+    max-width: 100%;
+    min-width: 0;
+  }
   .copy-btn {
     position: absolute;
     top: 8px; right: 8px;
@@ -375,8 +442,12 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     opacity: 0;
     transition: opacity .15s;
   }
-  .code-wrap:hover .copy-btn { opacity: 1; }
+  .code-wrap:hover .copy-btn,
+  .code-wrap:focus-within .copy-btn { opacity: 1; }
   .copy-btn.copied { color: #83b986; border-color: #83b986; }
+  @media (hover: none) {
+    .copy-btn { opacity: 1; }
+  }
 </style>
 ```
 
@@ -421,9 +492,9 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 ## 3. 可选交互（仅在内容确实需要时选入）
 
-### 3.1 左侧目录 —— 长文档使用
+### 3.1 左侧目录 —— 长文档使用，默认展开且可折叠
 
-当报告章节超过 5 个、内容包含多组问题/方案/链路/验证结果，或读者需要频繁跨章节查阅时使用。目录固定在左侧，正文放在右侧；小屏幕下目录退化为顶部卡片。
+当报告章节超过 5 个、内容包含多组问题/方案/链路/验证结果，或读者需要频繁跨章节查阅时使用。目录固定在左侧，正文放在右侧；目录必须用 `<details class="toc-details" open>`，默认展开，读者可以点击“目录”折叠；小屏幕下目录退化为顶部卡片，不遮挡正文。
 
 ```html
 <style>
@@ -452,11 +523,46 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
     padding: 16px;
   }
-  .toc-title {
-    margin: 0 0 10px;
+  .toc-details {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+  .toc-summary {
+    padding: 0 0 10px;
+    background: transparent;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toc-summary::-webkit-details-marker { display: none; }
+  .toc-summary::before {
+    content: "▸";
+    display: inline-block;
+    font-size: 10px;
+    transition: transform .2s;
+    color: var(--muted);
+  }
+  .toc-details[open] .toc-summary::before { transform: rotate(90deg); }
+  .toc-summary::after {
+    content: "收起";
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+  }
+  .toc-details:not([open]) .toc-summary::after { content: "展开"; }
+  .toc-links {
+    display: grid;
+    gap: 2px;
   }
   .toc a {
     display: block;
@@ -468,7 +574,6 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     line-height: 1.35;
   }
   .toc a:hover { background: #f1f5f9; color: var(--accent); }
-  html { scroll-behavior: smooth; }
   section[id], h2[id] { scroll-margin-top: 24px; }
 
   @media (max-width: 900px) {
@@ -495,11 +600,15 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 ```html
 <div class="layout-with-toc">
   <aside class="toc" aria-label="目录">
-    <p class="toc-title">目录</p>
-    <a href="#summary">最终结论</a>
-    <a href="#issue-1">问题 1：问题标题</a>
-    <a href="#architecture">架构视图</a>
-    <a href="#fix-order">建议修复顺序</a>
+    <details class="toc-details" open>
+      <summary class="toc-summary">目录</summary>
+      <nav class="toc-links" aria-label="章节">
+        <a href="#summary">最终结论</a>
+        <a href="#issue-1">问题 1：问题标题</a>
+        <a href="#architecture">架构视图</a>
+        <a href="#fix-order">建议修复顺序</a>
+      </nav>
+    </details>
   </aside>
   <main>
     <section id="summary" class="summary">...</section>
@@ -650,14 +759,14 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
   <span class="tok-cmt">// code snippet</span>
   <span class="tok-key">return</span> <span class="tok-fn">repository.find</span>(<span class="tok-var">id</span>)
 }</code></pre>
-      <button class="copy-btn">复制</button>
+      <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
     </div>
     <p><b>修复方案：</b>说明最小、安全的改法。</p>
     <div class="code-wrap">
       <pre><code class="language-kotlin"><span class="tok-key">fun</span> <span class="tok-fn">loadUser</span>(<span class="tok-var">id</span>: <span class="tok-type">String</span>): <span class="tok-type">User?</span> {
   <span class="tok-key">return</span> <span class="tok-fn">repository.findOrNull</span>(<span class="tok-var">id</span>)
 }</code></pre>
-      <button class="copy-btn">复制</button>
+      <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
     </div>
   </section>
 
@@ -676,7 +785,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
     <div class="details-body">
       <div class="code-wrap">
         <pre><code class="language-text"><span class="tok-cmt">// 日志内容</span></code></pre>
-        <button class="copy-btn">复制</button>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
       </div>
     </div>
   </details>
@@ -702,7 +811,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 在默认骨架的基础上：
 
 1. 在 `<style>` 中追加左侧目录 CSS
-2. 用 `.layout-with-toc` 包裹目录和正文
+2. 用 `.layout-with-toc` 包裹目录和正文，目录结构必须是 `<details class="toc-details" open>`
 3. 为主要章节设置稳定 `id`
 4. 目录链接只放主要章节，不要把每个小标题都塞进去
 
@@ -712,11 +821,15 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 <div class="layout-with-toc">
   <aside class="toc" aria-label="目录">
-    <p class="toc-title">目录</p>
-    <a href="#summary">最终结论</a>
-    <a href="#issue-1">问题 1：问题标题</a>
-    <a href="#architecture">架构视图</a>
-    <a href="#fix-order">建议修复顺序</a>
+    <details class="toc-details" open>
+      <summary class="toc-summary">目录</summary>
+      <nav class="toc-links" aria-label="章节">
+        <a href="#summary">最终结论</a>
+        <a href="#issue-1">问题 1：问题标题</a>
+        <a href="#architecture">架构视图</a>
+        <a href="#fix-order">建议修复顺序</a>
+      </nav>
+    </details>
   </aside>
 
   <main>

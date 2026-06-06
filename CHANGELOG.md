@@ -1,3 +1,11 @@
+## [0.13.3] - 2026-06-06
+### Changed
+- html-report: 强化 HTML 生成稳定性，要求代码块覆盖 SQL/JSON/YAML/Bash 等常见片段并通过静态高亮脚本输出
+- html-report: `highlight_code.py` 新增 `--engine auto/pygments`，可在本机 Pygments 可用时进行增强静态预渲染，最终 HTML 仍不加载外部高亮库
+- html-report: 长文档目录改为默认展开、可点击折叠的原生 `<details>` 结构
+- html-report: 校验脚本新增 viewport、响应式/打印样式、复制按钮和可折叠目录结构检查，降低窄屏/分屏显示不全风险
+- README / manifest: 插件版本升级到 `0.13.3`
+
 ## [0.13.2] - 2026-06-06
 ### Changed
 - best-of-web: 收窄触发边界，仅允许通过 `/best-of-web` slash command 显式触发，避免普通自然语言联网请求误触发
