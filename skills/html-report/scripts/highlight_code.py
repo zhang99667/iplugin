@@ -11,6 +11,8 @@ import argparse
 import html
 import importlib.util
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -603,25 +605,31 @@ def highlight(source: str, lang: str) -> str:
 
 
 def can_use_pygments() -> bool:
-    """检查当前 Python 环境是否可用 Pygments，不触发安装或联网。"""
+    """检查当前环境是否可用 Pygments，不触发安装或联网。"""
 
-    return importlib.util.find_spec("pygments") is not None
+    return importlib.util.find_spec("pygments") is not None or shutil.which("pygmentize") is not None
 
 
-def highlight_pygments(source: str, lang: str) -> str:
-    """使用本地 Pygments 生成静态 HTML；不可用时由调用方回退。"""
-
-    from pygments import highlight as pygments_highlight
-    from pygments.formatters import HtmlFormatter
-    from pygments.lexers import get_lexer_by_name
-    from pygments.util import ClassNotFound
-
-    lexer_name = {
+def pygments_lexer_name(lang: str) -> str:
+    return {
         "js": "javascript",
         "xml": "html",
         "yaml": "yaml",
         "bash": "bash",
     }.get(lang, lang)
+
+
+def highlight_pygments(source: str, lang: str) -> str:
+    """使用本地 Pygments 生成静态 HTML；不可用时由调用方回退。"""
+
+    lexer_name = pygments_lexer_name(lang)
+    if importlib.util.find_spec("pygments") is None:
+        return highlight_pygmentize(source, lexer_name)
+
+    from pygments import highlight as pygments_highlight
+    from pygments.formatters import HtmlFormatter
+    from pygments.lexers import get_lexer_by_name
+    from pygments.util import ClassNotFound
 
     try:
         lexer = get_lexer_by_name(lexer_name)
@@ -630,6 +638,27 @@ def highlight_pygments(source: str, lang: str) -> str:
 
     formatter = HtmlFormatter(nowrap=True, noclasses=True, style="monokai")
     return pygments_highlight(source, lexer, formatter)
+
+
+def highlight_pygmentize(source: str, lexer_name: str) -> str:
+    """使用 pygmentize CLI 作为 Pygments 模块不可导入时的本地后备。"""
+
+    command = [
+        "pygmentize",
+        "-f",
+        "html",
+        "-l",
+        lexer_name,
+        "-O",
+        "nowrap=True,noclasses=True,style=monokai",
+    ]
+    try:
+        result = subprocess.run(command, input=source, text=True, capture_output=True, check=True)
+    except subprocess.CalledProcessError:
+        fallback = command.copy()
+        fallback[4] = "text"
+        result = subprocess.run(fallback, input=source, text=True, capture_output=True, check=True)
+    return result.stdout
 
 
 def select_engine(requested: str, lang: str, mode: str) -> str:

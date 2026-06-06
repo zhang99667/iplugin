@@ -54,6 +54,12 @@
 5. 判断为正式技术/业务文档或分析报告时，必须加文档抬头；判断为普通对话转 HTML 时不强制加。
 6. 完成后只回复文件路径和一句话概要，不复述报告全文。
 
+## 可选依赖与安装
+
+- 默认保持轻量：生成报告时不安装任何依赖，`--engine auto` 只探测已有 Pygments 并在缺失时回退 builtin。
+- 用户明确要求增强高亮或安装 Pygments 时，先说明会写入当前用户 Python 环境，再执行安装；安装失败时不要阻塞报告生成，继续用 builtin。
+- Homebrew Python 可能触发 PEP 668；用户确认后可用 `python3 -m pip install --user --break-system-packages Pygments` 安装到用户 site-packages，避免修改系统包目录。
+
 ## 写作规范
 
 - 用户使用中文时，报告默认中文。
@@ -61,7 +67,7 @@
 - 每个问题建议包含：优先级、文件路径、行号范围、问题说明、影响、当前代码、修复方案。
 - 只要报告涉及代码新增、删除或修改，不能只贴“当前代码”和“修复后代码”。必须明确标出每处变更类型：新增、删除、修改、上下文。
 - 修复方案包含代码时，优先展示聚焦 diff；如果用 before/after，也必须在标题或行内标出“修改前/修改后”，并用颜色或标记突出实际变化。
-- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，常见语言映射到 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；真实 unified diff 使用 `--lang diff --diff-view`。
+- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，常见语言映射到 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；Pygments 缺失时不要自动安装，除非用户明确要求；真实 unified diff 使用 `--lang diff --diff-view`。
 - 如果代码片段是建议方案而不是已经存在的 git diff，标题写成“建议变更”或“拟修改”，不要伪装成已经发生的提交 diff。
 - 行号可能不准确时，说明基于当前本地源码。
 - 有绝对路径优先绝对路径，没有则用仓库相对路径。

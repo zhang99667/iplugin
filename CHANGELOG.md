@@ -1,3 +1,9 @@
+## [0.13.4] - 2026-06-06
+### Changed
+- html-report: 明确 Pygments 是可选增强依赖，生成报告时不自动安装；仅在用户明确要求时安装，缺失时继续回退 builtin
+- html-report: `highlight_code.py` 支持 Pygments 模块和 `pygmentize` CLI 两种本地预渲染形态
+- README / manifest: 插件版本升级到 `0.13.4`
+
 ## [0.13.3] - 2026-06-06
 ### Changed
 - html-report: 强化 HTML 生成稳定性，要求代码块覆盖 SQL/JSON/YAML/Bash 等常见片段并通过静态高亮脚本输出
