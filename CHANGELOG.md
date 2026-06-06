@@ -1,3 +1,10 @@
+## [0.13.5] - 2026-06-06
+### Changed
+- mgit: 执行 MGIT 只读诊断前增加 Ruby/gem 启动依赖预检，覆盖 `colored2`、`peach`、`tty-pager` 和 `logger`
+- mgit: 区分 gem 缺失与 rbenv 临时文件写入受限，避免把 MGIT 启动失败误判为工作区问题
+- mgit: EasyBox 规则补充完整 iCode 仓库名反推配置层级、无仓库输入不默认开启广告仓库、非目标 `syncSource` 默认保留和壳工程主分支映射
+- README / manifest: 插件版本升级到 `0.13.5`
+
 ## [0.13.4] - 2026-06-06
 ### Changed
 - html-report: 明确 Pygments 是可选增强依赖，生成报告时不自动安装；仅在用户明确要求时安装，缺失时继续回退 builtin

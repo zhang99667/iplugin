@@ -34,11 +34,21 @@ modules {
 
 不要根据仓库名直接猜 EasyBox 文件名。映射必须从 `xbuild/modules` 现有配置中查出来。
 
+如果用户没有明确给出目标仓库，不要默认开启“常用广告仓库”或任何预设仓库集合；不同壳工程和产品线的广告仓库范围不同。先让用户确认目标仓库，或根据本次实际代码改动仓库推断候选范围后再继续。
+
+用户输入可能是 EasyBox 节点名，也可能是完整 iCode 仓库名：
+
+- EasyBox 节点名，例如 `lib_ad`、`ad_business`、`lib_ad_runtime`、`nadcore`：在 `xbuild/modules/default` 中按原始节点名查找。
+- 完整 iCode 仓库名，例如 `baidu/baiduapp-android/ad`、`baidu/baiduapp-android/ad-business`：必须在 `xbuild/modules/default` 中按原始完整名查找，再从命中的配置块反推 EasyBox 节点名和层级。不要先把完整名硬编码转换成 `lib_ad`、`ad_business` 等短名。
+- 完整名没有命中时，说明当前壳工程 default 配置中未找到该仓库，请用户确认仓库名或壳工程。
+- 同一输入命中多个配置块、注释或无法判断所属真实节点时，列出匹配文件、行号和配置块摘要，让用户确认后再编辑。
+
 常用查找命令：
 
 ```bash
 find xbuild/modules -maxdepth 2 -type f -name 'modules*.gradle' -print
 rg -n '^\s*<repo_or_module>\s*\{' xbuild/modules/default xbuild/modules/overlay xbuild/modules/local
+rg -n '<full_icode_repo_name>' xbuild/modules/default
 rg -n 'absoluteRepo .*<repo_or_remote_name>' xbuild/modules/default
 rg -n 'artifactId .*(<artifact>|<repo_or_module>)' xbuild/modules/default
 ```
@@ -85,6 +95,18 @@ git branch --show-current
 
 若壳工程或主要仓库分支为 `master`，或用户语义是“合 master / 上 master”，按 master 合入处理。若是 feature/topic 分支且用户语义是“开发分支上车 / 提测 / CI 验证”，按开发分支处理。
 
+## revision 分支选择
+
+用户显式指定分支时，优先使用用户指定分支。否则根据当前壳工程选择主分支；无法从路径、工程文件或当前分支可靠判断时，让用户确认，不要猜。
+
+| 壳工程 | 默认主分支 |
+|-|-|
+| `client` / 手百主版 | `master` |
+| `searchbox-lite` / 手百极速版 | `lite/master` |
+| `searchbox-tomas` / 手百畅听版 | `tomas/master` |
+| `hk-android-center` / 好看视频 | `haokan/master` |
+| 贴吧壳工程 | `master` |
+
 ## 从改动仓库推断模块范围
 
 1. 用 MGIT 只读命令找实际改动仓库：
@@ -124,6 +146,7 @@ modules {
 - 开发分支 overlay：对本次改动仓库写 `syncSource true`；如 CI 需要指定组件分支，按当前仓库分支补 `revision "<branch>"`，但先确认这是用户需要的上车方式。
 - master 合入 local：把仍需本地源码模式的模块写到 local 文件；不要把 overlay 作为 master 合入提交的一部分。
 - 如果目标文件已有其他模块，保留无关配置，只更新本次相关模块。
+- 如果其他非目标模块已经存在 `syncSource true`，默认保持不变；用户未明确要求关闭时，不要擅自删除或改成 `syncSource false`。
 - 如果已有 local/overlay 文件包含目标模块，优先更新该文件；否则根据用户指定文件或当前工程命名习惯创建/更新一个用途清晰的覆盖文件。不要仅凭 default 文件名推导 overlay/local 文件名。
 - 不要修改 `default/*.gradle`，除非用户明确要求改基础组件配置。
 - 不要因为 `syncSource false` 就清理、删除或跳过某仓；它只是构建配置。

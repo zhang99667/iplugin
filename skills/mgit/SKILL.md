@@ -1,8 +1,8 @@
 ---
 name: mgit
-version: 0.1.4
+version: 0.1.5
 tags: [git, multi-repo, baidu, dev-tool]
-description: 百度 MGIT 多仓库管理助手。当任务上下文显示当前工作区可能是 MGIT/多仓库工程，或用户需要查看、同步、比较、提交、推送多个子仓库时触发，即使用户没有明确说 mgit；涉及百度 EasyBox/xbuild modules 配置、overlay/local、modules-local*.gradle、syncSource、本地源码模式或多仓模块范围判断时也触发。优先用于只读诊断多仓状态、分支、仓库范围和中间态；普通单仓 git 操作不触发。涉及写入、同步、推送、清理、reset 或跨仓自定义命令时必须先确认影响范围。
+description: 百度 MGIT 多仓库管理助手。当任务上下文显示当前工作区可能是 MGIT/多仓库工程，或用户需要查看、同步、比较、提交、推送多个子仓库时触发，即使用户没有明确说 mgit；涉及百度 EasyBox/xbuild modules 配置、overlay/local、modules-local*.gradle、syncSource、本地源码模式或多仓模块范围判断时也触发；遇到 Ruby/gem/colored2 等 MGIT 启动依赖问题时先诊断环境。优先用于只读诊断多仓状态、分支、仓库范围和中间态；普通单仓 git 操作不触发。涉及写入、同步、推送、清理、reset 或跨仓自定义命令时必须先确认影响范围。
 ---
 
 # MGIT 多仓库管理助手
@@ -39,11 +39,30 @@ SKILL.md 只保留触发、安全边界和命令路由。需要细节时按场�
 ## 最短执行流程
 
 1. 先判断是否真的是多仓 MGIT 任务；用户没有点名 mgit 也可以触发，但普通单仓 Git 不使用本技能。
-2. 优先只读建立上下文：`mgit -w`、`mgit -l`、`mgit branch --compact`、`mgit status`。
-3. 在 EasyBox/xbuild 场景中，如果用户提到 `syncSource`、`overlay/local` 或上车配置，读取 `references/easybox-overlay-local.md`，先用实际改动仓库推断需要开启源码模式的模块范围。
-4. 能限定仓库范围就限定，优先使用 `--mrepo`；不确定仓库名时先查 `mgit -l` 或 `mgit info <repo>`。
-5. 写入、推送、清理、删除、`mgit forall -c` 自定义命令执行前，说明影响范围和风险，等待用户确认。
-6. 需要具体命令时读取 `references/command-guide.md`；遇到 manifest、锁定仓库、中间态或冲突时读取 `references/config-troubleshooting.md`。
+2. 第一次准备执行 MGIT，或刚切换 shell/Ruby/rbenv 环境时，先做轻量启动依赖预检：
+
+```bash
+which mgit
+ruby -v
+ruby -e 'require "colored2"; require "peach"; require "tty-pager"; require "logger"; puts "mgit ruby deps ok"'
+```
+
+3. 如果预检出现 `cannot load such file -- colored2`、`peach`、`tty-pager` 或 `logger`，不要继续跑 `mgit`。先说明 MGIT 还没执行到多仓逻辑，是当前 Ruby gem path 缺依赖；除非用户明确要求安装，否则只给修复命令：
+
+```bash
+gem install colored2 -v 3.1.2
+gem install peach -v '~> 0.5'
+gem install tty-pager -v '~> 0.12'
+gem install logger -v '~> 1.4.2'
+rbenv rehash
+```
+
+4. 如果预检依赖通过，但出现 `rbenv ... cannot create temp file`，这是当前执行环境不允许 rbenv 写临时文件，不是 MGIT 工作区问题。可在普通终端重试，或在当前工具环境申请可写/非沙箱执行权限后再跑 MGIT。
+5. 预检通过后，优先只读建立上下文：`mgit -w`、`mgit -l`、`mgit branch --compact`、`mgit status`。
+6. 在 EasyBox/xbuild 场景中，如果用户提到 `syncSource`、`overlay/local` 或上车配置，读取 `references/easybox-overlay-local.md`，先用实际改动仓库推断需要开启源码模式的模块范围。
+7. 能限定仓库范围就限定，优先使用 `--mrepo`；不确定仓库名时先查 `mgit -l` 或 `mgit info <repo>`。
+8. 写入、推送、清理、删除、`mgit forall -c` 自定义命令执行前，说明影响范围和风险，等待用户确认。
+9. 需要具体命令时读取 `references/command-guide.md`；遇到 manifest、锁定仓库、中间态或冲突时读取 `references/config-troubleshooting.md`。
 
 ## 安全底线
 
