@@ -47,7 +47,7 @@
 
 ## 输出要求
 
-1. 单文件 `.html`，CSS 和 JS 内嵌在 `<style>` / `<script>` 中，不依赖外部文件。代码高亮不得使用 CDN 或让最终报告运行时加载 highlight.js/Prism/Shiki；确有图表库需求时才允许引入 CDN 图表库。
+1. 单文件 `.html`，CSS 和 JS 内嵌在 `<style>` / `<script>` 中，不依赖外部文件、CDN 或运行时高亮库；图表优先使用表格、内联 SVG 或生成期静态内容。
 2. 用户没有指定路径时，默认输出到桌面。
 3. 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
 4. `/htmlreport` 时直接生成，不再反问，默认带折叠和复制按钮。
@@ -56,9 +56,9 @@
 
 ## 可选依赖与安装
 
-- 默认保持轻量：生成报告时不安装任何依赖，`--engine auto` 只探测已有 Pygments 并在缺失时回退 builtin。
-- 用户明确要求增强高亮或安装 Pygments 时，先说明会写入当前用户 Python 环境，再执行安装；安装失败时不要阻塞报告生成，继续用 builtin。
-- Homebrew Python 可能触发 PEP 668；用户确认后可用 `python3 -m pip install --user --break-system-packages Pygments` 安装到用户 site-packages，避免修改系统包目录。
+- 默认不安装依赖。`--engine auto` 只探测已有 Pygments 模块或 `pygmentize` CLI，缺失时回退 builtin。
+- 只有用户明确要求增强高亮或同意安装时，才说明会写入当前用户 Python 环境并执行安装；安装失败不阻塞报告生成。
+- Homebrew Python 触发 PEP 668 时，可在用户确认后使用 `python3 -m pip install --user --break-system-packages Pygments`，避免修改系统包目录。
 
 ## 写作规范
 

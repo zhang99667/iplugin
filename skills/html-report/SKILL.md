@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.2.17
+version: 0.2.18
 tags:
   - report
   - html
@@ -17,10 +17,10 @@ description: 生成独立 HTML 报告文件。用户明确要求 HTML 输出（�
 SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读取：
 
 - `references/content-rules.md`：HTML vs Markdown 决策、文档类型、正式抬头、输出要求、写作规范、完成前检查。
-- `references/artifact-patterns.md`：按报告类型选择结构模板。当前只覆盖技术方案和技术调研两个高频场景，其他场景先按通用报告规则处理。
+- `references/artifact-patterns.md`：按报告类型选择结构模板。当前覆盖技术方案、技术调研、问题排查/修复方案三个高频场景，其他场景先按通用报告规则处理。
 - `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 模板、交互组件样式、可整体收起的浮动目录侧栏、复制按钮 JS 和 HTML 骨架。只有开始写 HTML 文件时再读取。
-- `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，需要更好语法覆盖时可用 `--engine auto` 尝试本机 Pygments 静态预渲染；Pygments 缺失时不要自动安装，只有用户明确要求增强高亮/安装依赖时才征得确认后安装；展示 unified diff 修改点时使用 `--diff-view`。
+- `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
 - `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、复制按钮、viewport、响应式/打印样式和可整体收起的目录侧栏结构。
 
 ## 触发边界
@@ -54,22 +54,14 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 7. 完成前运行 `python3 skills/html-report/scripts/check_html_report.py <html-file>`；若失败，修正 HTML 后重跑直到通过。
 8. 完成后只回复文件路径和一句话概要，不复述报告全文。
 
-## 可选依赖策略
-
-- 保持轻量优先：生成报告时默认使用 `--engine builtin`，不联网、不安装依赖。
-- `--engine auto` 只探测当前环境已有的 Pygments 模块或 `pygmentize` CLI；没有就自动回退 builtin。
-- 不要在报告生成流程里静默安装依赖。只有用户明确要求“安装 Pygments”“启用增强高亮”或同意安装时，才执行安装命令。
-- Homebrew Python 遇到 PEP 668 时，优先使用用户级安装：`python3 -m pip install --user --break-system-packages Pygments`；不要用会修改系统 Python 或全局 site-packages 的安装方式。
-
 ## 输出契约
 
-- 生成单文件 `.html`，CSS 和 JS 内嵌在 `<style>` / `<script>` 中，不依赖外部文件（CDN 图表库除外）。
+- 生成单文件 `.html`，CSS 和 JS 内嵌在 `<style>` / `<script>` 中，不依赖外部 CSS、JS 或 CDN；图表优先使用表格、内联 SVG 或生成期静态内容。
 - 用户没有指定路径时，默认输出到桌面。
 - 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
 - 判断为正式技术/业务文档或分析报告时，必须加文档抬头；普通对话转 HTML 不强制加。
 - 报告内容必须来自用户内容或可靠上下文，不编造仓库、负责人、日期、卡片号、上线计划或收益数据。
-- 代码高亮必须是离线单文件方案：默认使用 `scripts/highlight_code.py` 的 `builtin` 引擎做静态预高亮；如果本机安装了 Pygments，可用 `--engine auto` 或 `--engine pygments` 生成更准确的静态 HTML；如果没有安装，保持 builtin 回退，除非用户明确要求安装；最终报告不得引入 highlight.js、Prism、Shiki CDN 或外部 CSS/JS 文件。
-- 长文档目录沿用旧版浮动侧栏样式：使用 `.layout-with-toc` + `<aside class="toc">` + `.toc-title` + 直接锚点链接，并额外加入 `.toc-toggle` 按钮；默认展开，点击按钮切换 `.toc-collapsed` 来收起/展开整个目录侧栏，不要用 `<details class="toc-details">` 只折叠目录内部链接。窄屏/分屏下目录不能遮挡或挤出正文。
+- 代码高亮、长文档目录、响应式和打印样式的细节按 `references/visual-rules.md` 与 `references/css-template.md` 执行；最终必须通过 `scripts/check_html_report.py`。
 
 ## 核心原则
 

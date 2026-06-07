@@ -5,7 +5,7 @@
 HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视化表达力：
 
 - 卡片和网格：用卡片承载每个问题/结论，网格排列多方案对比。
-- 颜色即信息：优先级标签、状态标记、文件 chip 色块，让读者快速感知严重程度。
+- 颜色辅助信息：优先级标签、状态标记、文件 chip 色块配合文字，让读者快速感知严重程度。
 - 图表与架构图：流程图、架构图、时间线按内容选择 SVG、表格或 ASCII。
 - 表格天然适合对齐、比较和扫描。
 - 排版余白、字号层级、折叠收纳用于提升阅读效率。
@@ -152,7 +152,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 ## ASCII 架构图与代码块
 
-代码块不能只是深色背景加纯文本，也不要靠模型手工包大量 `tok-*` span。报告中的多行代码、SQL、XML、JSON、配置片段和 diff 必须使用 `scripts/highlight_code.py` 生成安全的 `.code-wrap` 片段。最终 HTML 必须是静态离线输出，不在浏览器运行 highlight.js、Prism、Shiki 或从 CDN 拉取高亮资源：
+代码块不能只是深色背景加纯文本，也不要靠模型手工包大量 `tok-*` span。报告中的多行代码、SQL、XML、JSON、配置片段和 diff 必须使用 `scripts/highlight_code.py` 生成安全的 `.code-wrap` 片段。最终 HTML 必须是静态离线输出，不在浏览器运行 highlight.js、Prism、Shiki，也不从 CDN 拉取资源：
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt

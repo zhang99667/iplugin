@@ -1,3 +1,9 @@
+## [0.13.7] - 2026-06-07
+### Changed
+- html-report: 精简重复声明，主 skill 只保留触发、路由和输出契约，代码高亮、目录和响应式细节继续下沉到 references
+- html-report: 移除 CDN 图表库例外，统一要求单文件离线 HTML，图表优先使用表格、内联 SVG 或生成期静态内容
+- README / manifest: 插件版本升级到 `0.13.7`
+
 ## [0.13.6] - 2026-06-06
 ### Changed
 - html-report: 长文档目录恢复旧版浮动侧栏视觉，不再使用 `<details>` 折叠目录内部链接
