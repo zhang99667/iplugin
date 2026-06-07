@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/.codex/hooks/iplugin-skill-telemetry.py\"",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/skill-telemetry.py\"",
             "timeout": 5
           }
         ]

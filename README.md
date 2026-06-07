@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、项目/需求总结、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
 
 ## 目录结构
 
@@ -21,6 +21,7 @@ iplugin/
 │   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
 │   ├── commercial-sql-writer/ # 商业广告 SQL 写作、改写与检查
 │   ├── project-summary/    # 项目/需求总结整理
+│   ├── obsidian/           # Obsidian 笔记写作格式规范
 │   ├── icafe-delivery-archive/ # iCafe 需求交付材料归档
 │   ├── lite-diff-marker/   # 矩阵产品差异化标记
 │   ├── karpathy-guidelines/ # Karpathy 风格编码准则
@@ -51,6 +52,7 @@ iplugin/
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
+| `obsidian` | 写入 Obsidian Vault 时应用统一 Markdown 排版、标题层级、引用块、双链规范，并按清晰度选择 Mermaid / ASCII / SVG / 图像生成等示意图表达 | "写到 Obsidian"、"记到笔记里"、"加到 vault 里" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |

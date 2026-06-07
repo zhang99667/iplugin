@@ -1,8 +1,18 @@
+## [0.14.2] - 2026-06-07
+### Changed
+- obsidian: 新增示意图表达策略，要求在 Mermaid、ASCII、SVG/矢量图和图像生成之间按清晰度选择，不再默认用 ASCII 表达复杂链路
+- README / manifest: 插件版本升级到 `0.14.2`
+
 ## [0.14.1] - 2026-06-07
 ### Changed
 - delegated-search: 扩展为执行前委派判断能力，在高输出命令、长日志、全仓扫描和跨源检索前优先判断是否拆给 explorer/subagent
 - delegated-search: 增加主 Agent 委派判断模板，要求明确是否委派、拆分问题、子 Agent 边界和期望输出
 - README / manifest: 插件版本升级到 `0.14.1`
+
+## [0.14.0] - 2026-06-07
+### Added
+- obsidian: 从外部个人 skills 目录迁入 Obsidian 笔记写作 skill，统一管理 Vault 路径、紧凑排版、标题层级、引用块、代码块和双向链接规范
+- README / manifest: 插件能力清单加入 Obsidian 笔记写作，版本升级到 `0.14.0`
 
 ## [0.13.7] - 2026-06-07
 ### Changed
