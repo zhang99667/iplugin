@@ -1,3 +1,9 @@
+## [0.14.3] - 2026-06-07
+### Fixed
+- hooks/codex-hooks.json: 恢复 Codex telemetry 的稳定 wrapper 入口 `$HOME/.codex/hooks/iplugin-skill-telemetry.py`，避免 session 继续引用已删除的版本化 `${PLUGIN_ROOT}` 缓存路径
+- validate-plugin.py / docs: 校验和文档同步 Codex wrapper 契约，防止后续变更再次回退到 `${PLUGIN_ROOT}/hooks/skill-telemetry.py`
+- manifest: 插件版本升级到 `0.14.3`
+
 ## [0.14.2] - 2026-06-07
 ### Changed
 - obsidian: 新增示意图表达策略，要求在 Mermaid、ASCII、SVG/矢量图和图像生成之间按清晰度选择，不再默认用 ASCII 表达复杂链路

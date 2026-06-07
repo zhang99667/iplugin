@@ -20,7 +20,7 @@
 - 插件级信息变更时，同时检查 `.claude-plugin/plugin.json` 和 `.codex-plugin/plugin.json`
 - 版本号、描述、关键词应尽量在两个 manifest 中保持一致
 - Codex 插件刷新使用 `codex plugin marketplace upgrade iplugin`
-- hooks 已用于 telemetry；Claude Code 的 `${CLAUDE_PLUGIN_ROOT}` 与 Codex 的 `${PLUGIN_ROOT}` 变量不同，hook 配置必须分别维护和验证，不要默认认为两边 1:1 兼容
+- hooks 已用于 telemetry；Claude Code 使用 `${CLAUDE_PLUGIN_ROOT}`，Codex 使用 `$HOME/.codex/hooks/iplugin-skill-telemetry.py` 稳定 wrapper，hook 配置必须分别维护和验证，不要默认认为两边 1:1 兼容
 
 ## Skill 准入标准
 

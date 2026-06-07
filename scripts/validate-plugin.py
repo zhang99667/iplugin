@@ -249,8 +249,10 @@ def check_hook_variable_scope(value: Any, label: str) -> list[str]:
     elif label == "hooks/codex-hooks.json":
         if "${CLAUDE_PLUGIN_ROOT}" in text:
             details.append(f"{label} is loaded by Codex and must not use Claude-only ${{CLAUDE_PLUGIN_ROOT}}")
-        if "skill-telemetry.py" in text and "${PLUGIN_ROOT}" not in text:
-            details.append(f"{label} telemetry command should use ${{PLUGIN_ROOT}}")
+        if "skill-telemetry.py" in text and "$HOME/.codex/hooks/iplugin-skill-telemetry.py" not in text:
+            details.append(f"{label} telemetry command should use $HOME/.codex/hooks/iplugin-skill-telemetry.py")
+        if "${PLUGIN_ROOT}/hooks/skill-telemetry.py" in text:
+            details.append(f"{label} telemetry command must not use versioned ${{PLUGIN_ROOT}} cache path")
     return details
 
 
