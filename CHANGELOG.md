@@ -1,3 +1,9 @@
+## [0.14.1] - 2026-06-07
+### Changed
+- delegated-search: 扩展为执行前委派判断能力，在高输出命令、长日志、全仓扫描和跨源检索前优先判断是否拆给 explorer/subagent
+- delegated-search: 增加主 Agent 委派判断模板，要求明确是否委派、拆分问题、子 Agent 边界和期望输出
+- README / manifest: 插件版本升级到 `0.14.1`
+
 ## [0.13.7] - 2026-06-07
 ### Changed
 - html-report: 精简重复声明，主 skill 只保留触发、路由和输出契约，代码高亮、目录和响应式细节继续下沉到 references

@@ -15,7 +15,7 @@ iplugin/
 │   ├── aidisheng-xueba/    # 爱迪生学霸，按题库快速回答选择题
 │   ├── ask-user-question/   # 结构化询问，把阻塞性决策交给 AskUserQuestion
 │   ├── best-of-web/        # 联网精选，结合高质量公开资料综合回答
-│   ├── delegated-search/   # 广域检索任务委派与证据收集
+│   ├── delegated-search/   # 广域检索任务委派、证据收集与执行前委派判断
 │   ├── html-report/        # 生成带内容类型判断的独立 HTML 工程报告
 │   ├── html2md/             # 将本地 HTML 或 file:// 页面转换成 Markdown
 │   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
@@ -45,7 +45,7 @@ iplugin/
 | `aidisheng-xueba` | 按已背题库匹配爱迪生考试题干和选项语义，快速输出单选/多选答案 | "爱迪生学霸"、"爱迪生考试这题选什么"、"帮我答爱迪生题库" |
 | `ask-user-question` | 把阻塞性决策、提交前确认、风险操作确认整理成结构化选择题，交给 AskUserQuestion / request_user_input | `/ask-user-question 这个 UI 改动应该怎么做`、"提交前让我确认" |
 | `best-of-web` | 仅通过 `/best-of-web` 命令触发；联网搜索并按来源质量分层核验公开资料，再综合成可引用、可执行的回答 | `/best-of-web 结合互联网上最优秀的内容梳理这个主题` |
-| `delegated-search` | 将发散搜索、证据收集、多来源核验任务拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来" |
+| `delegated-search` | 将发散搜索、证据收集、多来源核验和高输出操作前置判断拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来"、"先判断能不能拆给子 Agent" |
 | `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，长文档目录为浮动侧栏且可整体收起 | "整理成 HTML 报告"、"/htmlreport" |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
