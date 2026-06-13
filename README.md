@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、本地 session 归档、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
 
 ## 目录结构
 
@@ -18,8 +18,10 @@ iplugin/
 │   ├── delegated-search/   # 广域检索任务委派、证据收集与执行前委派判断
 │   ├── html-report/        # 生成带内容类型判断的独立 HTML 工程报告
 │   ├── html2md/             # 将本地 HTML 或 file:// 页面转换成 Markdown
+│   ├── local-session-archive/ # 本地归档 Codex / Claude JSONL session
 │   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
 │   ├── commercial-sql-writer/ # 商业广告 SQL 写作、改写与检查
+│   ├── datapilot-sql-runner/ # DataPilot SQL 提交、任务 ID 回收与状态汇报
 │   ├── project-summary/    # 项目/需求总结整理
 │   ├── obsidian/           # Obsidian 笔记写作格式规范
 │   ├── icafe-delivery-archive/ # iCafe 需求交付材料归档
@@ -49,8 +51,10 @@ iplugin/
 | `delegated-search` | 将发散搜索、证据收集、多来源核验和高输出操作前置判断拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来"、"先判断能不能拆给子 Agent" |
 | `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，长文档目录为浮动侧栏且可整体收起 | "整理成 HTML 报告"、"/htmlreport" |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
+| `local-session-archive` | 本地离线归档 Codex / Claude JSONL session，支持一次性同步、前台 watch、列表、状态和恢复 | "把 Codex session 本地备份一下"、"类似硅碳双键但存在本地" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |
+| `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，处理 Chrome 登录态、Monaco 编辑器粘贴、任务 ID 回收和排队/执行状态汇报 | "DataPilot 跑一下这个 SQL"、"把这些 .sql 提交到 datapilot 并回收任务 ID" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
 | `obsidian` | 写入 Obsidian Vault 时应用统一 Markdown 排版、标题层级、引用块、双链规范，并按清晰度选择 Mermaid / ASCII / SVG / 图像生成等示意图表达 | "写到 Obsidian"、"记到笔记里"、"加到 vault 里" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |

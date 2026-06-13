@@ -1,3 +1,19 @@
+## [0.17.0] - 2026-06-10
+### Added
+- datapilot-sql-runner: 新增 DataPilot SQL 跑数闭环 skill，用于提交单条或多条 SQL、处理 Chrome 登录态和 Monaco 编辑器粘贴、回收任务 ID 并汇报排队/执行状态
+- datapilot-sql-runner: 沉淀 DataPilot 实操经验，包括临时 SQL 副本、不污染原始文件、SQL 实验号/日期预处理、任务卡片状态边界解析和长 SQL 粘贴校验
+
+### Changed
+- README / manifest: 插件能力清单加入 DataPilot SQL 跑数，版本升级到 `0.17.0`
+
+## [0.16.0] - 2026-06-09
+### Added
+- local-session-archive: 新增本地 session 归档 skill，用于离线备份、列出、查看状态和恢复 Codex / Claude JSONL session
+- scripts: 新增 `scripts/local_session_archive.py`，支持 `sync`、`watch`、`list`、`status`、`restore`，默认写入 `~/.local/share/iplugin/session-archive`
+
+### Changed
+- README / manifest: 插件能力清单加入本地 session 归档，版本升级到 `0.16.0`
+
 ## [0.14.3] - 2026-06-07
 ### Fixed
 - hooks/codex-hooks.json: 恢复 Codex telemetry 的稳定 wrapper 入口 `$HOME/.codex/hooks/iplugin-skill-telemetry.py`，避免 session 继续引用已删除的版本化 `${PLUGIN_ROOT}` 缓存路径
