@@ -1,7 +1,7 @@
 {
   "name": "iplugin",
   "version": "0.17.0",
-  "description": "toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、本地 session 归档、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助",
+  "description": "toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助",
   "author": {
     "name": "markz"
   },
@@ -16,10 +16,6 @@
     "html2md",
     "markdown",
     "conversion",
-    "local-session-archive",
-    "backup",
-    "codex",
-    "claude",
     "best-of-web",
     "best",
     "of",
@@ -124,7 +120,7 @@
   "interface": {
     "displayName": "iPlugin",
     "shortDescription": "个人开发工作流工具箱",
-    "longDescription": "面向个人研发工作流的通用插件，提供代码链路阅读、爱迪生考试题库答题、广域检索委派、结构化询问命令、HTML 报告生成、HTML 转 Markdown、联网精选、本地 session 归档、SQL 实验替换、商业广告 SQL 写作、DataPilot SQL 跑数与任务 ID 回收、项目总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 风格编码约束、MGIT/EasyBox 多仓辅助等可复用能力。",
+    "longDescription": "面向个人研发工作流的通用插件，提供代码链路阅读、爱迪生考试题库答题、广域检索委派、结构化询问命令、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业广告 SQL 写作、DataPilot SQL 跑数与任务 ID 回收、项目总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 风格编码约束、MGIT/EasyBox 多仓辅助等可复用能力。",
     "developerName": "markz",
     "category": "Productivity",
     "capabilities": [
@@ -138,7 +134,6 @@
       "提交前让我确认一下",
       "把这份结论整理成 HTML 报告",
       "把这个 HTML 文件输出成 Markdown",
-      "把 Codex 和 Claude session 本地备份一下",
       "结合互联网上最优秀的内容，帮我梳理这个主题",
       "替换 SQL 里的实验号和日期",
       "帮我写一个商业广告展点消 SQL",

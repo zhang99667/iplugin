@@ -6,14 +6,6 @@
 ### Changed
 - README / manifest: 插件能力清单加入 DataPilot SQL 跑数，版本升级到 `0.17.0`
 
-## [0.16.0] - 2026-06-09
-### Added
-- local-session-archive: 新增本地 session 归档 skill，用于离线备份、列出、查看状态和恢复 Codex / Claude JSONL session
-- scripts: 新增 `scripts/local_session_archive.py`，支持 `sync`、`watch`、`list`、`status`、`restore`，默认写入 `~/.local/share/iplugin/session-archive`
-
-### Changed
-- README / manifest: 插件能力清单加入本地 session 归档，版本升级到 `0.16.0`
-
 ## [0.14.3] - 2026-06-07
 ### Fixed
 - hooks/codex-hooks.json: 恢复 Codex telemetry 的稳定 wrapper 入口 `$HOME/.codex/hooks/iplugin-skill-telemetry.py`，避免 session 继续引用已删除的版本化 `${PLUGIN_ROOT}` 缓存路径
