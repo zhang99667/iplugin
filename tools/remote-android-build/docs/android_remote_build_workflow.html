@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="support_full_screen" content="true" />
+  <title>Android 双 Mac 远程编译工作流实施方案</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --p0: #dc2626;
+      --p1: #ea580c;
+      --p2: #2563eb;
+      --code-bg: #10231f;
+      --code: #a9b5af;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --green: #047857;
+      --amber: #b45309;
+      --red: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+    img, svg, canvas, video { max-width: 100%; height: auto; }
+    main {
+      width: min(100%, 1180px);
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+    h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.25; }
+    h2 {
+      margin: 30px 0 14px;
+      font-size: 22px;
+      border-left: 5px solid var(--accent);
+      padding-left: 10px;
+    }
+    h3 { margin: 0 0 10px; font-size: 18px; }
+    p { margin: 8px 0; }
+    a { color: var(--accent); }
+    .summary, .issue {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+      padding: 18px 20px;
+      margin: 16px 0;
+      min-width: 0;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .p0 { background: var(--p0); }
+    .p1 { background: var(--p1); }
+    .p2 { background: var(--p2); }
+    .path {
+      display: inline-block;
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      word-break: break-all;
+      text-decoration: none;
+    }
+    .muted { color: var(--muted); }
+    .doc-header {
+      margin-bottom: 18px;
+      padding: 28px 30px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 58%, #60a5fa 100%);
+      color: #ffffff;
+      box-shadow: 0 14px 32px rgba(37, 99, 235, .22);
+    }
+    .doc-header h1 {
+      margin: 0 0 12px;
+      font-size: 30px;
+      line-height: 1.28;
+    }
+    .doc-subtitle {
+      margin: 0 0 18px;
+      color: rgba(255, 255, 255, .88);
+      font-size: 15px;
+    }
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .doc-chip {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      min-height: 30px;
+      padding: 3px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .15);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    ul, ol { margin: 8px 0 8px 22px; padding: 0; }
+    li { margin: 4px 0; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: .92em;
+      white-space: nowrap;
+    }
+    pre {
+      max-width: 100%;
+      margin: 10px 0 14px;
+      padding: 14px 16px;
+      overflow: auto;
+      background: var(--code-bg);
+      color: var(--code);
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      tab-size: 4;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      font-size: inherit;
+      white-space: pre;
+    }
+    .ascii-diagram {
+      background: #f8fafc;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .code-wrap {
+      position: relative;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .code-wrap pre {
+      padding-top: 38px;
+      overflow-x: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: rgba(255,255,255,.10);
+      color: #8fa59c;
+      border: 1px solid rgba(143,165,156,.22);
+      border-radius: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .code-wrap:hover .copy-btn,
+    .code-wrap:focus-within .copy-btn { opacity: 1; }
+    .copy-btn.copied {
+      color: #83b986;
+      border-color: #83b986;
+    }
+    .tok-key { color: #d955a2; font-weight: 700; }
+    .tok-str { color: #83b986; }
+    .tok-num { color: #d7c96f; }
+    .tok-cmt { color: #5f947d; font-style: italic; }
+    .tok-fn { color: #6fa0ff; }
+    .tok-var { color: #8f79bd; }
+    .tok-type { color: #d2d66f; font-weight: 700; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .grid > * { min-width: 0; }
+    .mini {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fbfdff;
+      min-width: 0;
+    }
+    .mini strong { display: block; margin-bottom: 4px; }
+    .ok { color: var(--green); font-weight: 700; }
+    .warn { color: var(--amber); font-weight: 700; }
+    .danger { color: var(--red); font-weight: 700; }
+    .tbl-wrap {
+      overflow-x: auto;
+      margin: 12px 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+    }
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      background: #f1f5f9;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: 0; }
+    tr:hover td { background: #f8fafc; }
+    .phase {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .phase-now { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+    .phase-later { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+    .phase-risk { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .decision {
+      border-left: 5px solid var(--accent);
+      background: var(--accent-soft);
+    }
+    .recommend {
+      border-left: 5px solid var(--green);
+      background: #ecfdf5;
+    }
+    details {
+      margin: 12px 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+    summary {
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      background: #f8fafc;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: "▸";
+      display: inline-block;
+      font-size: 10px;
+      transition: transform .2s;
+      color: var(--muted);
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+    .details-body { padding: 12px 16px; }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+    .layout-with-toc {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 24px;
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+      transition: grid-template-columns .2s ease;
+    }
+    .layout-with-toc.toc-collapsed {
+      grid-template-columns: 52px minmax(0, 1fr);
+    }
+    .layout-with-toc main {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+      padding: 16px;
+    }
+    .toc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+    .toc-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .toc-toggle {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 700;
+      line-height: 1;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .toc-toggle:hover {
+      background: #eef2ff;
+      border-color: #c7d2fe;
+      color: var(--accent);
+    }
+    .toc-toggle-icon { font-size: 18px; line-height: 1; }
+    .toc a {
+      display: block;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: #334155;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .toc a:hover { background: #f1f5f9; color: var(--accent); }
+    .layout-with-toc.toc-collapsed .toc {
+      padding: 10px;
+      overflow: visible;
+    }
+    .layout-with-toc.toc-collapsed .toc-header {
+      justify-content: center;
+      margin-bottom: 0;
+    }
+    .layout-with-toc.toc-collapsed .toc-title,
+    .layout-with-toc.toc-collapsed .toc a {
+      display: none;
+    }
+    .layout-with-toc.toc-collapsed .toc-toggle {
+      width: 32px;
+      height: 32px;
+    }
+    section[id], h2[id] { scroll-margin-top: 24px; }
+    .star { color: #f59e0b; }
+    @media (hover: none) {
+      .copy-btn { opacity: 1; }
+    }
+    @media (max-width: 900px) {
+      .layout-with-toc {
+        display: block;
+        padding: 20px 16px 44px;
+      }
+      .toc {
+        position: static;
+        max-height: none;
+        margin-bottom: 16px;
+        overflow: visible;
+      }
+      .layout-with-toc.toc-collapsed .toc {
+        padding: 16px;
+      }
+      .layout-with-toc.toc-collapsed .toc-header {
+        justify-content: space-between;
+        margin-bottom: 0;
+      }
+      .layout-with-toc.toc-collapsed .toc-title {
+        display: block;
+      }
+      .layout-with-toc.toc-collapsed .toc a {
+        display: none;
+      }
+      .doc-header {
+        padding: 22px 20px;
+        border-radius: 14px;
+      }
+      .doc-header h1 { font-size: 24px; }
+    }
+    @media (max-width: 720px) {
+      main { padding: 20px 14px 42px; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+      .summary, .issue { padding: 14px 14px; border-radius: 12px; }
+      .doc-header { padding: 22px 18px; border-radius: 14px; }
+      .doc-header h1 { font-size: 23px; }
+      .doc-chip { font-size: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .copy-btn { opacity: 1; }
+      table { min-width: 680px; }
+    }
+    @media print {
+      body { background: #ffffff; color: #111827; }
+      main, .layout-with-toc { width: 100%; max-width: none; padding: 0; }
+      .summary, .issue, .toc, .doc-header {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      .doc-header {
+        background: #ffffff;
+        color: #111827;
+        border: 1px solid #d1d5db;
+      }
+      .doc-subtitle, .muted { color: #374151; }
+      .doc-chip {
+        background: #f3f4f6;
+        color: #111827;
+        border: 1px solid #d1d5db;
+      }
+      .toc { position: static; max-height: none; }
+      .copy-btn, .toast { display: none !important; }
+      pre, .ascii-diagram {
+        white-space: pre-wrap;
+        overflow: visible;
+        color: #111827;
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+      }
+      a { color: #111827; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+<div id="toast" class="toast">已复制到剪贴板</div>
+
+<div class="layout-with-toc">
+  <aside class="toc" aria-label="目录">
+    <div class="toc-header">
+      <p class="toc-title">目录</p>
+      <button class="toc-toggle" type="button" aria-label="收起目录" aria-expanded="true" title="收起目录">
+        <span class="toc-toggle-icon" aria-hidden="true">‹</span>
+      </button>
+    </div>
+    <a href="#summary">最终结论</a>
+    <a href="#comparison">方案对比</a>
+    <a href="#mutagen">后续优化：Mutagen</a>
+    <a href="#gradle-cache">后续优化：Gradle Cache</a>
+    <a href="#architecture">总体架构</a>
+    <a href="#workflow">日常工作流</a>
+    <a href="#sync-design">同步策略</a>
+    <a href="#implementation">实施步骤</a>
+    <a href="#scripts">可用脚本</a>
+    <a href="#network">网络验证</a>
+    <a href="#debugging">调试闭环</a>
+    <a href="#multirepo">多仓工程处理</a>
+    <a href="#risks">风险与回退</a>
+    <a href="#sources">证据来源</a>
+  </aside>
+
+  <main>
+    <header class="doc-header">
+      <h1>Android 双 Mac 远程编译工作流实施方案</h1>
+      <p class="doc-subtitle">办公 Mac 保持代码编辑、真机连接和调试；编译 Mac 常久在线，作为本地 SSD 上的远程构建镜像。既然 SSH 已经可达，主路径收敛为 SSH + rsync 一键同步、远程 Gradle 编译、APK 回传和本地安装。</p>
+      <div class="doc-meta">
+        <span class="doc-chip">技术方案</span>
+        <span class="doc-chip">Android 开发</span>
+        <span class="doc-chip">两台 macOS 笔记本</span>
+        <span class="doc-chip">远程编译 + 本地调试</span>
+        <span class="doc-chip">更新日期：2026-06-15</span>
+      </div>
+    </header>
+
+    <p class="muted">适用前提：你希望在办公 Mac 上写代码、连接手机和看 Logcat，同时把重型 Gradle 构建交给另一台 24 小时在线的 Mac。本文不假设必须提交 Git，也不要求共享网络磁盘直接编译。</p>
+
+    <section id="summary" class="summary">
+      <h2>最终结论</h2>
+      <p>可行方案不是"远程桌面替代开发"，而是把编译 Mac 当成办公 Mac 当前工作区的远程构建镜像。当前已确认 SSH 可达，所以初版不需要 Tailscale、公网隧道或 VNC 主开发流程；办公 Mac 是唯一编辑入口，每次构建前用 <code>rsync</code> 把未提交改动和新增文件同步到编译 Mac，编译 Mac 在本地 SSD 上跑 Gradle，产物再拉回办公 Mac，由办公 Mac 安装到手边真机并挂调试器。</p>
+      <div class="grid">
+        <div class="mini"><span class="tag p1">P0 推荐</span><strong>先跑通 rsync 最小闭环</strong>SSH 已通时，先用 <code>rsync + ssh + adb</code> 做一键构建安装，行为最透明、最容易排错。</div>
+        <div class="mini"><span class="tag p2">核心</span><strong>不在共享盘上编译</strong>共享盘只适合放最终产物；Gradle 工作区和缓存应保留在编译 Mac 本地 SSD。</div>
+        <div class="mini"><span class="tag p2">P1 可选</span><strong>Mutagen 只做单向同步</strong>如果 rsync 每次扫描太慢，再升级到 local → buildmac 的 <code>one-way-safe</code> 同步，不做源码双向同步。</div>
+        <div class="mini"><span class="tag p2">P2 可选</span><strong>Gradle Remote Cache 后置</strong>只在最小闭环稳定后再加；默认开发机读取缓存，避免两台机器同时写共享缓存。</div>
+      </div>
+    </section>
+
+    <h2 id="comparison">方案对比</h2>
+    <section class="issue">
+      <h3>当前可选路径对比</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>方案</th><th>同步延迟</th><th>编译速度</th><th>调试体验</th><th>复杂度</th><th>推荐度</th></tr>
+          </thead>
+          <tbody>
+            <tr style="background: #ecfdf5;">
+              <td><strong>SSH + rsync 一键闭环</strong></td>
+              <td>中等（每次构建前同步）</td>
+              <td>正常</td>
+              <td>好</td>
+              <td>低</td>
+              <td class="ok"><span class="star">★★★★★</span> P0 推荐</td>
+            </tr>
+            <tr>
+              <td><strong>Mutagen 单向实时同步</strong></td>
+              <td class="ok">低（后台持续同步）</td>
+              <td>正常</td>
+              <td>好</td>
+              <td>中</td>
+              <td><span class="star">★★★★</span> P1 优化</td>
+            </tr>
+            <tr>
+              <td><strong>rsync + Gradle Remote Cache</strong></td>
+              <td>中等</td>
+              <td class="ok">可能更快（取决于 cacheable task）</td>
+              <td>好</td>
+              <td>中</td>
+              <td><span class="star">★★★</span> P2 观察后再加</td>
+            </tr>
+            <tr>
+              <td>Git commit 同步</td>
+              <td>高</td>
+              <td>正常</td>
+              <td>差（需频繁 commit）</td>
+              <td>低</td>
+              <td><span class="star">★★</span></td>
+            </tr>
+            <tr>
+              <td>远程桌面开发</td>
+              <td>高（UI 延迟）</td>
+              <td>快</td>
+              <td>差</td>
+              <td>低</td>
+              <td><span class="star">★</span> 不推荐</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="mutagen">后续优化：Mutagen 单向同步</h2>
+    <section class="summary recommend">
+      <h3>什么时候再上 Mutagen？</h3>
+      <div class="grid">
+        <div class="mini"><strong>rsync 扫描变慢时</strong>大 workspace 每次构建前扫描明显拖慢，再用 Mutagen 后台 watcher 降低等待。</div>
+        <div class="mini"><strong>只做单向同步</strong>办公 Mac 是源码真相，编译 Mac 是镜像；不要让远端生成物或临时改动反向污染本地源码。</div>
+        <div class="mini"><strong>构建前强制 flush</strong>脚本在远程编译前执行 <code>mutagen sync flush</code>，确保最新改动已经落到编译 Mac。</div>
+        <div class="mini"><strong>冲突可见</strong><code>one-way-safe</code> 遇到会造成数据丢失的覆盖会报告冲突，适合先保守落地。</div>
+      </div>
+    </section>
+
+    <section class="issue">
+      <h3>Mutagen 安装与配置（可选）</h3>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt"># 安装 Mutagen</span>
+<span class="tok-fn">brew</span> install mutagen-io/mutagen/mutagen
+
+<span class="tok-cmt"># 创建单向同步会话（一次性配置）</span>
+<span class="tok-fn">mutagen</span> sync create \
+  ./android-project \
+  buildmac:~/remote-work/android-project \
+  --name=android-build \
+  --sync-mode=one-way-safe \
+  --ignore-vcs \
+  --ignore=build/,.gradle/,.idea/,*.iml,.DS_Store,local.properties,.git/,captures/,*.apk,*.aab
+
+<span class="tok-cmt"># 查看同步状态</span>
+<span class="tok-fn">mutagen</span> sync list
+
+<span class="tok-cmt"># 暂停/恢复同步</span>
+<span class="tok-fn">mutagen</span> sync pause android-build
+<span class="tok-fn">mutagen</span> sync resume android-build
+
+<span class="tok-cmt"># 终止同步会话</span>
+<span class="tok-fn">mutagen</span> sync terminate android-build</code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+      <p class="muted">配置完成后，Mutagen 会在后台持续同步。这里刻意使用 <code>one-way-safe</code>，避免编译 Mac 反向覆盖办公 Mac；远端生成代码和 build 目录仍不作为常规同步对象。</p>
+    </section>
+
+    <section class="issue">
+      <h3>Mutagen 简化编译脚本</h3>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt">#!/usr/bin/env zsh</span>
+<span class="tok-fn">set</span> -euo pipefail
+
+<span class="tok-cmt"># Mutagen 已在后台同步，脚本只需编译和拉产物</span>
+<span class="tok-fn">REMOTE</span>=<span class="tok-str">&quot;${REMOTE:-buildmac}&quot;</span>
+<span class="tok-fn">REMOTE_ROOT</span>=<span class="tok-str">&quot;${REMOTE_ROOT:-~/remote-work/android-project}&quot;</span>
+<span class="tok-fn">MODULE</span>=<span class="tok-str">&quot;${MODULE:-app}&quot;</span>
+<span class="tok-fn">TASK</span>=<span class="tok-str">&quot;${TASK:-:${MODULE}:assembleDebug}&quot;</span>
+<span class="tok-fn">APK_GLOB</span>=<span class="tok-str">&quot;${APK_GLOB:-${MODULE}/build/outputs/apk/debug/*.apk}&quot;</span>
+<span class="tok-fn">LOCAL_APK_DIR</span>=<span class="tok-str">&quot;${LOCAL_APK_DIR:-$HOME/Downloads/android-artifacts}&quot;</span>
+
+<span class="tok-cmt"># 检查并等待本轮改动同步完成</span>
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;📡 检查同步状态...&quot;</span>
+<span class="tok-fn">mutagen</span> sync list android-build
+<span class="tok-fn">mutagen</span> sync flush android-build
+
+<span class="tok-cmt"># 远程编译</span>
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;🔨 开始远程编译...&quot;</span>
+<span class="tok-fn">ssh</span> <span class="tok-str">&quot;$REMOTE&quot;</span> <span class="tok-str">&quot;cd $REMOTE_ROOT &amp;&amp; ./gradlew $TASK&quot;</span>
+
+<span class="tok-cmt"># 拉回 APK</span>
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;📦 拉回构建产物...&quot;</span>
+<span class="tok-fn">mkdir</span> -p <span class="tok-str">&quot;$LOCAL_APK_DIR&quot;</span>
+<span class="tok-fn">remote_apk</span>=$(ssh <span class="tok-str">&quot;$REMOTE&quot;</span> <span class="tok-str">&quot;cd $REMOTE_ROOT &amp;&amp; ls -t $APK_GLOB 2>/dev/null | head -1&quot;</span>)
+<span class="tok-key">if</span> [[ -z <span class="tok-str">&quot;$remote_apk&quot;</span> ]]; <span class="tok-key">then</span>
+  <span class="tok-fn">echo</span> <span class="tok-str">&quot;❌ 未找到 APK，检查构建是否成功&quot;</span>
+  <span class="tok-fn">exit</span> 1
+<span class="tok-key">fi</span>
+<span class="tok-fn">rsync</span> -P <span class="tok-str">&quot;$REMOTE:$REMOTE_ROOT/$remote_apk&quot;</span> <span class="tok-str">&quot;$LOCAL_APK_DIR/&quot;</span>
+<span class="tok-fn">local_apk</span>=<span class="tok-str">&quot;$LOCAL_APK_DIR/$(basename &quot;</span>$remote_apk<span class="tok-str">&quot;)&quot;</span>
+
+<span class="tok-cmt"># 安装到真机</span>
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;📲 安装到真机...&quot;</span>
+<span class="tok-fn">adb</span> install -r -d <span class="tok-str">&quot;$local_apk&quot;</span>
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;✅ 完成！&quot;</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+    </section>
+
+    <h2 id="gradle-cache">后续优化：Gradle Remote Build Cache</h2>
+    <section class="summary recommend">
+      <h3>先验证闭环，再考虑缓存</h3>
+      <p>Gradle Build Cache 能跨工作区复用部分 task 输出，但前提是工程本身的增量构建和 cacheable task 表现稳定。初版不依赖它；等 rsync 远程构建闭环跑稳后，再把编译 Mac 或 CI 作为主要写入方，办公 Mac 默认读取缓存即可。</p>
+    </section>
+
+    <section class="issue">
+      <h3>可选方案：自建 Gradle Build Cache Node</h3>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt"># 在编译 Mac 上启动 Build Cache Node</span>
+<span class="tok-cmt"># 先下载：https://github.com/gradle/gradle-build-cache-node/releases</span>
+
+<span class="tok-fn">./gradle-build-cache-node</span> \
+  --port 5071 \
+  --path ~/gradle-build-cache \
+  --max-cache-size 10GB
+
+<span class="tok-cmt"># 后台运行</span>
+<span class="tok-fn">nohup</span> ./gradle-build-cache-node --port 5071 --path ~/gradle-build-cache <span class="tok-str">&amp;&gt;</span> cache.log <span class="tok-str">&amp;</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+
+      <p>在项目 <code>settings.gradle</code> 中配置。下面是 Groovy DSL 示例；如果项目使用 <code>settings.gradle.kts</code>，需要按 Kotlin DSL 语法改写：</p>
+      <div class="code-wrap">
+        <pre><code class="language-text"><span class="tok-cmt">// settings.gradle (Groovy DSL)</span>
+<span class="tok-var">def</span> isBuildMac = System.getenv(<span class="tok-str">'BUILD_MAC'</span>) == <span class="tok-str">'true'</span>
+
+<span class="tok-fn">buildCache</span> {
+    <span class="tok-fn">local</span>(DirectoryBuildCache) {
+        enabled = <span class="tok-key">true</span>
+    }
+    <span class="tok-fn">remote</span>(HttpBuildCache) {
+        url = <span class="tok-str">'http://buildmac.local:5071/'</span>
+        enabled = System.getenv(<span class="tok-str">'USE_REMOTE_BUILD_CACHE'</span>) == <span class="tok-str">'true'</span>
+        push = isBuildMac  <span class="tok-cmt">// 编译 Mac 或 CI 写入；办公 Mac 默认只读</span>
+        allowInsecureProtocol = <span class="tok-key">true</span>
+    }
+}</code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+    </section>
+
+    <section class="issue">
+      <h3>明确不推荐：共享 <code>~/.gradle/caches</code> 目录</h3>
+      <p>不要把办公 Mac 的 <code>~/.gradle/caches</code> 软链到编译 Mac 的网络共享目录。这个目录包含锁文件、本地状态和大量小文件，网络盘并发写入容易造成性能抖动和缓存损坏；需要跨机器复用时，用 Gradle Remote Build Cache，而不是共享 Gradle User Home。</p>
+    </section>
+
+    <h2 id="architecture">总体架构</h2>
+    <section class="summary">
+      <p>这套方案的关键是职责分离：办公 Mac 负责人机交互和设备调试，编译 Mac 负责可重复的构建。既然 SSH 已经可达，两台机器之间优先用 rsync 按需同步源码增量和构建产物；Mutagen 和 Gradle Remote Cache 只作为后续优化。</p>
+      <pre class="ascii-diagram">办公 Mac（唯一编辑入口）
+    ├─ Android Studio / IntelliJ：写代码、看工程、Attach Debugger
+    ├─ ADB：连接手边真机、安装 APK、Logcat
+    ├─ SSH：远程触发构建
+    └─ rsync：构建前增量同步、构建后拉回 APK
+         │
+         │ ① 源码按需同步
+         ▼
+编译 Mac（24 小时在线构建镜像）
+    ├─ 本地 SSD：~/remote-work/android-project
+    ├─ JDK / Android SDK / Gradle cache / 签名配置
+    ├─ Mutagen 单向同步（P1 可选）
+    ├─ Gradle Build Cache Node（P2 可选）
+    └─ ./gradlew :app:assembleDebug
+         │
+         │ ② 拉回 APK / AAB / mapping
+         ▼
+办公 Mac
+    ├─ adb install -r -d app-debug.apk
+    └─ Android Studio Attach Debugger / adb logcat</pre>
+    </section>
+
+    <h2 id="workflow">日常工作流</h2>
+    <section class="issue">
+      <h3>推荐的一键循环</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>阶段</th><th>发生在哪台 Mac</th><th>动作</th><th>成功标准</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="phase phase-now">1 写代码</span></td><td>办公 Mac</td><td>正常使用 Android Studio 编辑代码，允许存在未提交改动和未跟踪文件。</td><td>本地源码就是本轮构建的准确信息源。</td></tr>
+            <tr><td><span class="phase phase-now">2 同步</span></td><td>办公 Mac → 编译 Mac</td><td><strong>P0：</strong>脚本执行 <code>rsync</code> 增量同步。<br><strong>P1 可选：</strong>Mutagen 单向同步后构建前 <code>flush</code>。</td><td>编译 Mac 镜像目录内容与办公 Mac 工作区一致。</td></tr>
+            <tr><td><span class="phase phase-now">3 编译</span></td><td>编译 Mac</td><td>执行 <code>./gradlew :app:assembleDebug</code> 或指定模块/变体任务。</td><td>远端生成 APK/AAB，Gradle 缓存在编译 Mac 保留。</td></tr>
+            <tr><td><span class="phase phase-now">4 回传</span></td><td>编译 Mac → 办公 Mac</td><td>脚本拉回最新 APK 到 <code>~/Downloads/android-artifacts</code>。</td><td>办公 Mac 本地存在本轮构建产物。</td></tr>
+            <tr><td><span class="phase phase-now">5 安装调试</span></td><td>办公 Mac</td><td><code>adb install</code> 到手边真机，Android Studio 选择 Attach Debugger 或看 Logcat。</td><td>手机运行的是刚才远程编译出的包。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="sync-design">同步策略</h2>
+    <section class="summary decision">
+      <h3>推荐策略：P0 用 rsync 按需同步</h3>
+      <p>办公 Mac 是源码主工作区，编译 Mac 是可覆盖的远程镜像。初版每次远程编译前做一次 <code>rsync</code> 增量同步，这样未提交改动、新增资源文件、临时 mock 配置都能参与构建，不需要为了跑一次包而 commit。只有在大工程扫描明显拖慢时，才把同步层升级成 Mutagen 单向后台同步。</p>
+    </section>
+    <section class="issue">
+      <h3>同步目录的基本规则</h3>
+      <div class="grid">
+        <div class="mini"><strong>同步进去</strong>源码、资源、Gradle 脚本、工程内配置、未提交改动、未跟踪但需要参与编译的文件。</div>
+        <div class="mini"><strong>不要同步</strong><code>.gradle</code>、各模块 <code>build</code>、<code>.idea</code>、<code>local.properties</code>、机器私有 SDK 路径、IDE 索引。</div>
+        <div class="mini"><strong>谨慎处理</strong><code>.git</code> 不从办公 Mac 同步过去；编译 Mac 可以保留自己的 clone 元数据，用于构建脚本读取 Git 信息。</div>
+        <div class="mini"><strong>单独放置</strong>签名文件、证书、内部账号配置放在编译 Mac 固定路径，例如 <code>~/android-build-secrets</code>，不要放进可被 <code>--delete</code> 覆盖的镜像目录。</div>
+      </div>
+    </section>
+
+    <h2 id="implementation">实施步骤</h2>
+    <section class="issue">
+      <h3>阶段化落地</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>阶段</th><th>目标</th><th>实施动作</th><th>验收方式</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="phase phase-now">P0</span></td><td>两台 Mac 能稳定互通</td><td>开启编译 Mac 的远程登录；办公 Mac 配置 SSH 免密和稳定别名。</td><td><code>ssh buildmac hostname</code> 成功，rsync 512MB 测速可接受。</td></tr>
+            <tr><td><span class="phase phase-now">P0</span></td><td>编译 Mac 能独立构建</td><td>安装 JDK、Android SDK、Gradle 所需环境；准备 <code>local.properties</code>、签名和公司内部配置。</td><td>在编译 Mac 上手动执行一次 <code>./gradlew :app:assembleDebug</code> 成功。</td></tr>
+            <tr><td><span class="phase phase-now">P0</span></td><td>办公 Mac 能一键远程编译</td><td>先使用 rsync 方案，配置 <code>.remote-buildignore</code> 和编译脚本；先跑 debug 包。</td><td>办公 Mac 运行脚本后，APK 被拉回并安装到本地手机。</td></tr>
+            <tr><td><span class="phase phase-later">P1</span></td><td>适配多模块、多 flavor、split APK</td><td>把 <code>MODULE</code>、<code>TASK</code>、<code>APK_GLOB</code> 参数化；split APK 改为 <code>adb install-multiple</code>。</td><td>常用业务模块和变体都能通过脚本构建安装。</td></tr>
+            <tr><td><span class="phase phase-later">P1</span></td><td>适配大工程多仓</td><td>按仓库或 workspace 根目录定义同步范围；确认 <code>--delete</code> 不会删除远端私有文件。</td><td>多仓未提交改动能进入远端构建，且远端 secrets 不受影响。</td></tr>
+            <tr><td><span class="phase phase-later">P1</span></td><td>优化同步体验</td><td>如果 rsync 同步仍慢，升级到 Mutagen 单向同步；构建前执行 <code>mutagen sync flush</code>。</td><td>构建前等待时间降低，冲突和误删可控。</td></tr>
+            <tr><td><span class="phase phase-risk">P2</span></td><td>加 Gradle Remote Cache</td><td>在编译 Mac 启动 Build Cache Node；编译 Mac 或 CI 写入，办公 Mac 默认读取。</td><td>确认 cache 命中确实能缩短本地轻量构建或 IDE sync 相关任务。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="scripts">可用脚本</h2>
+    <section class="issue">
+      <h3>1. 办公 Mac 的 SSH 配置</h3>
+      <p>先把编译 Mac 配成稳定别名。若同局域网支持 Bonjour，<code>buildmac.local</code> 可直接使用；否则替换成公司内网固定 IP 或公司批准的主机名。</p>
+      <div class="code-wrap">
+        <pre><code class="language-text">Host buildmac
+  HostName buildmac.local
+  User mark
+  ServerAliveInterval 30
+  ServerAliveCountMax 4
+  ControlMaster auto
+  ControlPath ~/.ssh/cm-%r@%h:%p
+  ControlPersist 10m</code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+    </section>
+
+    <section class="issue">
+      <h3>2. <code>.remote-buildignore</code> 示例</h3>
+      <p>这个文件放在办公 Mac 的项目根目录，用来保护远端缓存、Git 元数据和机器私有配置。注意不要使用 <code>--delete-excluded</code>，否则可能把远端本应保留的 <code>.git</code>、<code>.gradle</code> 或 secrets 删掉。</p>
+      <div class="code-wrap">
+        <pre><code class="language-text">.git/
+.gradle/
+**/build/
+.idea/
+.DS_Store
+local.properties
+captures/
+*.iml
+*.apk
+*.aab
+*.keystore
+*.jks
+node_modules/</code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+    </section>
+
+    <section class="issue">
+      <h3>3. rsync 版本：一键同步、编译、拉包、安装</h3>
+      <p>这是基于 rsync 的最小可落地版本。先从 debug 包跑通，再按你的真实模块名、flavor 和 APK 输出目录改 <code>MODULE</code>、<code>TASK</code>、<code>APK_GLOB</code>。</p>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt">#!/usr/bin/env zsh</span>
+<span class="tok-fn">set</span> -euo pipefail
+
+<span class="tok-fn">REMOTE</span>=<span class="tok-str">&quot;${REMOTE:-buildmac}&quot;</span>
+<span class="tok-fn">LOCAL_ROOT</span>=<span class="tok-str">&quot;${LOCAL_ROOT:-$PWD}&quot;</span>
+<span class="tok-fn">REMOTE_ROOT</span>=<span class="tok-str">&quot;${REMOTE_ROOT:-~/remote-work/android-project}&quot;</span>
+<span class="tok-fn">MODULE</span>=<span class="tok-str">&quot;${MODULE:-app}&quot;</span>
+<span class="tok-fn">TASK</span>=<span class="tok-str">&quot;${TASK:-:${MODULE}:assembleDebug}&quot;</span>
+<span class="tok-fn">APK_GLOB</span>=<span class="tok-str">&quot;${APK_GLOB:-${MODULE}/build/outputs/apk/debug/*.apk}&quot;</span>
+<span class="tok-fn">LOCAL_APK_DIR</span>=<span class="tok-str">&quot;${LOCAL_APK_DIR:-$HOME/Downloads/android-artifacts}&quot;</span>
+<span class="tok-fn">DRY_RUN</span>=<span class="tok-str">&quot;${DRY_RUN:-0}&quot;</span>
+
+<span class="tok-fn">mkdir</span> -p <span class="tok-str">&quot;$LOCAL_APK_DIR&quot;</span>
+<span class="tok-key">if</span> [[ ! -f <span class="tok-str">&quot;$LOCAL_ROOT/.remote-buildignore&quot;</span> ]]; <span class="tok-key">then</span>
+  <span class="tok-fn">echo</span> <span class="tok-str">&quot;缺少 $LOCAL_ROOT/.remote-buildignore&quot;</span>
+  <span class="tok-fn">exit</span> 1
+<span class="tok-key">fi</span>
+
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;📤 同步源码到远端...&quot;</span>
+<span class="tok-fn">ssh</span> <span class="tok-str">&quot;$REMOTE&quot;</span> <span class="tok-str">&quot;mkdir -p $REMOTE_ROOT&quot;</span>
+<span class="tok-fn">rsync_args</span>=(<span class="tok-str">-az</span> <span class="tok-str">--delete-delay</span> <span class="tok-str">--human-readable</span> <span class="tok-str">--info=stats1,progress2</span>)
+<span class="tok-key">if</span> [[ <span class="tok-str">&quot;$DRY_RUN&quot;</span> == <span class="tok-str">&quot;1&quot;</span> ]]; <span class="tok-key">then</span>
+  <span class="tok-fn">rsync_args</span>+=(<span class="tok-str">--dry-run</span>)
+<span class="tok-key">fi</span>
+<span class="tok-fn">rsync</span> <span class="tok-str">&quot;${rsync_args[@]}&quot;</span> \
+  --exclude-from=<span class="tok-str">&quot;$LOCAL_ROOT/.remote-buildignore&quot;</span> \
+  <span class="tok-str">&quot;$LOCAL_ROOT/&quot;</span> <span class="tok-str">&quot;$REMOTE:$REMOTE_ROOT/&quot;</span>
+<span class="tok-key">if</span> [[ <span class="tok-str">&quot;$DRY_RUN&quot;</span> == <span class="tok-str">&quot;1&quot;</span> ]]; <span class="tok-key">then</span>
+  <span class="tok-fn">echo</span> <span class="tok-str">&quot;DRY_RUN=1，仅预览同步内容，未执行编译。&quot;</span>
+  <span class="tok-fn">exit</span> 0
+<span class="tok-key">fi</span>
+
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;🔨 远程编译...&quot;</span>
+<span class="tok-fn">ssh</span> <span class="tok-str">&quot;$REMOTE&quot;</span> <span class="tok-str">&quot;cd $REMOTE_ROOT &amp;&amp; ./gradlew $TASK&quot;</span>
+
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;📦 拉回构建产物...&quot;</span>
+<span class="tok-fn">remote_apk</span>=$(ssh <span class="tok-str">&quot;$REMOTE&quot;</span> <span class="tok-str">&quot;cd $REMOTE_ROOT &amp;&amp; ls -t $APK_GLOB 2>/dev/null | head -1&quot;</span>)
+<span class="tok-key">if</span> [[ -z <span class="tok-str">&quot;$remote_apk&quot;</span> ]]; <span class="tok-key">then</span>
+  <span class="tok-fn">echo</span> <span class="tok-str">&quot;❌ 未找到 APK，检查构建是否成功&quot;</span>
+  <span class="tok-fn">exit</span> 1
+<span class="tok-key">fi</span>
+<span class="tok-fn">rsync</span> -P <span class="tok-str">&quot;$REMOTE:$REMOTE_ROOT/$remote_apk&quot;</span> <span class="tok-str">&quot;$LOCAL_APK_DIR/&quot;</span>
+<span class="tok-fn">local_apk</span>=<span class="tok-str">&quot;$LOCAL_APK_DIR/$(basename &quot;</span>$remote_apk<span class="tok-str">&quot;)&quot;</span>
+
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;📲 安装到真机...&quot;</span>
+<span class="tok-fn">adb_target</span>=()
+<span class="tok-key">if</span> [[ -n <span class="tok-str">&quot;${ADB_SERIAL:-}&quot;</span> ]]; <span class="tok-key">then</span>
+  <span class="tok-fn">adb_target</span>=(<span class="tok-str">-s</span> <span class="tok-str">&quot;$ADB_SERIAL&quot;</span>)
+<span class="tok-key">fi</span>
+<span class="tok-fn">adb</span> <span class="tok-str">&quot;${adb_target[@]}&quot;</span> install -r -d <span class="tok-str">&quot;$local_apk&quot;</span>
+<span class="tok-fn">echo</span> <span class="tok-str">&quot;✅ 完成！&quot;</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+      <p class="muted">首次运行建议加 <code>DRY_RUN=1</code> 预览将同步和删除的文件。如果你的项目输出多个 split APK，把最后一段改为拉回整个 APK 目录并执行 <code>adb install-multiple base.apk config*.apk</code>。如果输出 AAB，先在远端生成 universal APK 或走你们已有的打包链路。若安装时报 <code>INSTALL_FAILED_UPDATE_INCOMPATIBLE</code>，统一两台机器的 debug keystore，或首次卸载旧包后再安装。</p>
+    </section>
+
+    <section class="issue">
+      <h3>4. 编译 Mac 常久在线与环境验证</h3>
+      <p>编译 Mac 需要开启 <code>系统设置 → 通用 → 共享 → 远程登录</code>，并避免睡眠中断远程构建。</p>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt"># 编译 Mac：只做一次，避免睡眠中断远程构建</span>
+<span class="tok-fn">sudo</span> pmset -a sleep <span class="tok-num">0</span>
+<span class="tok-fn">sudo</span> pmset -a disksleep <span class="tok-num">0</span>
+<span class="tok-fn">sudo</span> pmset -a displaysleep <span class="tok-num">30</span>
+
+<span class="tok-cmt"># 开启 SSH 后，在办公 Mac 上验证</span>
+<span class="tok-fn">ssh</span> buildmac <span class="tok-str">&#x27;hostname; sw_vers; java -version; adb version || true&#x27;</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+    </section>
+
+    <h2 id="network">网络验证</h2>
+    <section class="issue">
+      <h3>先测互通，再谈体验</h3>
+      <p>现在 SSH 已经可达，网络验证的重点变成两件事：连接是否稳定、增量同步是否足够快。第一次全量同步慢可以接受，之后每次只传变更文件；如果增量仍慢，先收紧 ignore 和同步范围，再考虑 Mutagen。</p>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt">#!/usr/bin/env zsh</span>
+<span class="tok-fn">set</span> -euo pipefail
+
+<span class="tok-fn">REMOTE</span>=<span class="tok-str">&quot;${1:-buildmac}&quot;</span>
+<span class="tok-fn">SIZE_MB</span>=<span class="tok-str">&quot;${SIZE_MB:-512}&quot;</span>
+<span class="tok-fn">tmp</span>=<span class="tok-str">&quot;/tmp/rsync-speed-test-${SIZE_MB}m.bin&quot;</span>
+
+<span class="tok-fn">ssh</span> <span class="tok-str">&quot;$REMOTE&quot;</span> <span class="tok-str">&quot;mkfile ${SIZE_MB}m $tmp&quot;</span>
+<span class="tok-fn">time</span> rsync -P <span class="tok-str">&quot;$REMOTE:$tmp&quot;</span> /tmp/
+<span class="tok-fn">ssh</span> <span class="tok-str">&quot;$REMOTE&quot;</span> <span class="tok-str">&quot;rm -f $tmp&quot;</span>
+<span class="tok-fn">rm</span> -f <span class="tok-str">&quot;$tmp&quot;</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>结果</th><th>判断</th><th>下一步</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="ok">SSH 直连成功，rsync 稳定</span></td><td>P0 方案可用</td><td>直接使用 <code>buildmac.local</code>、固定 IP 或公司内 DNS 名。</td></tr>
+            <tr><td><span class="warn">rsync 很慢</span></td><td>第一次全量同步可能正常；增量仍慢才是问题</td><td>检查排除规则，避免同步 <code>build</code>、<code>.gradle</code>、大日志和缓存。</td></tr>
+            <tr><td><span class="warn">大 workspace 扫描慢</span></td><td>传输量小但每次扫描耗时</td><td>按子仓/模块缩小同步范围，或升级 Mutagen 单向同步。</td></tr>
+            <tr><td><span class="danger">SSH 连接抖动</span></td><td>同步中断或构建输出断开</td><td>先调 <code>ServerAliveInterval</code> 和固定网络入口；不要开放公网 SSH/VNC。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="debugging">调试闭环</h2>
+    <section class="issue">
+      <h3>本地手机仍由办公 Mac 管</h3>
+      <p>远程编译出的 debug APK 安装到办公 Mac 手边的手机后，调试仍在办公 Mac 完成。Android Studio 里可以使用 Attach Debugger to Android Process；前提是本地源码和远端编译用的源码一致，APK 是 debuggable 变体，并且签名与已安装包兼容。</p>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt"># 办公 Mac：安装远程编译产物后，本地看日志和挂调试器</span>
+<span class="tok-fn">adb</span> devices
+<span class="tok-fn">adb</span> install -r -d ~/Downloads/android-artifacts/app-debug.apk
+<span class="tok-fn">adb</span> shell am start -n com.example.app/.MainActivity
+<span class="tok-fn">adb</span> logcat | grep -i <span class="tok-str">&#x27;your-package-or-tag&#x27;</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+      <div class="grid">
+        <div class="mini"><strong>断点调试</strong>使用 Android Studio 的 Attach Debugger。不要用本地 Run 按钮触发本地 assemble，除非你明确想本地构建。</div>
+        <div class="mini"><strong>Logcat</strong>办公 Mac 直接通过本地 ADB 看日志，和普通开发没有区别。</div>
+        <div class="mini"><strong>Debug 签名</strong>两台机器最好使用同一个 debug keystore；否则覆盖安装可能因为签名不一致失败。</div>
+        <div class="mini"><strong>IDE 索引</strong>办公 Mac 仍需要能打开项目和完成 Gradle sync。远程编译不能完全替代 IDE 对工程模型的理解。</div>
+        <div class="mini"><strong>生成代码</strong>如果 Data Binding、KSP、APT 等生成代码导致本地 IDE 报红，偶尔本地 sync 或拉回必要生成源目录，但不要把整个远端 build 目录当成常规同步对象。</div>
+      </div>
+    </section>
+
+    <h2 id="multirepo">多仓工程处理</h2>
+    <section class="issue">
+      <h3>如果是 MGIT / 多仓 Android 工程</h3>
+      <p>多仓场景的原则不变：办公 Mac 仍是编辑入口，编译 Mac 仍是镜像。但同步范围要更明确，避免把某个子仓的缓存、IDE 文件或远端私有配置误删。</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>场景</th><th>建议</th><th>原因</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>壳工程 + 多个业务仓</td><td>优先同步整个 workspace 根目录，但用统一 ignore 保护 <code>.git</code>、<code>build</code>、<code>.gradle</code>。</td><td>最少脚本分支，能覆盖未提交改动和新增文件。</td></tr>
+            <tr><td>只改少数子仓</td><td>后续可优化成按子仓 rsync，减少同步扫描时间。</td><td>大工程首次扫描可能慢，按子仓能减少无关目录遍历。</td></tr>
+            <tr><td>构建依赖 Git 元数据</td><td>编译 Mac 保留自己的 clone 和 <code>.git</code>，办公 Mac 同步时排除 <code>.git</code>。</td><td>避免传输 Git 内部对象，同时让远端构建脚本仍可读取 HEAD。</td></tr>
+            <tr><td>版本号依赖 Git 状态</td><td>远端 clone 的 HEAD 要和办公 Mac 当前基线一致；dirty 状态、分支名或 commit id 可通过 Gradle 参数显式传入。</td><td>避免 APK 里写入的版本信息来自远端旧 HEAD。</td></tr>
+            <tr><td>需要本地源码模式/overlay 配置</td><td>把编译 Mac 的源码模式配置视为机器私有配置，单独维护，不随办公 Mac 的 IDE 配置同步。</td><td>避免两台机器 SDK 路径、IDE 设置、local.properties 相互污染。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="risks">风险与回退</h2>
+    <section class="issue">
+      <h3>主要风险</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>风险</th><th>影响</th><th>规避方式</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>--delete</code> 删除远端私有文件</td><td>签名、local.properties、远端临时配置丢失</td><td>远端 secrets 放镜像目录外；ignore 保护机器私有文件；不要用 <code>--delete-excluded</code>。</td></tr>
+            <tr><td>本地源码与安装 APK 不一致</td><td>断点错位、Attach Debugger 表现异常</td><td>每次构建前先同步；脚本一条链路完成同步、编译、安装。</td></tr>
+            <tr><td>debug 签名不一致</td><td>覆盖安装失败，或必须卸载导致数据丢失</td><td>统一 debug keystore；不统一时只在首次切换时手动卸载旧包。</td></tr>
+            <tr><td>远端 Git 元数据滞后</td><td>版本号、commit id、渠道脚本读取到旧信息</td><td>远端保留 clone 但同步基线 commit；必要时把版本信息作为 Gradle 参数传入。</td></tr>
+            <tr><td>远端 Gradle 环境不一致</td><td>远端能编/本地不能编，或反过来</td><td>固定 JDK、Android SDK、Gradle 参数；把环境验证放进脚本前置检查。</td></tr>
+            <tr><td>网络不稳定</td><td>同步中断、构建等待变长</td><td>优先使用公司内网固定入口；仍慢时缩小同步范围或使用 Mutagen 单向同步。</td></tr>
+            <tr><td>IDE 生成代码报红</td><td>办公 Mac 编辑体验变差</td><td>办公 Mac 保留轻量 Gradle sync；必要时本地生成 IDE 所需代码，不跑完整 assemble。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <details>
+      <summary>备选同步工具取舍（点击展开）</summary>
+      <div class="details-body">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>工具</th><th>适用场景</th><th>不适合点</th></tr>
+            </thead>
+            <tbody>
+              <tr style="background: #ecfdf5;"><td><code>rsync</code></td><td>先落地最简单。每次构建前同步一次，行为可见、可控、可回退。<strong>P0 推荐</strong></td><td>不是实时同步；大 workspace 每次扫描可能有成本。</td></tr>
+              <tr><td><strong>Mutagen</strong></td><td>远程开发持续单向同步，适合高频小改动和 SSH 稳定场景。</td><td>需要额外配置 ignore 和冲突策略；先用 rsync 跑通后再升级更稳。</td></tr>
+              <tr><td>Syncthing</td><td>适合同步文档、资源、工具目录，或非构建工作区的文件共享。</td><td>双向同步容易产生冲突；不建议直接承担 Gradle workspace 的主要同步职责。</td></tr>
+              <tr><td>SMB/文件共享</td><td>适合共享最终 APK、AAB、mapping、报告。</td><td>不建议把 Android 项目放在共享盘上直接编译，IO、缓存和文件监听都容易拖慢。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+
+    <section class="summary">
+      <h3>回退策略</h3>
+      <ol>
+        <li><b>脚本失败：</b>先在编译 Mac 进入远端镜像目录手动跑 <code>./gradlew</code>，确认是同步问题还是构建问题。</li>
+        <li><b>同步异常：</b>去掉 <code>--delete</code> 跑一次，只同步增量，不删除远端文件；排查 ignore 规则。</li>
+        <li><b>网络异常：</b>先用 <code>ssh -vv buildmac</code> 和 rsync 测速定位问题；不要开放公网 SSH/VNC。</li>
+        <li><b>远端状态污染：</b>删除远端镜像目录重新从办公 Mac 同步；secrets 和 SDK 配置必须在镜像目录外，所以这一步不应伤到关键配置。</li>
+        <li><b>Mutagen 冲突：</b>用 <code>mutagen sync list</code> 查看冲突文件，手动解决后 <code>mutagen sync resume</code>。</li>
+      </ol>
+    </section>
+
+    <h2 id="sources">证据来源</h2>
+    <section class="summary">
+      <p>本文基于当前对话中的使用场景和以下公开官方资料整理，未假设具体公司仓库、负责人、卡片号或上线计划。</p>
+      <ul>
+        <li>Apple Support：<a href="https://support.apple.com/guide/mac-help/allow-a-remote-computer-to-access-your-mac-mchlp1066/mac">Allow a remote computer to access your Mac / Remote Login</a></li>
+        <li>rsync 官方手册：<a href="https://download.samba.org/pub/rsync/rsync.1">rsync(1) manpage</a></li>
+        <li>Android Developers：<a href="https://developer.android.com/tools/adb">Android Debug Bridge 文档</a></li>
+        <li>Mutagen：<a href="https://mutagen.io/documentation/synchronization">File synchronization / synchronization modes</a>、<a href="https://mutagen.io/documentation/synchronization/ignores">Ignores</a></li>
+        <li>Gradle：<a href="https://docs.gradle.org/current/userguide/build_cache.html">Build Cache</a></li>
+        <li>Gradle Build Cache Node：<a href="https://github.com/gradle/gradle-build-cache-node">GitHub Repository</a></li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.layout-with-toc').forEach(layout => {
+    const btn = layout.querySelector('.toc-toggle');
+    if (!btn) return;
+    const icon = btn.querySelector('.toc-toggle-icon');
+    const setCollapsed = collapsed => {
+      layout.classList.toggle('toc-collapsed', collapsed);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', collapsed ? '展开目录' : '收起目录');
+      btn.title = collapsed ? '展开目录' : '收起目录';
+      if (icon) icon.textContent = collapsed ? '›' : '‹';
+    };
+    btn.addEventListener('click', () => {
+      setCollapsed(!layout.classList.contains('toc-collapsed'));
+    });
+  });
+
+  const toast = document.getElementById('toast');
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.closest('.code-wrap').querySelector('pre').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '已复制';
+        btn.classList.add('copied');
+        if (toast) {
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 1500);
+        }
+        setTimeout(() => {
+          btn.textContent = '复制';
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+  });
+</script>
+</body>
+</html>
