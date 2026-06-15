@@ -1,3 +1,8 @@
+## [0.17.1] - 2026-06-15
+### Changed
+- obsidian: 将 Markdown 表格前后必要空行列为紧凑排版规则的明确例外，避免表格紧跟引导句时在 Obsidian/GFM 中无法正常渲染
+- manifest: 插件版本升级到 `0.17.1`
+
 ## [0.17.0] - 2026-06-10
 ### Added
 - datapilot-sql-runner: 新增 DataPilot SQL 跑数闭环 skill，用于提交单条或多条 SQL、处理 Chrome 登录态和 Monaco 编辑器粘贴、回收任务 ID 并汇报排队/执行状态
