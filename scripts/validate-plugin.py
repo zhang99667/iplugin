@@ -513,7 +513,7 @@ def check_commands(skill_names: set[str]) -> CheckResult:
         if not scan_file.is_file():
             continue
         for command_name in sorted(slash_command_candidates(scan_file)):
-            if command_name not in commands:
+            if command_name not in commands and command_name not in skill_names:
                 result.details.append(
                     f"{rel(scan_file)} mentions /{command_name}, but {rel(COMMANDS_DIR / (command_name + '.md'))} does not exist"
                 )

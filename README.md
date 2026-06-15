@@ -30,6 +30,8 @@ iplugin/
 │   ├── session-rename/     # Claude Code 会话自动命名
 │   └── <name>/references/  # 按需读取的长规则、示例和模板
 ├── commands/               # slash command 入口
+├── tools/                  # 独立 CLI / 自动化工具子项目，不自动进入插件 manifest
+│   └── z-agent/             # Codex / Claude Code 会话恢复与自动化编排
 ├── versions/               # 版本规划与决策文档
 ├── scripts/                # 共享脚本和提交前校验
 ├── hooks/                  # 全局横切 hooks，区分 Claude/Codex 配置
@@ -48,7 +50,7 @@ iplugin/
 | `ask-user-question` | 把阻塞性决策、提交前确认、风险操作确认整理成结构化选择题，交给 AskUserQuestion / request_user_input | `/ask-user-question 这个 UI 改动应该怎么做`、"提交前让我确认" |
 | `best-of-web` | 仅通过 `/best-of-web` 命令触发；联网搜索并按来源质量分层核验公开资料，再综合成可引用、可执行的回答 | `/best-of-web 结合互联网上最优秀的内容梳理这个主题` |
 | `delegated-search` | 将发散搜索、证据收集、多来源核验和高输出操作前置判断拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来"、"先判断能不能拆给子 Agent" |
-| `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，长文档目录为浮动侧栏且可整体收起 | "整理成 HTML 报告"、"/htmlreport" |
+| `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，长文档目录为浮动侧栏且可整体收起 | "整理成 HTML 报告"、`/html-report` |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |
@@ -63,11 +65,21 @@ iplugin/
 
 ## Commands
 
-| 命令 | 用途 |
-|------|------|
-| `/ask-user-question` | 把当前阻塞性决策交给结构化询问机制，让用户选择后再继续执行 |
-| `/best-of-web` | 显式调用 `best-of-web` skill，联网搜索并精选整合互联网上的高质量内容 |
-| `/htmlreport` | 把当前回答、上一轮回答或提供的上下文整理成独立 HTML 报告 |
+以下 slash command 已整合进同名 skill，输入命令名即可触发对应 skill：
+
+| 命令 | 对应 skill |
+|------|-----------|
+| `/ask-user-question` | `ask-user-question` |
+| `/best-of-web` | `best-of-web` |
+| `/html-report` | `html-report` |
+
+## Tools
+
+`tools/` 放独立 CLI / 自动化工具子项目，不作为 skill 自动触发，也不默认写入 Claude Code / Codex 插件 manifest。每个 tool 自己维护 `README.md`、`CHANGELOG.md`、`versions/`、`docs/` 和测试。
+
+| 工具 | 用途 | 入口 |
+|------|------|------|
+| `tools/z-agent` | Codex / Claude Code 会话记录、恢复与自动化编排 CLI | `python3 tools/z-agent/src/z_agent/cli.py --help` |
 
 ## 安装
 

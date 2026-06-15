@@ -1,3 +1,8 @@
+## [0.17.2] - 2026-06-15
+### Removed
+- commands: 删除与 skills 重复的 command 文件（htmlreport、ask-user-question、best-of-web），避免被 harness 重复注册为 skill 条目
+- manifest: 插件版本升级到 `0.17.2`
+
 ## [0.17.1] - 2026-06-15
 ### Changed
 - obsidian: 将 Markdown 表格前后必要空行列为紧凑排版规则的明确例外，避免表格紧跟引导句时在 Obsidian/GFM 中无法正常渲染
