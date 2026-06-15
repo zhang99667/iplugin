@@ -27,7 +27,9 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 - 优先级、状态用彩色胶囊标签（P0 红 / P1 橙 / P2 蓝）。
 - 文件路径和行号用 chip 样式（缩进色块 + 等宽字体）。
 - 行内代码用灰色小反引号样式（`<code>` 标签，`#f1f5f9` 底 + `#334155` 字色）。
+- 从 Markdown 内容生成 HTML 时，反引号包裹的短标识必须变成真实 `<code>` 标签，例如 `` `d` `` 输出为 `<code>d</code>`，不要把原始反引号文本留在正文里。
 - 多行代码用接近 IDE 的深绿色背景块（`#10231f`），旁边放 copy 按钮，并对关键字、字符串、数字、注释等做颜色区分；默认采用 JetBrains 深色主题观感，关键字偏玫红、类型/常量偏黄绿、注释偏低饱和绿色。
+- 使用 `tok-*` span 时必须同时带上 `.tok-key`、`.tok-str`、`.tok-num`、`.tok-cmt`、`.tok-fn`、`.tok-var`、`.tok-type` 等 CSS 定义；否则浏览器里会退化成纯文本。
 - 长日志、次要章节用 `<details><summary>` 默认折叠。
 - 长文档使用旧版左侧浮动目录固定导航，快速跳转到各章节；目录默认展开，并且必须能通过点击按钮收起/展开整个目录侧栏。
 - 中文说明简洁准确，突出问题、影响和修复方案。
@@ -89,7 +91,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 优先级：
 
-1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时优先用 `scripts/highlight_code.py --lang diff --diff-view` 生成 old/new 行号视图；没有脚本时再手工使用绿色 `+` 表示新增，红色 `-` 表示删除，灰色空白表示上下文。
+1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，保持 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header 的固定样式。不要手写 `.diff-card`，也不要把 diff 做成普通 `language-diff` 代码块。
 2. **Before / After 双栏**：适合结构变化较大、需要对比旧方案和新方案。左栏标题写“修改前”，右栏标题写“修改后”，两栏都必须只保留必要片段。
 3. **新增代码块**：适合纯新增文件、纯新增方法或纯新增配置。标题和 badge 必须写“新增”，左侧使用绿色竖线，不要让它看起来像普通代码摘录。
 4. **删除代码块**：适合删除旧逻辑。标题和 badge 必须写“删除”，左侧使用红色竖线，并说明删除原因或替代逻辑。
@@ -109,25 +111,23 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 - 上下文行：中性背景、左侧空白或 `·`，避免用强颜色。
 - 如果没有真实旧代码，只能展示新增方案，明确标成“建议新增”，不要写成“修改”。
 
-示例结构：
+真实 unified diff 示例结构应与 `highlight_code.py --lang diff --diff-view` 输出保持一致：
 
 ```html
-<section class="diff-card">
+<section class="diff-card diff-viewer">
   <div class="diff-header">
-    <span class="change-chip change-mod">修改</span>
-    <a class="path file-link" href="idea://open?file=/abs/path/SKILL.md&amp;line=5">/abs/path/SKILL.md:5</a>
-    <span class="muted">收窄/放宽触发描述，避免模型误判。</span>
+    <span class="change-chip change-mod">代码差异</span>
+    <span class="muted">统一 diff · old/new 行号</span>
   </div>
-  <table class="diff-table" aria-label="代码变更">
-    <tr class="diff-line diff-del">
-      <td class="diff-gutter">-</td><td class="diff-num">5</td>
-      <td class="diff-code"><del>description: 仅当用户明确要求...</del></td>
-    </tr>
-    <tr class="diff-line diff-add">
-      <td class="diff-gutter">+</td><td class="diff-num">5</td>
-      <td class="diff-code"><ins>description: 当任务上下文显示...</ins></td>
-    </tr>
-  </table>
+  <div class="diff-scroll">
+    <table class="diff-table" aria-label="代码差异">
+      <tbody>
+        <tr class="diff-line diff-hunk"><td class="diff-gutter"></td><td class="diff-num diff-old-num"></td><td class="diff-num diff-new-num"></td><td class="diff-code">@@ -5,1 +5,1 @@</td></tr>
+        <tr class="diff-line diff-del"><td class="diff-gutter">-</td><td class="diff-num diff-old-num">5</td><td class="diff-num diff-new-num"></td><td class="diff-code">description: 旧描述</td></tr>
+        <tr class="diff-line diff-add"><td class="diff-gutter">+</td><td class="diff-num diff-old-num"></td><td class="diff-num diff-new-num">5</td><td class="diff-code">description: 新描述</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 ```
 
@@ -152,28 +152,27 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 ## ASCII 架构图与代码块
 
-代码块不能只是深色背景加纯文本，也不要靠模型手工包大量 `tok-*` span。报告中的多行代码、SQL、XML、JSON、配置片段和 diff 必须使用 `scripts/highlight_code.py` 生成安全的 `.code-wrap` 片段。最终 HTML 必须是静态离线输出，不在浏览器运行 highlight.js、Prism、Shiki，也不从 CDN 拉取资源：
+代码块不能只是深色背景加纯文本，也不要靠模型手工包大量 `tok-*` span。报告中的多行代码、SQL、XML、JSON、配置片段和 diff 必须使用 `scripts/highlight_code.py` 生成安全 HTML 片段：普通代码输出 `.code-wrap`，真实 unified diff 输出 `.diff-card.diff-viewer`。最终 HTML 必须是静态离线输出，不在浏览器运行 highlight.js、Prism、Shiki，也不从 CDN 拉取资源：
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
 python3 skills/html-report/scripts/highlight_code.py --lang sql query.sql
 python3 skills/html-report/scripts/highlight_code.py --lang json payload.json
 python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin snippet.kt
-python3 skills/html-report/scripts/highlight_code.py --lang diff patch.diff
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
-脚本会先转义 HTML，再做静态高亮，并输出可直接嵌入报告的 `<div class="code-wrap">...</div>`。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认 `--engine builtin` 零依赖输出 `tok-*` class；`--engine auto` 会在本机可用 Pygments 模块或 `pygmentize` CLI 时改用 Pygments inline style 预渲染，否则自动回退 builtin；`--engine pygments` 则要求 Pygments 可用。不要在生成报告时静默安装 Pygments；只有用户明确要求安装/增强高亮时，才征得确认后安装。Shiki、highlight.js、Prism 如需使用，也必须只在生成阶段本地预渲染，不能把外部 JS/CSS 依赖带进最终报告。当输入是真实 unified diff 且需要展示修改点时，必须使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。
+脚本会先转义 HTML，再做静态高亮，并输出可直接嵌入报告的 HTML 片段。普通代码输出 `<div class="code-wrap">...</div>`；真实 unified diff 必须使用 `--diff-view` 输出 `.diff-card.diff-viewer`，不要使用普通 `language-diff` 代码块。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认 `--engine builtin` 零依赖输出 `tok-*` class；`--engine auto` 会在本机可用 Pygments 模块或 `pygmentize` CLI 时改用 Pygments inline style 预渲染，否则自动回退 builtin；`--engine pygments` 则要求 Pygments 可用。不要在生成报告时静默安装 Pygments；只有用户明确要求安装/增强高亮时，才征得确认后安装。Shiki、highlight.js、Prism 如需使用，也必须只在生成阶段本地预渲染，不能把外部 JS/CSS 依赖带进最终报告。当输入是真实 unified diff 且需要展示修改点时，必须使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。
 
 脚本不可用时，不要直接交付未高亮代码块；先修正脚本路径、临时文件或语言参数并重试。确实无法运行脚本时，才手工使用以下规则：
 
 - 优先用 `<span class="tok-key">`、`tok-str`、`tok-num`、`tok-cmt`、`tok-fn`、`tok-var` 等 class 标出关键字、字符串、数字、注释、函数名和变量名。
 - 不需要完整编译级语法分析，但至少要让读者一眼区分注释、字符串、关键逻辑和普通标识符。
-- 差异代码可额外使用 `tok-add` / `tok-del` 标识新增和删除行。
+- 差异代码不要手工改成普通代码块；只有在脚本路径、临时文件和语言参数都修复后仍无法运行时，才按 `.diff-card.diff-viewer` 的结构手工补齐固定样式。
 - 短代码块只高亮确定的核心 token；如果不确定，保持转义后的纯文本更好。
 - 代码内容必须先转义 HTML，再包高亮 span，避免 `<`、`>`、`&` 破坏页面。
 - 多行代码块必须放在 `.code-wrap` 容器中，使用 `<pre><code class="language-xxx">...</code></pre>`，右上角提供复制按钮。
-- 完成前运行 `scripts/check_html_report.py`。支持高亮的语言应包含至少一种 `tok-*` token 或 Pygments inline style；`text`、日志和纯文本只要求已转义并包在 `.code-wrap` 中。
+- 完成前运行 `scripts/check_html_report.py`。支持高亮的语言应包含至少一种 `tok-*` token 或 Pygments inline style；使用 `tok-*` 时还必须有对应 CSS 定义；`text`、日志和纯文本只要求已转义并包在 `.code-wrap` 中。
 
 ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让浏览器自动换行破坏结构。ASCII 图使用专用浅色容器，例如 `<pre class="ascii-diagram">...</pre>`，样式必须包含等宽字体、`white-space: pre`、`overflow-x: auto`、合适行高和横向滚动。
 

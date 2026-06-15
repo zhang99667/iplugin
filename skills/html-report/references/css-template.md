@@ -182,9 +182,10 @@
   .diff-card {
     margin: 14px 0;
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: 1px solid #cbd5e1;
     border-radius: 12px;
     background: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
   }
   .diff-header {
     display: flex;
@@ -209,6 +210,7 @@
   }
   .diff-gutter, .diff-num {
     width: 42px;
+    min-width: 42px;
     user-select: none;
     text-align: right;
     color: #64748b;
@@ -216,7 +218,8 @@
     border-right: 1px solid #e2e8f0;
   }
   .diff-gutter {
-    width: 26px;
+    width: 28px;
+    min-width: 28px;
     text-align: center;
     font-weight: 800;
   }
@@ -236,13 +239,15 @@
     min-width: 760px;
   }
   .diff-viewer .diff-num {
-    width: 52px;
+    width: 54px;
+    min-width: 54px;
     padding: 1px 8px;
     font-variant-numeric: tabular-nums;
   }
   .diff-viewer .diff-code {
     min-width: 0;
-    padding: 1px 12px;
+    padding: 2px 12px;
+    color: #1e293b;
   }
   .diff-viewer .diff-add .diff-gutter {
     border-left: 5px solid #16a34a;
@@ -255,11 +260,11 @@
   }
   .diff-viewer .diff-add .diff-num,
   .diff-viewer .diff-add .diff-code {
-    background: #e8f5e9;
+    background: #ecfdf3;
   }
   .diff-viewer .diff-del .diff-num,
   .diff-viewer .diff-del .diff-code {
-    background: #fde8e8;
+    background: #fff1f2;
   }
   .diff-viewer .diff-hunk .diff-code,
   .diff-viewer .diff-meta .diff-code {
@@ -372,17 +377,16 @@ python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
 python3 skills/html-report/scripts/highlight_code.py --lang sql query.sql
 python3 skills/html-report/scripts/highlight_code.py --lang json payload.json
 python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin snippet.kt
-python3 skills/html-report/scripts/highlight_code.py --lang diff patch.diff
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
-脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`，常见后缀/别名会映射到这些语言。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`，diff 新增/删除行 `tok-add` / `tok-del`。
+脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`，常见后缀/别名会映射到这些语言。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`。真实 unified diff 不使用普通 `.code-wrap language-diff`，必须走 `--diff-view`。
 
 需要更准确语法覆盖时，使用 `--engine auto` 尝试本机 Pygments 静态预渲染；如果 Pygments 不可用，脚本会回退到 `builtin`。最终报告仍然只包含静态 HTML/CSS/JS，不引入 highlight.js、Prism、Shiki CDN 或外部文件。
 
-展示修改点时必须使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。脚本不可用时先修复并重试；确实无法运行时，才手工高亮确定 token，且必须先转义 HTML。
+展示修改点时必须使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。脚本不可用时先修复并重试；确实无法运行时，才按本模板的 `.diff-card.diff-viewer` 结构手工补齐，且必须先转义 HTML。
 
-涉及代码变更时，优先使用 `.diff-card` + `.diff-table` 展示聚焦 diff。新增、删除、修改、上下文必须有不同视觉状态；行内 token 变化可使用 `<ins>` / `<del>` 或 `.diff-mark-add` / `.diff-mark-del`。
+涉及代码变更时，真实 diff 统一使用 `.diff-card.diff-viewer` + `.diff-table` 展示聚焦 diff。新增、删除、修改、上下文必须有不同视觉状态；行内 token 变化可使用 `<ins>` / `<del>` 或 `.diff-mark-add` / `.diff-mark-del`。不要生成没有 `.diff-viewer` 的手写 `.diff-card`。
 
 ### 2.1 可折叠区域
 

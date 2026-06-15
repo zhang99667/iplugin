@@ -65,9 +65,11 @@
 - 用户使用中文时，报告默认中文。
 - 首屏必须有 TL;DR 或摘要区，让读者不滚动也能知道结论、风险和下一步。
 - 每个问题建议包含：优先级、文件路径、行号范围、问题说明、影响、当前代码、修复方案。
+- Markdown 来源里的行内代码必须转成 `<code>...</code>`，并先做 HTML 转义；不要把 `` `d` ``、`` `support_full_screen` `` 这类原始反引号文本留在正文里。
+- 多行代码如果使用 `tok-*` class 做 builtin 高亮，页面 `<style>` 必须包含对应 `.tok-*` CSS；如果使用 Pygments inline style，则不需要额外 token CSS。
 - 只要报告涉及代码新增、删除或修改，不能只贴“当前代码”和“修复后代码”。必须明确标出每处变更类型：新增、删除、修改、上下文。
 - 修复方案包含代码时，优先展示聚焦 diff；如果用 before/after，也必须在标题或行内标出“修改前/修改后”，并用颜色或标记突出实际变化。
-- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，常见语言映射到 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；Pygments 缺失时不要自动安装，除非用户明确要求；真实 unified diff 使用 `--lang diff --diff-view`。
+- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，常见语言映射到 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`text`。默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；Pygments 缺失时不要自动安装，除非用户明确要求；真实 unified diff 必须使用 `--lang diff --diff-view`，不要用普通 `language-diff` 代码块。
 - 如果代码片段是建议方案而不是已经存在的 git diff，标题写成“建议变更”或“拟修改”，不要伪装成已经发生的提交 diff。
 - 行号可能不准确时，说明基于当前本地源码。
 - 有绝对路径优先绝对路径，没有则用仓库相对路径。
@@ -92,8 +94,8 @@
 - 已判断内容类型：正式文档/分析报告有文档抬头；普通对话转 HTML 没有强行套正式抬头；拿不准时已询问用户。
 - 正式抬头中的文档类型、仓库、任务、负责人、日期、状态等信息都来自用户内容或可靠上下文，没有编造。
 - 行内代码用灰色反引号样式，多行代码用接近 IDE 的深绿色背景块和 token 配色或 Pygments inline style，且每个代码块都有复制按钮。
-- 已运行 `scripts/check_html_report.py`，不存在外部 CSS/JS 依赖、裸 `<pre><code>`、缺少复制按钮、缺少必要静态高亮结构的代码块，且页面包含 viewport、窄屏、横向滚动和打印样式。
-- 涉及代码改动的报告已经提供变更标识：新增行、删除行、修改行、上下文行可区分；没有把旧代码和新代码混在一起。
+- 已运行 `scripts/check_html_report.py`，不存在外部 CSS/JS 依赖、未渲染的 Markdown 行内代码、裸 `<pre><code>`、缺少复制按钮、缺少必要静态高亮结构或 token CSS 的代码块，且页面包含 viewport、窄屏、横向滚动和打印样式。
+- 涉及代码改动的报告已经提供变更标识：新增行、删除行、修改行、上下文行可区分；真实 unified diff 使用 `.diff-card.diff-viewer` 固定样式；没有把旧代码和新代码混在一起。
 - 文件路径和行号以单个 `{path}:{line}`、`{path}:{start}-{end}` 或 `{path}:{line}:{column}` chip 展示；有绝对路径时已加 `idea://open` 超链接；没有把路径和行号拆成两个 chip，也没有把行号范围另起一行。
 - ASCII 架构图在浏览器中保持缩进、连线和横向滚动，不出现自动换行导致的错位。
 - 长内容已折叠，首屏清爽。

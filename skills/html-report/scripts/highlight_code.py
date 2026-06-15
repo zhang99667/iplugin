@@ -534,8 +534,8 @@ def render_diff_viewer(source: str) -> str:
     return (
         '<section class="diff-card diff-viewer">\n'
         '  <div class="diff-header">\n'
-        '    <span class="change-chip change-mod">Diff</span>\n'
-        '    <span class="muted">Unified diff viewer</span>\n'
+        '    <span class="change-chip change-mod">代码差异</span>\n'
+        '    <span class="muted">统一 diff · old/new 行号</span>\n'
         "  </div>\n"
         '  <div class="diff-scroll">\n'
         '  <table class="diff-table" aria-label="代码差异">\n'

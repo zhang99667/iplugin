@@ -1,3 +1,10 @@
+## [0.17.3] - 2026-06-15
+### Changed
+- html-report: 强化 Markdown 行内代码渲染规则，要求 `` `d` ``、`` `support_full_screen` `` 等短标识输出为 `<code>...</code>`，并由校验脚本拒绝正文中残留的原始反引号代码
+- html-report: 校验脚本新增 token CSS 检查，避免代码块里有 `tok-*` span 但页面缺少 `.tok-*` 样式时仍通过
+- html-report: 真实 unified diff 统一要求使用 `highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，并由校验脚本拒绝普通 `language-diff` 代码块和手写 diff card，稳定变更展示样式
+- manifest: 插件版本升级到 `0.17.3`
+
 ## [0.17.2] - 2026-06-15
 ### Removed
 - commands: 删除与 skills 重复的 command 文件（htmlreport、ask-user-question、best-of-web），避免被 harness 重复注册为 skill 条目

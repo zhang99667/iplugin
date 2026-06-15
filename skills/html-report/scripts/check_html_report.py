@@ -16,9 +16,10 @@ from pathlib import Path
 
 CODE_WRAP_RE = re.compile(r'<div\b[^>]*class=["\'][^"\']*\bcode-wrap\b[^"\']*["\'][^>]*>.*?</div>', re.DOTALL)
 LANG_RE = re.compile(r'\blanguage-([a-zA-Z0-9_-]+)\b')
-TOKEN_RE = re.compile(r'\btok-[a-zA-Z0-9_-]+\b')
+TOKEN_SPAN_RE = re.compile(r'<span\b[^>]*\bclass=["\'][^"\']*\b(tok-[a-zA-Z0-9_-]+)\b[^"\']*["\'][^>]*>.*?</span>', re.DOTALL)
 INLINE_STYLE_RE = re.compile(r'<span\b[^>]*\bstyle=["\'][^"\']+["\']', re.DOTALL)
 COPY_BTN_RE = re.compile(r'<button\b[^>]*class=["\'][^"\']*\bcopy-btn\b[^"\']*["\']', re.DOTALL)
+RAW_INLINE_CODE_RE = re.compile(r'`[^`\n]+`')
 
 TEXT_LIKE_LANGS = {"text", "txt", "log", "logs", "plain", "plaintext"}
 SUPPORTED_LANGS = {"kotlin", "java", "js", "python", "xml", "sql", "json", "yaml", "bash", "diff", "text"}
@@ -43,6 +44,9 @@ class ReportParser(HTMLParser):
         self.has_toc_toggle = False
         self.has_toc_details = False
         self.toc_link_count = 0
+        self.raw_inline_code_samples: list[str] = []
+        self.has_diff_viewer = False
+        self.has_non_viewer_diff_card = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attr_map = {name.lower(): value or "" for name, value in attrs}
@@ -70,6 +74,11 @@ class ReportParser(HTMLParser):
             self.has_toc_details = True
         if tag == "a" and inside_toc and attr_map.get("href", "").startswith("#"):
             self.toc_link_count += 1
+        if "diff-card" in classes:
+            if "diff-viewer" in classes:
+                self.has_diff_viewer = True
+            else:
+                self.has_non_viewer_diff_card = True
 
         if tag == "pre":
             inside_code_wrap = any("code-wrap" in frame.classes for frame in self.stack)
@@ -96,14 +105,23 @@ class ReportParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self.in_style:
             self.style_chunks.append(data)
+            return
+
+        if any(frame.tag in {"code", "pre", "script", "style"} for frame in self.stack):
+            return
+
+        for match in RAW_INLINE_CODE_RE.findall(data):
+            if len(self.raw_inline_code_samples) < 3:
+                self.raw_inline_code_samples.append(match)
 
 
 def class_set(value: str) -> set[str]:
     return {part for part in value.split() if part}
 
 
-def check_code_wrap_blocks(html: str) -> list[str]:
+def check_code_wrap_blocks(html: str, css: str) -> list[str]:
     errors: list[str] = []
+    compact_css = re.sub(r"\s+", " ", css)
     for index, block in enumerate(CODE_WRAP_RE.findall(html), start=1):
         lang_match = LANG_RE.search(block)
         if not lang_match:
@@ -113,9 +131,18 @@ def check_code_wrap_blocks(html: str) -> list[str]:
         lang = lang_match.group(1).lower()
         if lang not in SUPPORTED_LANGS and lang not in TEXT_LIKE_LANGS:
             errors.append(f"第 {index} 个 .code-wrap 使用未支持的 language-{lang}；请用 highlight_code.py 支持的语言或映射到 text")
-        has_static_highlight = TOKEN_RE.search(block) or INLINE_STYLE_RE.search(block)
+        if lang == "diff":
+            errors.append(f"第 {index} 个 .code-wrap 使用 language-diff；真实 diff 必须用 highlight_code.py --lang diff --diff-view 生成 .diff-card.diff-viewer")
+            continue
+        token_classes = set(TOKEN_SPAN_RE.findall(block))
+        has_inline_style = bool(INLINE_STYLE_RE.search(block))
+        has_static_highlight = bool(token_classes) or has_inline_style
         if lang not in TEXT_LIKE_LANGS and not has_static_highlight:
             errors.append(f"第 {index} 个 .code-wrap 使用 language-{lang}，但没有 tok-* 或 inline style 高亮 token")
+        if token_classes:
+            missing_classes = sorted(class_name for class_name in token_classes if f".{class_name}" not in compact_css)
+            if missing_classes:
+                errors.append(f"第 {index} 个 .code-wrap 使用 {', '.join(missing_classes)}，但 CSS 缺少对应 token 样式，代码会显示成未高亮")
         if not COPY_BTN_RE.search(block):
             errors.append(f"第 {index} 个 .code-wrap 缺少 .copy-btn 复制按钮")
     return errors
@@ -127,6 +154,9 @@ def check_document_chrome(parser: ReportParser) -> list[str]:
 
     if not parser.has_viewport_meta:
         errors.append("缺少 viewport meta，窄屏/分屏模式可能显示不全")
+    if parser.raw_inline_code_samples:
+        samples = "、".join(parser.raw_inline_code_samples)
+        errors.append(f"发现未渲染的 Markdown 行内代码 {samples}；请改为 <code>...</code> 并先转义内容")
     if not css.strip():
         errors.append("缺少内嵌 <style>，不符合单文件报告模板")
         return errors
@@ -154,6 +184,21 @@ def check_document_chrome(parser: ReportParser) -> list[str]:
         if parser.toc_link_count == 0:
             errors.append("目录缺少指向章节 id 的锚点链接")
 
+    if parser.has_non_viewer_diff_card:
+        errors.append("发现非 .diff-card.diff-viewer 的 diff 卡片；真实 diff 必须由 highlight_code.py --lang diff --diff-view 生成，避免手写样式漂移")
+
+    if parser.has_diff_viewer:
+        required_diff_css = {
+            ".diff-card": "diff viewer 缺少 .diff-card 基础样式",
+            ".diff-viewer .diff-table": "diff viewer 缺少固定表格样式",
+            ".diff-add": "diff viewer 缺少新增行样式",
+            ".diff-del": "diff viewer 缺少删除行样式",
+            ".diff-gutter": "diff viewer 缺少左侧变更轨道样式",
+        }
+        for fragment, message in required_diff_css.items():
+            if fragment not in compact_css:
+                errors.append(message)
+
     return errors
 
 
@@ -164,7 +209,7 @@ def validate(path: Path) -> list[str]:
 
     errors = parser.errors
     errors.extend(check_document_chrome(parser))
-    errors.extend(check_code_wrap_blocks(html))
+    errors.extend(check_code_wrap_blocks(html, "\n".join(parser.style_chunks)))
     return errors
 
 
