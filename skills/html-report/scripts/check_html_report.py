@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 CODE_WRAP_RE = re.compile(r'<div\b[^>]*class=["\'][^"\']*\bcode-wrap\b[^"\']*["\'][^>]*>.*?</div>', re.DOTALL)
+DIFF_VIEWER_RE = re.compile(r'<section\b[^>]*class=["\'][^"\']*\bdiff-viewer\b[^"\']*["\'][^>]*>.*?</section>', re.DOTALL)
 LANG_RE = re.compile(r'\blanguage-([a-zA-Z0-9_-]+)\b')
 TOKEN_SPAN_RE = re.compile(r'<span\b[^>]*\bclass=["\'][^"\']*\b(tok-[a-zA-Z0-9_-]+)\b[^"\']*["\'][^>]*>.*?</span>', re.DOTALL)
 INLINE_STYLE_RE = re.compile(r'<span\b[^>]*\bstyle=["\'][^"\']+["\']', re.DOTALL)
@@ -148,6 +149,21 @@ def check_code_wrap_blocks(html: str, css: str) -> list[str]:
     return errors
 
 
+def check_diff_viewer_tokens(html: str, css: str) -> list[str]:
+    errors: list[str] = []
+    compact_css = re.sub(r"\s+", " ", css)
+    token_classes: set[str] = set()
+    for block in DIFF_VIEWER_RE.findall(html):
+        token_classes.update(TOKEN_SPAN_RE.findall(block))
+
+    missing_classes = sorted(class_name for class_name in token_classes if f".{class_name}" not in compact_css)
+    if missing_classes:
+        errors.append(
+            f"diff viewer 使用 {', '.join(missing_classes)}，但 CSS 缺少对应 token 样式，代码列会显示成未高亮"
+        )
+    return errors
+
+
 def check_document_chrome(parser: ReportParser) -> list[str]:
     errors: list[str] = []
     css = "\n".join(parser.style_chunks)
@@ -209,7 +225,9 @@ def validate(path: Path) -> list[str]:
 
     errors = parser.errors
     errors.extend(check_document_chrome(parser))
-    errors.extend(check_code_wrap_blocks(html, "\n".join(parser.style_chunks)))
+    css = "\n".join(parser.style_chunks)
+    errors.extend(check_code_wrap_blocks(html, css))
+    errors.extend(check_diff_viewer_tokens(html, css))
     return errors
 
 

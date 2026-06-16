@@ -91,7 +91,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 优先级：
 
-1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，保持 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header 的固定样式。不要手写 `.diff-card`，也不要把 diff 做成普通 `language-diff` 代码块。
+1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，保持 old/new 行号、红绿整行背景、左侧变更轨道、hunk header 和代码列语法高亮的固定样式。不要手写 `.diff-card`，也不要把 diff 做成普通 `language-diff` 代码块。
 2. **Before / After 双栏**：适合结构变化较大、需要对比旧方案和新方案。左栏标题写“修改前”，右栏标题写“修改后”，两栏都必须只保留必要片段。
 3. **新增代码块**：适合纯新增文件、纯新增方法或纯新增配置。标题和 badge 必须写“新增”，左侧使用绿色竖线，不要让它看起来像普通代码摘录。
 4. **删除代码块**：适合删除旧逻辑。标题和 badge 必须写“删除”，左侧使用红色竖线，并说明删除原因或替代逻辑。
@@ -162,7 +162,7 @@ python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
-脚本会先转义 HTML，再做静态高亮，并输出可直接嵌入报告的 HTML 片段。普通代码输出 `<div class="code-wrap">...</div>`；真实 unified diff 必须使用 `--diff-view` 输出 `.diff-card.diff-viewer`，不要使用普通 `language-diff` 代码块。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认 `--engine builtin` 零依赖输出 `tok-*` class；`--engine auto` 会在本机可用 Pygments 模块或 `pygmentize` CLI 时改用 Pygments inline style 预渲染，否则自动回退 builtin；`--engine pygments` 则要求 Pygments 可用。不要在生成报告时静默安装 Pygments；只有用户明确要求安装/增强高亮时，才征得确认后安装。Shiki、highlight.js、Prism 如需使用，也必须只在生成阶段本地预渲染，不能把外部 JS/CSS 依赖带进最终报告。当输入是真实 unified diff 且需要展示修改点时，必须使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道和 hunk header。
+脚本会先转义 HTML，再做静态高亮，并输出可直接嵌入报告的 HTML 片段。普通代码输出 `<div class="code-wrap">...</div>`；真实 unified diff 必须使用 `--diff-view` 输出 `.diff-card.diff-viewer`，不要使用普通 `language-diff` 代码块。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`。默认 `--engine builtin` 零依赖输出 `tok-*` class；diff viewer 会根据 `---` / `+++` 文件路径后缀推断语言，并复用同一套 builtin 高亮给代码列生成 `tok-*` token。`--engine auto` 会在本机可用 Pygments 模块或 `pygmentize` CLI 时改用 Pygments inline style 预渲染，否则自动回退 builtin；`--engine pygments` 则要求 Pygments 可用。不要在生成报告时静默安装 Pygments；只有用户明确要求安装/增强高亮时，才征得确认后安装。Shiki、highlight.js、Prism 如需使用，也必须只在生成阶段本地预渲染，不能把外部 JS/CSS 依赖带进最终报告。当输入是真实 unified diff 且需要展示修改点时，必须使用 `--diff-view` 输出类似代码评审工具的 `.diff-card.diff-viewer`，包含 old/new 行号、红绿整行背景、左侧变更轨道、hunk header 和代码列语法高亮。
 
 脚本不可用时，不要直接交付未高亮代码块；先修正脚本路径、临时文件或语言参数并重试。确实无法运行脚本时，才手工使用以下规则：
 

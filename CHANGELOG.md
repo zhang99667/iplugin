@@ -1,3 +1,10 @@
+## [0.17.4] - 2026-06-16
+### Changed
+- html-report: `highlight_code.py --lang diff --diff-view` 会根据 `---` / `+++` 文件路径后缀推断语言，并复用普通代码高亮逻辑给 diff 代码列生成 `tok-*` token
+- html-report: CSS 模板补充 diff viewer 专用 token 配色，避免浅色新增/删除背景下语法高亮对比度不足
+- html-report: 校验脚本新增 diff viewer token CSS 检查，避免 diff 代码列有 `tok-*` span 但页面缺少对应样式
+- manifest: 插件版本升级到 `0.17.4`
+
 ## [0.17.3] - 2026-06-15
 ### Changed
 - html-report: 强化 Markdown 行内代码渲染规则，要求 `` `d` ``、`` `support_full_screen` `` 等短标识输出为 `<code>...</code>`，并由校验脚本拒绝正文中残留的原始反引号代码

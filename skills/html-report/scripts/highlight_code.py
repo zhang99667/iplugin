@@ -314,6 +314,29 @@ def normalize_lang(lang: str) -> str:
     return normalized
 
 
+def infer_lang_from_diff_path(diff_path: str) -> str:
+    """从 unified diff 的 ---/+++ 文件路径推断代码语言。"""
+
+    path = diff_path.strip()
+    if "\t" in path:
+        path = path.split("\t", 1)[0]
+    if len(path) >= 2 and path[0] == path[-1] == '"':
+        path = path[1:-1]
+    if path in {"/dev/null", "dev/null"}:
+        return "text"
+    if path.startswith(("a/", "b/")):
+        path = path[2:]
+
+    suffix = Path(path).suffix.lower().lstrip(".")
+    if not suffix:
+        return "text"
+
+    lang = LANG_ALIASES.get(suffix, suffix)
+    if lang in SUPPORTED_LANGS and lang != "diff":
+        return lang
+    return "text"
+
+
 def read_source(path: str | None) -> str:
     if not path or path == "-":
         return sys.stdin.read()
@@ -459,17 +482,26 @@ def highlight_diff(source: str) -> str:
 HUNK_RE = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
-def render_diff_row(row_class: str, marker: str, old_num: int | None, new_num: int | None, code: str) -> str:
+def highlight_diff_code(code: str, lang: str) -> str:
+    """对 diff 代码列做语法高亮；未知语言保持安全转义文本。"""
+
+    if lang in {"text", "diff"}:
+        return html.escape(code)
+    return highlight(code, lang)
+
+
+def render_diff_row(row_class: str, marker: str, old_num: int | None, new_num: int | None, code: str, lang: str) -> str:
     """生成一行带 old/new 行号的 diff viewer 表格。"""
 
     old_text = str(old_num) if old_num is not None else ""
     new_text = str(new_num) if new_num is not None else ""
+    highlighted_code = highlight_diff_code(code, lang)
     return (
         f'    <tr class="diff-line {row_class}">'
         f'<td class="diff-gutter">{html.escape(marker)}</td>'
         f'<td class="diff-num diff-old-num">{old_text}</td>'
         f'<td class="diff-num diff-new-num">{new_text}</td>'
-        f'<td class="diff-code">{html.escape(code)}</td>'
+        f'<td class="diff-code language-{html.escape(lang)}">{highlighted_code}</td>'
         "</tr>"
     )
 
@@ -493,6 +525,7 @@ def render_diff_viewer(source: str) -> str:
     rows: list[str] = []
     old_line: int | None = None
     new_line: int | None = None
+    current_lang = "text"
 
     for line in source.splitlines():
         hunk = HUNK_RE.match(line)
@@ -502,7 +535,21 @@ def render_diff_viewer(source: str) -> str:
             rows.append(render_diff_note("diff-hunk", line))
             continue
 
-        if line.startswith(("diff ", "index ", "--- ", "+++ ")):
+        if line.startswith("--- "):
+            old_lang = infer_lang_from_diff_path(line[4:])
+            if old_lang != "text":
+                current_lang = old_lang
+            rows.append(render_diff_note("diff-meta", line))
+            continue
+
+        if line.startswith("+++ "):
+            new_lang = infer_lang_from_diff_path(line[4:])
+            if new_lang != "text" or current_lang == "text":
+                current_lang = new_lang
+            rows.append(render_diff_note("diff-meta", line))
+            continue
+
+        if line.startswith(("diff ", "index ")):
             rows.append(render_diff_note("diff-meta", line))
             continue
 
@@ -511,17 +558,17 @@ def render_diff_viewer(source: str) -> str:
             continue
 
         if line.startswith("-") and old_line is not None:
-            rows.append(render_diff_row("diff-del", "-", old_line, None, line[1:]))
+            rows.append(render_diff_row("diff-del", "-", old_line, None, line[1:], current_lang))
             old_line += 1
             continue
 
         if line.startswith("+") and new_line is not None:
-            rows.append(render_diff_row("diff-add", "+", None, new_line, line[1:]))
+            rows.append(render_diff_row("diff-add", "+", None, new_line, line[1:], current_lang))
             new_line += 1
             continue
 
         if line.startswith(" ") and old_line is not None and new_line is not None:
-            rows.append(render_diff_row("diff-context", "", old_line, new_line, line[1:]))
+            rows.append(render_diff_row("diff-context", "", old_line, new_line, line[1:], current_lang))
             old_line += 1
             new_line += 1
             continue
