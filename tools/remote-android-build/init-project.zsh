@@ -47,14 +47,26 @@ fi
 # 需要用户按项目实际输出修改 TASK 和 APK_GLOB。
 if [[ ! -f "$CONFIG_FILE" ]]; then
   cat > "$CONFIG_FILE" <<EOF
+# 远端 Mac 的 SSH alias，需要先在 ~/.ssh/config 中配置好。
 REMOTE="buildmac"
+
+# 本地 Android Gradle 工程根目录，也就是包含 gradlew 的目录。
 LOCAL_ROOT="$PROJECT_ROOT"
+
+# 远端用于接收 rsync 同步源码的镜像目录。这个目录会被 --delete-delay 清理，
+# 不要把签名文件、local.properties 或其他远端私有配置放在这里。
 REMOTE_ROOT="~/remote-work/$PROJECT_NAME"
 
+# 远端执行的 Gradle task。多 flavor 项目通常需要改成实际的 assemble task。
 TASK=":app:assembleDebug"
+
+# 相对 REMOTE_ROOT 的 APK 匹配路径。构建成功后脚本会取最新匹配到的 APK 拉回本地。
 APK_GLOB="app/build/outputs/apk/debug/*.apk"
+
+# APK 拉回本地后的保存目录。
 LOCAL_APK_DIR="\$HOME/Downloads/android-artifacts"
 
+# 是否在拉回 APK 后安装到本地连接的 Android 设备。1 表示安装，0 表示只拉回。
 INSTALL_APK="1"
 
 # 本地连接多台 Android 设备时使用。

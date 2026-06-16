@@ -64,12 +64,25 @@ ADB_SERIAL=device-serial /path/to/iplugin/tools/remote-android-build/remote-buil
 `.remote-build.zsh` 是普通 zsh 配置文件：
 
 ```bash
+# 远端 Mac 的 SSH alias，需要先在 ~/.ssh/config 中配置好。
 REMOTE="buildmac"
+
+# 本地 Android Gradle 工程根目录，也就是包含 gradlew 的目录。
 LOCAL_ROOT="/path/to/android-project"
+
+# 远端用于接收 rsync 同步源码的镜像目录。
 REMOTE_ROOT="~/remote-work/client"
+
+# 远端执行的 Gradle task。
 TASK=":app:assembleDebug"
+
+# 相对 REMOTE_ROOT 的 APK 匹配路径。
 APK_GLOB="app/build/outputs/apk/debug/*.apk"
+
+# APK 拉回本地后的保存目录。
 LOCAL_APK_DIR="$HOME/Downloads/android-artifacts"
+
+# 是否在拉回 APK 后安装到本地连接的 Android 设备。
 INSTALL_APK="1"
 ```
 
