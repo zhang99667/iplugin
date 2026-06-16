@@ -15,15 +15,15 @@ PROJECT_NAME="${PROJECT_ROOT:t}"
 
 # 只接受存在的目录，避免把配置文件写到拼错的路径下面。
 if [[ ! -d "$PROJECT_ROOT" ]]; then
-  echo "Project root does not exist: $PROJECT_ROOT" >&2
+  echo "项目根目录不存在：$PROJECT_ROOT" >&2
   exit 1
 fi
 
 # 这个工具只面向 Android Gradle 工程根目录。用 gradlew 做轻量判断，
 # 可以避免用户在 workspace 根目录、子模块目录或普通源码目录误初始化。
 if [[ ! -f "$PROJECT_ROOT/gradlew" ]]; then
-  echo "No gradlew found in project root: $PROJECT_ROOT" >&2
-  echo "Run this from an Android Gradle root, for example baiduapp-android/client." >&2
+  echo "项目根目录下没有找到 gradlew：$PROJECT_ROOT" >&2
+  echo "请在 Android Gradle 工程根目录运行，例如 baiduapp-android/client。" >&2
   exit 1
 fi
 
@@ -37,9 +37,9 @@ CONFIG_FILE="$PROJECT_ROOT/.remote-build.zsh"
 # 包含项目特有的模块名、flavor、签名路径约定，覆盖会破坏已有调试环境。
 if [[ ! -f "$IGNORE_FILE" ]]; then
   cp "$SCRIPT_DIR/remote-buildignore.template" "$IGNORE_FILE"
-  echo "Created $IGNORE_FILE"
+  echo "已创建 $IGNORE_FILE"
 else
-  echo "Kept existing $IGNORE_FILE"
+  echo "已保留现有 $IGNORE_FILE"
 fi
 
 # 生成的是一份可读、可直接编辑的 zsh 配置。默认值只覆盖常见
@@ -57,23 +57,23 @@ LOCAL_APK_DIR="\$HOME/Downloads/android-artifacts"
 
 INSTALL_APK="1"
 
-# Use when multiple Android devices are attached locally.
+# 本地连接多台 Android 设备时使用。
 # ADB_SERIAL="device-serial"
 
-# Optional extra Gradle args.
+# 可选的额外 Gradle 参数。
 # REMOTE_GRADLE_ARGS="-Pfoo=bar"
 EOF
-  echo "Created $CONFIG_FILE"
+  echo "已创建 $CONFIG_FILE"
 else
-  echo "Kept existing $CONFIG_FILE"
+  echo "已保留现有 $CONFIG_FILE"
 fi
 
 # 最后只打印下一步命令，不自动连接远端。初始化阶段应该是纯本地操作，
 # 真正同步前让用户先用 DRY_RUN=1 看清楚 rsync 会传什么、删什么。
 echo
-echo "Next:"
-echo "  1. Edit $CONFIG_FILE if module, task, or APK path is different."
-echo "  2. Dry run:"
+echo "下一步："
+echo "  1. 如果模块名、Gradle task 或 APK 路径不同，编辑 $CONFIG_FILE。"
+echo "  2. 先预览同步内容："
 echo "     DRY_RUN=1 $SCRIPT_DIR/remote-build.zsh --config $CONFIG_FILE"
-echo "  3. Build and install:"
+echo "  3. 构建并安装："
 echo "     $SCRIPT_DIR/remote-build.zsh --config $CONFIG_FILE"

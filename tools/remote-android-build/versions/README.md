@@ -4,6 +4,7 @@
 
 | 版本 | 版本记录 | 关联技术文档 | 说明 |
 | --- | --- | --- | --- |
+| v0.1.1 | `v0.1.1.md` | 无新增技术文档 | 输出文案中文化，保留 shell 接口兼容。 |
 | v0.1.0 | `v0.1.0.md` | `../docs/remote_android_build_implementation_plan_v0_1.md`、`../docs/android_remote_build_workflow.html` | SSH + rsync + 远端 Gradle + 本地 adb 的首个可运行版本。 |
 
 ## 维护规则

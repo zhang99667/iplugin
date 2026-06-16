@@ -16,20 +16,20 @@ PRINT_CONFIG=0
 # .remote-build.zsh 配置文件表达，命令行只负责临时开关。
 usage() {
   cat <<EOF
-Usage:
+用法：
   remote-build.zsh [--config path] [--dry-run] [--no-install] [--print-config]
 
-Environment/config keys:
-  REMOTE              SSH host alias. Default: buildmac
-  LOCAL_ROOT          Local Android Gradle root. Default: current directory
-  REMOTE_ROOT         Remote mirror root. Default: ~/remote-work/<project>
-  TASK                Gradle task. Default: :app:assembleDebug
-  APK_GLOB            APK glob relative to REMOTE_ROOT. Default: app/build/outputs/apk/debug/*.apk
-  LOCAL_APK_DIR       Where pulled APKs are stored. Default: ~/Downloads/android-artifacts
-  INSTALL_APK         1 to install after build, 0 to only pull. Default: 1
-  ADB_SERIAL          Optional local adb device serial
-  REMOTE_GRADLE_ARGS  Optional extra Gradle args
-  IGNORE_FILE         Optional rsync exclude file
+环境变量/配置项：
+  REMOTE              远端 SSH host alias。默认：buildmac
+  LOCAL_ROOT          本地 Android Gradle 工程根目录。默认：当前目录
+  REMOTE_ROOT         远端镜像目录。默认：~/remote-work/<project>
+  TASK                Gradle task。默认：:app:assembleDebug
+  APK_GLOB            相对 REMOTE_ROOT 的 APK 匹配表达式。默认：app/build/outputs/apk/debug/*.apk
+  LOCAL_APK_DIR       拉回 APK 后存放的本地目录。默认：~/Downloads/android-artifacts
+  INSTALL_APK         构建后安装填 1，只拉回填 0。默认：1
+  ADB_SERIAL          可选的本地 adb 设备 serial
+  REMOTE_GRADLE_ARGS  可选的额外 Gradle 参数
+  IGNORE_FILE         可选的 rsync 排除文件
 EOF
 }
 
@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      echo "Unknown argument: $1" >&2
+      echo "未知参数：$1" >&2
       usage >&2
       exit 2
       ;;
@@ -76,7 +76,7 @@ fi
 # 这里主动检查文件存在，避免 source 一个空路径或拼错路径时静默退回默认值。
 if [[ -n "$CONFIG_FILE" ]]; then
   if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "Config file does not exist: $CONFIG_FILE" >&2
+    echo "配置文件不存在：$CONFIG_FILE" >&2
     exit 1
   fi
   source "$CONFIG_FILE"
@@ -117,7 +117,7 @@ fi
 # 允许用户在没有本地 Android 设备环境的机器上只做远程构建和拉包。
 need_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
-    echo "Missing command: $1" >&2
+    echo "缺少命令：$1" >&2
     exit 1
   fi
 }
@@ -164,15 +164,15 @@ fi
 # 这些本地前置条件可以在联网前验证。LOCAL_ROOT 必须是 Gradle 根目录，
 # gradlew 必须可执行；否则即使同步到远端也无法按预期构建。
 if [[ ! -d "$LOCAL_ROOT" ]]; then
-  echo "LOCAL_ROOT does not exist: $LOCAL_ROOT" >&2
+  echo "LOCAL_ROOT 不存在：$LOCAL_ROOT" >&2
   exit 1
 fi
 if [[ ! -x "$LOCAL_ROOT/gradlew" ]]; then
-  echo "gradlew is missing or not executable: $LOCAL_ROOT/gradlew" >&2
+  echo "gradlew 不存在或不可执行：$LOCAL_ROOT/gradlew" >&2
   exit 1
 fi
 if [[ ! -f "$IGNORE_FILE" ]]; then
-  echo "Ignore file does not exist: $IGNORE_FILE" >&2
+  echo "排除规则文件不存在：$IGNORE_FILE" >&2
   exit 1
 fi
 
@@ -187,13 +187,13 @@ remote_root_q="$(remote_path_expr "$REMOTE_ROOT")"
 
 # 先在远端创建镜像目录。REMOTE_ROOT 应视为可丢弃工作镜像，持久的
 # SDK、签名文件、local.properties 等机器私有配置不应该放在这个目录里。
-echo "[1/5] Ensure remote root"
+echo "[1/5] 准备远端镜像目录"
 ssh "$REMOTE" "mkdir -p $remote_root_q"
 
 # 同步源码到远端。--delete-delay 会删除远端本地已经不存在的文件，
 # 但延迟到传输结束后执行，降低中途失败导致远端处于半删除状态的概率。
 # 首次使用前建议 DRY_RUN=1，确认排除规则不会删掉远端需要保留的文件。
-echo "[2/5] Sync source"
+echo "[2/5] 同步源码"
 rsync_args=(-az --delete-delay --human-readable --info=stats1,progress2)
 if [[ "$DRY_RUN" == "1" ]]; then
   rsync_args+=(--dry-run)
@@ -203,23 +203,23 @@ rsync "${rsync_args[@]}" \
   "$LOCAL_ROOT/" "$REMOTE:$REMOTE_ROOT/"
 
 if [[ "$DRY_RUN" == "1" ]]; then
-  echo "DRY_RUN=1: sync preview completed. Build was not started."
+  echo "DRY_RUN=1：同步预览已完成，未开始编译。"
   exit 0
 fi
 
 # 远端只负责构建，不负责安装手机。这样 Android Studio、Logcat 和真机
 # 仍留在本地 Mac，避免远程桌面/VNC 快捷键和手势问题。
-echo "[3/5] Remote build"
+echo "[3/5] 远端编译"
 ssh "$REMOTE" "cd $remote_root_q && ./gradlew $TASK $REMOTE_GRADLE_ARGS"
 
 # 构建成功后在远端按修改时间找最新 APK。APK_GLOB 是相对 REMOTE_ROOT
 # 的表达式，适用于常见 app/build/outputs/apk/... 单 APK 输出。
-echo "[4/5] Pull APK"
+echo "[4/5] 拉回 APK"
 remote_apk="$(
   ssh "$REMOTE" "cd $remote_root_q && ls -t $APK_GLOB 2>/dev/null | head -1"
 )"
 if [[ -z "$remote_apk" ]]; then
-  echo "No APK matched on remote: $APK_GLOB" >&2
+  echo "远端没有匹配到 APK：$APK_GLOB" >&2
   exit 1
 fi
 
@@ -232,16 +232,16 @@ else
 fi
 rsync -P "$REMOTE:$remote_src" "$LOCAL_APK_DIR/"
 local_apk="$LOCAL_APK_DIR/${remote_apk:t}"
-echo "Pulled: $local_apk"
+echo "已拉回：$local_apk"
 
 # 安装是可选步骤。split APK、AAB 或只想交给别人验证的场景，可以通过
 # INSTALL_APK=0 或 --no-install 跳过安装，只保留构建产物。
 if [[ "$INSTALL_APK" != "1" ]]; then
-  echo "[5/5] Install skipped"
+  echo "[5/5] 已跳过安装"
   exit 0
 fi
 
-echo "[5/5] Install APK"
+echo "[5/5] 安装 APK"
 adb_target=()
 
 # 多设备连接时必须指定 ADB_SERIAL，否则 adb install 会因为设备不唯一失败。
@@ -253,9 +253,9 @@ fi
 # -r 允许覆盖安装，-d 允许 debug 场景版本号回退。签名不一致仍会失败，
 # 这种情况应统一 debug keystore，或首次切换时手动卸载旧包。
 if ! adb "${adb_target[@]}" install -r -d "$local_apk"; then
-  echo "adb install failed." >&2
-  echo "If this is INSTALL_FAILED_UPDATE_INCOMPATIBLE, align debug keystore across both Macs or uninstall the old package once." >&2
+  echo "adb install 失败。" >&2
+  echo "如果错误是 INSTALL_FAILED_UPDATE_INCOMPATIBLE，请统一两台 Mac 的 debug keystore，或先卸载旧包再安装一次。" >&2
   exit 1
 fi
 
-echo "Done."
+echo "完成。"

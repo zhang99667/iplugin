@@ -9,6 +9,7 @@
 5. 用本地 adb 安装到手边的 Android 设备
 
 这个工具刻意只做最小闭环，不依赖 Mutagen、Gradle Remote Cache、Tailscale 或 VNC。
+脚本提示、错误和生成配置中的说明默认使用中文；命令参数、环境变量和配置键名保持英文，以维持 shell 接口兼容。
 
 ## 快速开始
 
