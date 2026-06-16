@@ -1,3 +1,11 @@
+## [0.18.0] - 2026-06-16
+### Added
+- nad-acx-pivot-table: 新增商业 AB 实验数据透视表 skill，用于从 CSV/TXT/XLSX 生成 Excel 原生透视表，支持多文件合并、字段别名映射、相对差指标和自动命名
+- nad-acx-pivot-table: 随 skill 引入零外部依赖的 `pivot_tool` 脚本、`commercial_ab_test` 预设、配置 schema 与 OOXML 注意事项 references
+
+### Changed
+- README / manifest: 插件能力清单加入商业 AB 透视表生成，版本升级到 `0.18.0`
+
 ## [0.17.4] - 2026-06-16
 ### Changed
 - html-report: `highlight_code.py --lang diff --diff-view` 会根据 `---` / `+++` 文件路径后缀推断语言，并复用普通代码高亮逻辑给 diff 代码列生成 `tok-*` token

@@ -1,0 +1,44 @@
+{
+  "name": "commercial_ab_test",
+  "description": "商业广告 AB 实验数据分析预设（7 个必需字段 + 3 个计算字段；CSV 中多出的维度字段如 cmatch/mt_id/wosid/trans_type/meg_trade/can_predict 等会被自动推断类型并加入 pivot cache，可在 Excel 字段面板手动拖拽）",
+  "data_sheet_name": "原始数据",
+  "pivot_table_name": "数据透视表",
+  "pivot_style": "PivotStyleLight16",
+  "columns": [
+    {"name": "event_day", "type": "int",   "nullable": false, "shared_items_type": "enumerated"},
+    {"name": "exp_id",    "type": "str",   "nullable": false, "shared_items_type": "enumerated"},
+    {"name": "eshow",     "type": "int",   "nullable": false, "shared_items_type": "range"},
+    {"name": "click",     "type": "int",   "nullable": false, "shared_items_type": "range"},
+    {"name": "charge",    "type": "float", "nullable": false, "shared_items_type": "range"},
+    {"name": "tcharge",   "type": "float", "nullable": true,  "shared_items_type": "range"},
+    {"name": "conv",      "type": "int",   "nullable": true,  "shared_items_type": "range"}
+  ],
+  "calculated_fields": [
+    {"name": "ectr", "formula": "click /eshow"},
+    {"name": "cvr",  "formula": "conv /click"},
+    {"name": "evr",  "formula": "conv /eshow"}
+  ],
+  "pivot_layout": {
+    "row_fields": ["exp_id"],
+    "col_fields": ["__data__"],
+    "filter_fields": [],
+    "data_fields": [
+      {"name": "求和项:eshow",    "source_field": "eshow",   "show_data_as": "normal",      "num_fmt_id": 0},
+      {"name": "求和项:eshow2",   "source_field": "eshow",   "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10},
+      {"name": "求和项:click",    "source_field": "click",   "show_data_as": "normal",      "num_fmt_id": 0},
+      {"name": "求和项:click2",   "source_field": "click",   "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10},
+      {"name": "求和项:charge",   "source_field": "charge",  "show_data_as": "normal",      "num_fmt_id": 0},
+      {"name": "求和项:charge2",  "source_field": "charge",  "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10},
+      {"name": "求和项:tcharge",  "source_field": "tcharge", "show_data_as": "normal",      "num_fmt_id": 0},
+      {"name": "求和项:tcharge2", "source_field": "tcharge", "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10},
+      {"name": "求和项:conv",     "source_field": "conv",    "show_data_as": "normal",      "num_fmt_id": 0},
+      {"name": "求和项:conv2",    "source_field": "conv",    "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10},
+      {"name": "求和项:ectr",     "source_field": "ectr",    "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10},
+      {"name": "求和项:cvr",      "source_field": "cvr",     "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10},
+      {"name": "求和项:evr",      "source_field": "evr",     "show_data_as": "percentDiff", "base_field": "exp_id", "base_item": 0, "num_fmt_id": 10}
+    ],
+    "row_item_order": {
+      "exp_id": ["dz", "exp"]
+    }
+  }
+}
