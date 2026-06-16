@@ -9,7 +9,6 @@
 - `skills/<name>/SKILL.md` — 技能定义，两边共用，目录名必须与 `SKILL.md` 中的 `name` 字段一致
 - `skills/<name>/references/` — 按需读取的长规则、示例和模板，用于 progressive disclosure，避免 `SKILL.md` 过长
 - `commands/<name>.md` — slash command 入口，优先调用 `skills/` 中的通用能力，不承载大段重复逻辑
-- `tools/<project>/` — 独立 CLI / 自动化工具子项目，不自动进入插件 manifest，也不作为 skill 被模型触发
 - `versions/vX.Y.Z.md` — 每个版本的规划和决策记录
 - `scripts/` — 共享脚本（需要确定性执行的代码）
 - `hooks/` — 全局钩子（横切关注点）；Claude Code 默认扫描 `hooks/hooks.json`，Codex manifest 指向 `hooks/codex-hooks.json`
@@ -46,20 +45,10 @@
 4. 如新增用户可见能力，更新 README、CHANGELOG 和 `versions/vX.Y.Z.md`
 5. 需要改变插件定位时，同步检查 `.claude-plugin/plugin.json` 与 `.codex-plugin/plugin.json`
 
-## 添加 Tool 子项目
-
-1. `mkdir -p tools/<project-name>`
-2. 子项目必须自带 `README.md`、`CHANGELOG.md`、`versions/`、`tests/`，复杂方案可放到 `docs/`
-3. 子项目建议自带 `CLAUDE.md` 与 `AGENTS.md`，说明该工具自己的运行、测试、发布和安全边界
-4. Tool 的版本、迭代方案和变更记录只写在 `tools/<project-name>/` 内，不写入 iPlugin 根 `CHANGELOG.md`，除非它改变了插件本体、skill、command、hook 或 manifest 行为
-5. Tool 默认不加入 `.claude-plugin/plugin.json` / `.codex-plugin/plugin.json`；只有明确要把它暴露为插件能力时，才增加 manifest、skill、command 或 `bin/` wrapper
-6. Tool 可作为 agent 工作流编排工具、独立 CLI 或实验性自动化项目；不要把一次性脚本伪装成 Tool 子项目
-
 ## 版本号
 
 - 插件级版本同时维护在 `.claude-plugin/plugin.json` 和 `.codex-plugin/plugin.json` 中
 - 每个 skill 在各自 `SKILL.md` frontmatter 中有独立 `version`
-- 每个 tool 子项目维护自己的版本号、`CHANGELOG.md` 和 `versions/`，不与插件级版本强绑定
 - 遵循 SemVer：Patch（指令优化）、Minor（新增/改名 skill）、Major（删除/breaking change）
 - 每次变更必须在 `versions/` 下记录对应的版本规划文档
 
@@ -81,5 +70,4 @@
 - `skills/*/SKILL.md` 的 `name` 与目录名一致
 - 长规则和长示例优先放到 `skills/<name>/references/`，`SKILL.md` 只保留触发、导航和核心流程
 - `commands/*.md` 只保留轻量编排逻辑，未复制大段 skill 正文
-- 如果改动 `tools/<project-name>/`，运行该子项目自己的测试，并确认没有误写入插件 manifest 或根 CHANGELOG
 - 每次完成文件改动并做完必要校验后，必须通过 `/ask-user-question` 询问用户是否要把本次改动提交；用户确认前不要主动执行 `git commit`

@@ -31,8 +31,6 @@ iplugin/
 │   ├── session-rename/     # Claude Code 会话自动命名
 │   └── <name>/references/  # 按需读取的长规则、示例和模板
 ├── commands/               # slash command 入口
-├── tools/                  # 独立 CLI / 自动化工具子项目，不自动进入插件 manifest
-│   └── z-agent/             # Codex / Claude Code 会话恢复与自动化编排
 ├── versions/               # 版本规划与决策文档
 ├── scripts/                # 共享脚本和提交前校验
 ├── hooks/                  # 全局横切 hooks，区分 Claude/Codex 配置
@@ -74,14 +72,6 @@ iplugin/
 | `/ask-user-question` | `ask-user-question` |
 | `/best-of-web` | `best-of-web` |
 | `/html-report` | `html-report` |
-
-## Tools
-
-`tools/` 放独立 CLI / 自动化工具子项目，不作为 skill 自动触发，也不默认写入 Claude Code / Codex 插件 manifest。每个 tool 自己维护 `README.md`、`CHANGELOG.md`、`versions/`、`docs/` 和测试。
-
-| 工具 | 用途 | 入口 |
-|------|------|------|
-| `tools/z-agent` | Codex / Claude Code 会话记录、恢复与自动化编排 CLI | `python3 tools/z-agent/src/z_agent/cli.py --help` |
 
 ## 安装
 
