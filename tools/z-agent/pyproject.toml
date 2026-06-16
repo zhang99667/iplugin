@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "z-agent"
+version = "0.1.0"
+description = "Ghostty 工作区快照与 agent session 恢复工具。"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+zagent = "z_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+z_agent = ["applescript/*.scpt", "templates/*"]

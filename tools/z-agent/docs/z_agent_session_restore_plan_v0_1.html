@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>z-agent Ghostty 工作区恢复技术方案 v0.1.0</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --good: #047857;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --code-bg: #10231f;
+      --code: #a9b5af;
+      --p0: #dc2626;
+      --p1: #ea580c;
+      --p2: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+    a { color: #1d4ed8; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      color: #334155;
+      padding: 1px 5px;
+      white-space: nowrap;
+    }
+    .layout-with-toc {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 24px;
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+      transition: grid-template-columns .2s ease;
+    }
+    .layout-with-toc.toc-collapsed { grid-template-columns: 52px minmax(0, 1fr); }
+    main { min-width: 0; }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+      padding: 16px;
+    }
+    .toc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .toc-title {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .toc-toggle {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #64748b;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .toc a {
+      display: block;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.35;
+      text-decoration: none;
+    }
+    .toc a:hover { background: #f1f5f9; color: var(--accent); }
+    .layout-with-toc.toc-collapsed .toc {
+      padding: 10px;
+      overflow: visible;
+    }
+    .layout-with-toc.toc-collapsed .toc-header { justify-content: center; margin-bottom: 0; }
+    .layout-with-toc.toc-collapsed .toc-title,
+    .layout-with-toc.toc-collapsed .toc a { display: none; }
+    .layout-with-toc.toc-collapsed .toc-toggle { width: 32px; height: 32px; }
+    section[id], h2[id] { scroll-margin-top: 24px; }
+    .doc-header {
+      margin-bottom: 18px;
+      padding: 28px 30px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #0f766e 0%, #2563eb 62%, #7c3aed 100%);
+      color: #ffffff;
+      box-shadow: 0 14px 32px rgba(37, 99, 235, .22);
+    }
+    .doc-header h1 { margin: 0 0 12px; font-size: 30px; line-height: 1.28; }
+    .doc-subtitle { margin: 0 0 18px; color: rgba(255, 255, 255, .88); font-size: 15px; }
+    .doc-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .doc-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 3px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .16);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    h2 {
+      margin: 30px 0 14px;
+      border-left: 5px solid var(--accent);
+      padding-left: 10px;
+      font-size: 22px;
+      line-height: 1.3;
+    }
+    h3 { margin: 0 0 10px; font-size: 18px; }
+    p { margin: 8px 0; }
+    ul { margin: 8px 0 8px 22px; padding: 0; }
+    li { margin: 4px 0; }
+    .summary, .issue {
+      min-width: 0;
+      margin: 16px 0;
+      padding: 18px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+    }
+    .mini {
+      min-width: 0;
+      padding: 12px 14px;
+      background: #fbfdff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .mini b { display: block; margin: 5px 0 4px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 9px;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .p0 { background: var(--p0); }
+    .p1 { background: var(--p1); }
+    .p2 { background: var(--p2); }
+    .ok { color: var(--good); font-weight: 800; }
+    .warn { color: var(--warn); font-weight: 800; }
+    .bad { color: var(--bad); font-weight: 800; }
+    .muted { color: var(--muted); }
+    .tbl-wrap { max-width: 100%; overflow-x: auto; }
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th { background: #f8fafc; color: #475569; font-weight: 800; }
+    tr:last-child td { border-bottom: 0; }
+    .ascii-diagram {
+      margin: 12px 0;
+      padding: 14px 16px;
+      overflow-x: auto;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      color: #0f172a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre;
+    }
+    .flow-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 14px 0;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+    }
+    .flow-svg {
+      display: block;
+      min-width: 1040px;
+      width: 100%;
+      height: auto;
+    }
+    .flow-title { fill: #0f172a; font: 800 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .flow-text { fill: #334155; font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .flow-small { fill: #64748b; font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .flow-box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.4; rx: 10; }
+    .flow-box-blue { fill: #eff6ff; stroke: #93c5fd; }
+    .flow-box-green { fill: #ecfdf5; stroke: #86efac; }
+    .flow-box-orange { fill: #fff7ed; stroke: #fdba74; }
+    .flow-line { stroke: #64748b; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .code-wrap {
+      position: relative;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .code-wrap pre {
+      margin: 10px 0 14px;
+      padding: 38px 16px 14px;
+      overflow-x: auto;
+      background: var(--code-bg);
+      border-radius: 12px;
+      color: var(--code);
+      font-size: 13px;
+      line-height: 1.5;
+      tab-size: 4;
+    }
+    .code-wrap code {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      color: inherit;
+      padding: 0;
+      white-space: pre;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      color: #dbeafe;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 3px 8px;
+    }
+    .tok-key { color: #d955a2; font-weight: 800; }
+    .tok-str { color: #83b986; }
+    .tok-num { color: #d7c96f; }
+    .tok-cmt { color: #5f947d; font-style: italic; }
+    .tok-fn { color: #6fa0ff; }
+    .tok-var { color: #c4b5fd; }
+    details {
+      margin: 16px 0;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .04);
+    }
+    summary {
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .details-body { padding: 0 16px 16px; }
+    @media (max-width: 860px) {
+      .layout-with-toc, .layout-with-toc.toc-collapsed {
+        display: block;
+        padding: 18px 14px 40px;
+      }
+      .toc {
+        position: static;
+        max-height: none;
+        margin-bottom: 16px;
+      }
+      .layout-with-toc.toc-collapsed .toc-title,
+      .layout-with-toc.toc-collapsed .toc a { display: block; }
+      .layout-with-toc.toc-collapsed .toc-header { justify-content: space-between; margin-bottom: 10px; }
+      .doc-header { padding: 22px 18px; }
+      .doc-header h1 { font-size: 24px; }
+      table { min-width: 680px; }
+    }
+    @media print {
+      body { background: #ffffff; }
+      .layout-with-toc { display: block; padding: 0; }
+      .toc, .copy-btn { display: none; }
+      .summary, .issue, details, .doc-header { box-shadow: none; break-inside: avoid; }
+      .doc-header { color: #111827; background: #ffffff; border: 1px solid #d1d5db; }
+      .doc-chip { color: #111827; background: #f3f4f6; border: 1px solid #d1d5db; }
+      a { color: #111827; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout-with-toc">
+  <aside class="toc" aria-label="目录">
+    <div class="toc-header">
+      <p class="toc-title">目录</p>
+      <button class="toc-toggle" type="button" aria-label="收起目录" aria-expanded="true" title="收起目录">‹</button>
+    </div>
+    <a href="#summary">TL;DR</a>
+    <a href="#implementation-scope">实施边界</a>
+    <a href="#delivery">交付内容</a>
+    <a href="#lifecycle">时机链路</a>
+    <a href="#implementation-contract">实现契约</a>
+    <a href="#architecture">实现架构</a>
+    <a href="#commands">命令契约</a>
+    <a href="#data">状态数据</a>
+    <a href="#review">Review 后执行路径</a>
+    <a href="#extension">扩展性</a>
+    <a href="#risk">风险与验证</a>
+    <a href="#sources">证据来源</a>
+  </aside>
+
+  <main>
+    <header class="doc-header">
+      <h1>z-agent Ghostty 工作区恢复技术方案</h1>
+      <p class="doc-subtitle">本方案定义 z-agent 的本期目标：记录 Ghostty window / tab / split / terminal pane 的工作区快照，并把每个 pane 与对应 Agent session 绑定；恢复时重建布局，并在原 pane 位置执行 Codex 或 Claude Code 的原生 resume。</p>
+      <div class="doc-meta">
+        <span class="doc-chip">技术方案 · 工作区恢复</span>
+        <span class="doc-chip">z-agent v0.1.0</span>
+        <span class="doc-chip">macOS · Ghostty</span>
+        <span class="doc-chip">布局接口：Ghostty AppleScript</span>
+        <span class="doc-chip">Codex / Claude Code 分端接入</span>
+        <span class="doc-chip">版本记录：../versions/v0.1.0.md</span>
+        <span class="doc-chip">更新日期：2026-06-13</span>
+        <span class="doc-chip">状态：方案待 review，代码待对齐</span>
+      </div>
+    </header>
+
+    <section id="summary" class="summary">
+      <h2>TL;DR</h2>
+      <div class="grid">
+        <div class="mini">
+          <span class="tag p2">目标模型</span>
+          <b>恢复工作区快照</b>
+          z-agent 通过 Ghostty AppleScript 记录 window、tab、split、terminal pane 布局，并将每个 pane 绑定到当时运行的 Agent session。
+        </div>
+        <div class="mini">
+          <span class="tag p2">分端支持</span>
+          <b>Codex / Claude Code 拆开</b>
+          <code>zagent install codex</code> 与 <code>zagent install claude</code> 分别生成 agent 原生 hook 模板和 ingest 入口；启动仍显式使用 <code>zagent codex</code> / <code>zagent claude</code>。
+        </div>
+        <div class="mini">
+          <span class="tag p2">单文件状态</span>
+          <b>workspace_state.json</b>
+          本期只维护一个当前状态文件，包含 active terminals、latest workspace 和一份 previous workspace 回退缓存。
+        </div>
+        <div class="mini">
+          <span class="tag p1">安全默认</span>
+          <b>review first</b>
+          <code>install</code> 不接管原始 <code>codex</code>/<code>claude</code> 命令，<code>restore</code> 默认只输出工作区恢复计划；本轮不会替用户执行恢复。
+        </div>
+        <div class="mini">
+          <span class="tag p1">边界明确</span>
+          <b>恢复布局与 session</b>
+          恢复目标是 Ghostty 布局、pane 的工作目录和 Agent 原生 session；不恢复进程内存、PTY、未完成 tool call，也不读取对话转录正文。
+        </div>
+      </div>
+    </section>
+
+    <h2 id="implementation-scope">实施边界</h2>
+    <section class="issue">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>设计项</th>
+              <th>最终实现</th>
+              <th>边界说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>项目形态</td>
+              <td>主体放在 iPlugin monorepo 的 <code>tools/z-agent</code> 独立工具项目中。</td>
+              <td>它是可运行工具，未来可以单独打包、测试、发布，也可以扩展为 Agent 工作区编排工具。</td>
+            </tr>
+            <tr>
+              <td>恢复对象</td>
+              <td>恢复单位是一次 Ghostty 工作区快照，快照内的每个 terminal/pane 独立携带恢复所需元数据。</td>
+              <td>快照包含 window、tab、terminal、split_tree、cwd、agent、session_id、restore_cmd 和采集时间。</td>
+            </tr>
+            <tr>
+              <td>Ghostty 控制接口</td>
+              <td>通过 <code>osascript</code> 调用 Ghostty AppleScript dictionary 读取和重建 GUI 布局。</td>
+              <td>workspace snapshot 的 window / tab / terminal 信息以 AppleScript 返回的对象模型为准。</td>
+            </tr>
+            <tr>
+              <td>Codex / Claude Code 支持</td>
+              <td>主程序复用同一套核心模块，install 和配置按 agent 拆分。</td>
+              <td>每个 agent 维护自己的安装路径、hook 模板、session 目录和 resume 参数。</td>
+            </tr>
+            <tr>
+              <td><code>zagent snapshot</code></td>
+              <td>通过 <code>osascript</code> 采集 Ghostty 当前布局，并把 AppleScript terminal 与当前 terminal 记录绑定成可恢复快照。</td>
+              <td>快照写入 <code>workspace_state.json</code> 的 <code>latest_workspace</code>，供 <code>zagent restore</code> 使用。</td>
+            </tr>
+            <tr>
+              <td><code>zagent restore</code></td>
+              <td>读取最近一次快照，调用 <code>osascript</code> 重建布局并输入 resume 命令。</td>
+              <td>恢复动作会打开窗口、创建 tab/split 并输入命令，执行前由内部白名单拦截不安全命令。</td>
+            </tr>
+            <tr>
+              <td>Shell 入口</td>
+              <td>不生成 PATH wrapper，不自动写入 <code>.zshrc</code>。</td>
+              <td>避免未经确认接管用户原始 <code>codex</code>/<code>claude</code> 命令。</td>
+            </tr>
+            <tr>
+              <td>自动化 hooks</td>
+              <td>实现 agent 原生 hook ingest 与 post-hook 两层扩展点；hook 事件用于更新 <code>workspace_state.json</code> 中当前 terminal 的 session_id、session_file 和 restore_cmd。</td>
+              <td>hook 不追加长期历史，只维护恢复最新工作区所需的当前 terminal 状态。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="delivery">交付内容</h2>
+    <section class="issue">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>文件</th>
+              <th>类型</th>
+              <th>作用</th>
+              <th>是否会安装</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>src/z_agent/</code></td>
+              <td>独立 CLI 子项目</td>
+              <td>本地 CLI 主体，包含源码、README、pyproject 和 tests；后续代码调整应按本文的 snapshot / restore 契约收敛。</td>
+              <td><span class="ok">否</span>，只有用户手动运行才生效。</td>
+            </tr>
+            <tr>
+              <td><code>pyproject.toml [project.scripts]</code></td>
+              <td>包入口</td>
+              <td>定义 console script：安装后提供 <code>zagent</code> 命令。</td>
+              <td><span class="ok">否</span>，不会自动安装。</td>
+            </tr>
+            <tr>
+              <td><code>docs/z_agent_session_restore_plan_v0_1.html</code></td>
+              <td>技术方案文档</td>
+              <td>定义 Ghostty 工作区快照恢复的目标模型、命令契约、状态数据和验证路径，不修改桌面输入文档。</td>
+              <td><span class="ok">否</span>，仅供 review。</td>
+            </tr>
+            <tr>
+              <td><code>README.md</code> / <code>CHANGELOG.md</code> / <code>pyproject.toml</code></td>
+              <td>元数据同步</td>
+              <td>记录 z-agent 自己的版本、入口和 review 说明，不写入 iPlugin 插件 changelog。</td>
+              <td><span class="ok">否</span>，只有用户手动运行安装命令才进入使用态。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="lifecycle">时机链路</h2>
+    <section class="issue">
+      <p>关键时机分成三段：启动 Agent 时生成 terminal 身份并注入运行环境；Agent 运行中由 hook 回写 session；采集快照时通过 Ghostty AppleScript 读取布局并固化到 <code>latest_workspace</code>。恢复只读取这份快照。</p>
+      <div class="flow-wrap" aria-label="z-agent 启动、采集和恢复流程图">
+        <svg class="flow-svg" viewBox="0 0 1080 520" role="img" aria-labelledby="flow-title flow-desc">
+          <title id="flow-title">z-agent 时机链路</title>
+          <desc id="flow-desc">展示 terminal_key、环境变量、terminal marker、hook payload 和 workspace_state 的生成、注入、读取时机。</desc>
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#64748b"></path>
+            </marker>
+          </defs>
+
+          <rect class="flow-box flow-box-blue" x="30" y="38" width="176" height="86"></rect>
+          <text class="flow-title" x="48" y="68">1. 用户启动</text>
+          <text class="flow-text" x="48" y="92">输入 zagent codex / claude</text>
+          <text class="flow-small" x="48" y="112">显式进入 z-agent wrapper</text>
+
+          <rect class="flow-box flow-box-blue" x="248" y="38" width="196" height="86"></rect>
+          <text class="flow-title" x="266" y="68">2. wrapper 启动前</text>
+          <text class="flow-text" x="266" y="92">生成 terminal_key / run_id</text>
+          <text class="flow-small" x="266" y="112">读取 cwd、真实 CLI 路径</text>
+
+          <rect class="flow-box flow-box-orange" x="486" y="28" width="242" height="108"></rect>
+          <text class="flow-title" x="504" y="58">3. 注入到当前会话</text>
+          <text class="flow-text" x="504" y="82">env: Z_AGENT_TERMINAL_KEY</text>
+          <text class="flow-text" x="504" y="104">env: Z_AGENT_RUN_ID / CWD</text>
+          <text class="flow-small" x="504" y="124">marker 写到 terminal name/title</text>
+
+          <rect class="flow-box flow-box-blue" x="770" y="38" width="230" height="86"></rect>
+          <text class="flow-title" x="788" y="68">4. 启动真实 Agent</text>
+          <text class="flow-text" x="788" y="92">exec codex / claude</text>
+          <text class="flow-small" x="788" y="112">真实进程继承 Z_AGENT_* env</text>
+
+          <path class="flow-line" d="M206 82 H248"></path>
+          <path class="flow-line" d="M444 82 H486"></path>
+          <path class="flow-line" d="M728 82 H770"></path>
+
+          <rect class="flow-box flow-box-green" x="92" y="190" width="238" height="104"></rect>
+          <text class="flow-title" x="110" y="220">5. Agent 原生 hook</text>
+          <text class="flow-text" x="110" y="244">从 stdin 读取 hook JSON</text>
+          <text class="flow-text" x="110" y="266">从 env 读取 terminal_key</text>
+          <text class="flow-small" x="110" y="286">提取 session_id / transcript path</text>
+
+          <rect class="flow-box flow-box-green" x="392" y="190" width="282" height="104"></rect>
+          <text class="flow-title" x="410" y="220">6. 更新 workspace_state</text>
+          <text class="flow-text" x="410" y="244">active_terminals[terminal_key]</text>
+          <text class="flow-text" x="410" y="266">写入 agent / cwd / session_id</text>
+          <text class="flow-small" x="410" y="286">写入 restore_cmd</text>
+
+          <path class="flow-line" d="M885 124 V164 H211 V190"></path>
+          <path class="flow-line" d="M330 242 H392"></path>
+
+          <rect class="flow-box flow-box-orange" x="92" y="356" width="250" height="106"></rect>
+          <text class="flow-title" x="110" y="386">7. snapshot capture</text>
+          <text class="flow-text" x="110" y="410">osascript 读取 Ghostty</text>
+          <text class="flow-text" x="110" y="432">windows / tabs / terminals</text>
+          <text class="flow-small" x="110" y="452">从 terminal name/title 识别 marker</text>
+
+          <rect class="flow-box flow-box-orange" x="392" y="356" width="282" height="106"></rect>
+          <text class="flow-title" x="410" y="386">8. 生成 latest_workspace</text>
+          <text class="flow-text" x="410" y="410">绑定 terminal_key 和 session</text>
+          <text class="flow-text" x="410" y="432">保存布局、cwd、restore_cmd</text>
+          <text class="flow-small" x="410" y="452">覆盖写入最新工作区快照</text>
+
+          <rect class="flow-box flow-box-blue" x="750" y="356" width="250" height="106"></rect>
+          <text class="flow-title" x="768" y="386">9. restore</text>
+          <text class="flow-text" x="768" y="410">读取 latest_workspace</text>
+          <text class="flow-text" x="768" y="432">AppleScript 重建布局</text>
+          <text class="flow-small" x="768" y="452">输入 codex resume / claude --resume</text>
+
+          <path class="flow-line" d="M217 294 V356"></path>
+          <path class="flow-line" d="M342 410 H392"></path>
+          <path class="flow-line" d="M674 410 H750"></path>
+          <path class="flow-line" d="M533 294 V356"></path>
+        </svg>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>数据 / 动作</th>
+              <th>生成或读取时机</th>
+              <th>来源</th>
+              <th>写入 / 注入位置</th>
+              <th>后续读取方</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>terminal_key</code></td>
+              <td>wrapper 被 shell 命中后、真实 Agent 启动前。</td>
+              <td>z-agent wrapper 生成的随机稳定标识。</td>
+              <td>写入子进程环境变量 <code>Z_AGENT_TERMINAL_KEY</code>，同时写入当前 terminal 的 name/title marker。</td>
+              <td>hook ingest 通过 env 读取；snapshot capture 通过 Ghostty AppleScript 读取 terminal name/title marker。</td>
+            </tr>
+            <tr>
+              <td><code>run_id</code></td>
+              <td>wrapper 启动本次 Agent 进程时。</td>
+              <td>z-agent wrapper 为本次启动生成。</td>
+              <td>写入子进程环境变量 <code>Z_AGENT_RUN_ID</code>，用于诊断和一次启动链路关联。</td>
+              <td>hook ingest 可读取，用于日志和低置信度匹配辅助。</td>
+            </tr>
+            <tr>
+              <td><code>cwd</code></td>
+              <td>wrapper 启动前；snapshot capture 时再次读取。</td>
+              <td>wrapper 的当前工作目录；Ghostty AppleScript 的 terminal working directory。</td>
+              <td>写入 <code>Z_AGENT_CWD</code> 和 <code>active_terminals</code>，快照时写入 <code>latest_workspace</code>。</td>
+              <td>restore 用它设置恢复后的 initial working directory；匹配失败时也可作为兜底条件。</td>
+            </tr>
+            <tr>
+              <td>terminal marker</td>
+              <td>真实 Agent 启动前。</td>
+              <td>由 <code>terminal_key</code> 拼成 <code>__zagent_terminal_xxx__</code>。</td>
+              <td>通过终端标题控制序列写入当前 Ghostty terminal 的 name/title 元数据。</td>
+              <td><code>zagent snapshot capture</code> 通过 AppleScript 读取，用来识别这个 pane 对应哪个 <code>terminal_key</code>。</td>
+            </tr>
+            <tr>
+              <td><code>session_id</code></td>
+              <td>Agent 运行后触发原生 hook 时。</td>
+              <td>Codex / Claude Code hook payload，或 hook payload 中的 transcript/session 文件路径。</td>
+              <td>由 <code>zagent hook ingest</code> 更新到 <code>workspace_state.json.active_terminals[terminal_key]</code>。</td>
+              <td>snapshot capture 合成快照时读取；restore 最终生成 <code>codex resume</code> 或 <code>claude --resume</code>。</td>
+            </tr>
+            <tr>
+              <td><code>latest_workspace</code></td>
+              <td>执行 <code>zagent snapshot capture</code> 时。</td>
+              <td>Ghostty AppleScript 布局数据 + <code>active_terminals</code> 里的 Agent session 状态。</td>
+              <td>覆盖写入 <code>workspace_state.json.latest_workspace</code>。</td>
+              <td><code>zagent restore</code> 读取它，重建 window / tab / terminal split，并输入 resume 命令。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="implementation-contract">实现契约</h2>
+    <section class="issue">
+      <p>本节定义代码实现必须遵守的边界。实现者按下面的模块职责拆分即可落地；各模块之间只通过命令参数、环境变量、Ghostty AppleScript 返回值和 <code>workspace_state.json</code> 交换信息。</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>模块</th>
+              <th>输入</th>
+              <th>必须完成的动作</th>
+              <th>输出 / 副作用</th>
+              <th>失败处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>install</td>
+              <td><code>zagent install codex</code> 或 <code>zagent install claude</code>、安装目录。</td>
+              <td>生成 agent hook ingest 脚本和原生 hook 配置模板。</td>
+              <td>写入安装目录，不自动修改 shell profile，不生成同名 PATH wrapper。</td>
+              <td>需要 z-agent 记录会话时，显式使用 <code>zagent codex</code> 或 <code>zagent claude</code>。</td>
+            </tr>
+            <tr>
+              <td>wrapper</td>
+              <td>用户输入的 <code>codex</code> / <code>claude</code> 命令、当前 <code>cwd</code>、真实 CLI 路径。</td>
+              <td>生成 <code>terminal_key</code> 和 <code>run_id</code>；写 terminal marker；设置 <code>Z_AGENT_*</code> 环境变量；启动真实 CLI。</td>
+              <td>真实 Agent 进程继承环境变量；<code>workspace_state.json.active_terminals[terminal_key]</code> 可先写入 agent、cwd、marker、last_seen_at。</td>
+              <td>真实 CLI 启动失败时透传退出码；状态写入失败时输出 warning，不阻止用户启动 Agent。</td>
+            </tr>
+            <tr>
+              <td>hook ingest</td>
+              <td>agent 原生 hook 的 stdin JSON，以及 wrapper 注入的 <code>Z_AGENT_TERMINAL_KEY</code>、<code>Z_AGENT_CWD</code>。</td>
+              <td>提取 <code>session_id</code>、transcript/session 文件路径、agent、cwd；生成 <code>restore_cmd</code>。</td>
+              <td>更新 <code>workspace_state.json.active_terminals[terminal_key]</code>。</td>
+              <td>缺少 <code>terminal_key</code> 时拒绝写入并提示 wrapper 未生效；缺少 <code>session_id</code> 时保留 cwd 和 agent，但标记为不可 resume。</td>
+            </tr>
+            <tr>
+              <td>state store</td>
+              <td>active terminal 更新、snapshot capture 结果、restore 读取请求。</td>
+              <td>维护单文件 <code>workspace_state.json</code>；写入前读旧状态；更新时保留未涉及字段；capture 前把旧 <code>latest_workspace</code> 移到 <code>previous_workspace</code>。</td>
+              <td>原子写入状态文件，建议采用临时文件 + rename；并发写入使用 lock 文件或平台文件锁。</td>
+              <td>JSON 解析失败时先备份坏文件，再初始化空状态并提示用户；写入失败时返回非零退出码。</td>
+            </tr>
+            <tr>
+              <td>ghostty adapter</td>
+              <td>Ghostty AppleScript 对象模型、<code>latest_workspace</code>、restore plan。</td>
+              <td>通过 <code>osascript</code> 读取 windows / tabs / terminals；读取 terminal id、name、working directory；恢复时创建 window、tab、split terminal 并输入命令。</td>
+              <td>capture 输出布局树；restore 执行 AppleScript。</td>
+              <td>Automation 权限缺失、Ghostty 未运行、AppleScript 字段缺失时输出明确错误；restore 不应执行半截命令后静默成功。</td>
+            </tr>
+            <tr>
+              <td>restore planner</td>
+              <td><code>workspace_state.json.latest_workspace</code>。</td>
+              <td>生成内部恢复计划；校验 <code>restore_cmd</code> 只允许 <code>codex resume &lt;id&gt;</code> 或 <code>claude --resume &lt;id&gt;</code>；区分 Agent terminal 和普通 shell terminal。</td>
+              <td>恢复前校验计划；校验通过后调用 Ghostty adapter。</td>
+              <td>没有 <code>latest_workspace</code> 时提示先执行 <code>zagent snapshot capture</code>；命令白名单校验失败时拒绝执行。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>字段 / 标识</th>
+              <th>格式</th>
+              <th>生命周期</th>
+              <th>实现要求</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>terminal_key</code></td>
+              <td><code>za_terminal_</code> + 随机短 id，示例：<code>za_terminal_a1b2c3d4</code>。</td>
+              <td>一次 terminal/Agent 启动期间稳定；写入状态后可被快照长期引用。</td>
+              <td>必须避免不同 terminal 冲突；不得包含 shell 特殊字符。</td>
+            </tr>
+            <tr>
+              <td>terminal marker</td>
+              <td><code>__zagent_terminal_&lt;id&gt;__</code>。</td>
+              <td>wrapper 启动真实 Agent 前写入当前 terminal name/title。</td>
+              <td>snapshot capture 优先用它绑定 terminal；写入方式需要在真实 Ghostty 上验证能否通过 AppleScript 读取。</td>
+            </tr>
+            <tr>
+              <td><code>Z_AGENT_TERMINAL_KEY</code></td>
+              <td>值等于 <code>terminal_key</code>。</td>
+              <td>只存在于真实 Agent 进程及其子进程环境中。</td>
+              <td>不写入 <code>.zshrc</code>；hook ingest 通过环境变量读取。</td>
+            </tr>
+            <tr>
+              <td><code>restore_cmd</code></td>
+              <td><code>codex resume &lt;session_id&gt;</code> 或 <code>claude --resume &lt;session_id&gt;</code>。</td>
+              <td>hook ingest 生成，snapshot 固化，restore 执行。</td>
+              <td>执行前必须重新校验白名单，不能执行任意历史命令或用户 prompt。</td>
+            </tr>
+            <tr>
+              <td><code>binding_confidence</code></td>
+              <td><code>high</code> / <code>medium</code> / <code>low</code>。</td>
+              <td>snapshot capture 绑定 terminal 时生成。</td>
+              <td>marker 命中为 high；cwd/process 兜底为 low；低置信绑定不自动执行。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="architecture">实现架构</h2>
+    <section class="issue">
+      <p>实现采用四层拆分：wrapper 负责启动真实 CLI 并注入本次 <code>terminal_key</code>；agent 原生 hook 把 session 元数据写回当前 terminal 状态；snapshot collector 通过 <code>osascript</code> 调用 Ghostty AppleScript 采集工作区布局并把 terminal/pane 与状态记录绑定；Ghostty adapter 按快照重建 window / tab / terminal split，并在对应 terminal 输入白名单 resume 命令。</p>
+      <pre class="ascii-diagram">Operator
+  │
+  ├─ zagent install codex        →  生成 Codex native hook / ingest 入口
+  ├─ zagent install claude       →  生成 Claude native hook / ingest 入口
+  │
+  └─ zagent codex|claude
+        │
+        ├─ 生成 terminal_key / run_id
+        ├─ 写入 terminal name/title marker：__zagent_terminal_<id>__
+        ├─ 注入 Z_AGENT_TERMINAL_KEY / Z_AGENT_RUN_ID / Z_AGENT_CWD / Z_AGENT_STATE_DIR
+        ├─ 启动真实 codex / claude binary
+        ├─ agent 原生 hook → zagent hook ingest
+        └─ 更新 ~/.local/share/z-agent/workspace_state.json.active_terminals[terminal_key]
+
+zagent snapshot capture
+  │
+  ├─ 调用 osascript / Ghostty AppleScript
+  ├─ 读取 Ghostty windows / tabs / terminals
+  ├─ 从 terminal name/title / cwd / process 识别 terminal_key
+  ├─ 按 terminal_key 绑定 active terminal
+  └─ 覆盖写入 ~/.local/share/z-agent/workspace_state.json.latest_workspace
+
+zagent restore
+  │
+  ├─ 读取 workspace_state.json.latest_workspace
+  ├─ 生成内部恢复计划
+  ├─ 校验每个 terminal 的 restore_cmd 是否为白名单命令
+  └─ 调用 osascript / Ghostty AppleScript → 重建 Ghostty 布局 → 在对应 terminal 输入 resume 命令</pre>
+    </section>
+
+    <h2 id="commands">命令契约</h2>
+    <section class="issue">
+      <p>下面是本方案要求代码对齐的目标命令契约。安装仍然按 agent 分端执行；恢复入口固定读取 <code>workspace_state.json.latest_workspace</code>。</p>
+      <div class="code-wrap">
+        <pre><code class="language-bash"><span class="tok-cmt"># 能力诊断：不写入、不安装</span>
+<span class="tok-fn">python3</span> src/z_agent/cli.py doctor
+
+<span class="tok-cmt"># 分端安装：写入 hook ingest 和原生 hook 配置示例</span>
+<span class="tok-fn">zagent</span> install codex
+<span class="tok-fn">zagent</span> install claude
+
+<span class="tok-cmt"># 显式通过 zagent 启动真实 CLI，并把 terminal_key 注入当前 terminal/pane</span>
+<span class="tok-fn">python3</span> src/z_agent/cli.py codex
+<span class="tok-fn">python3</span> src/z_agent/cli.py claude
+
+<span class="tok-cmt"># agent 原生 hook 调用入口：从 stdin 接收 hook JSON，只提取元数据</span>
+<span class="tok-fn">zagent</span> hook ingest --agent codex --json &lt; hook-event.json
+
+<span class="tok-cmt"># 采集当前 Ghostty 工作区快照：内部通过 osascript 访问 Ghostty AppleScript</span>
+<span class="tok-fn">zagent</span> snapshot capture --name working-now
+<span class="tok-fn">zagent</span> state show --json
+
+<span class="tok-cmt"># 恢复 Ghostty 布局</span>
+<span class="tok-fn">zagent</span> restore</code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+    </section>
+
+    <h2 id="data">状态数据</h2>
+    <section class="issue">
+      <p>本期只维护一个状态文件：<code>~/.local/share/z-agent/workspace_state.json</code>。它表达当前可恢复状态：<code>active_terminals</code> 保存每个 z-agent terminal 当前绑定的 agent session，<code>latest_workspace</code> 保存最近一次 Ghostty 工作区快照。恢复时只读取 <code>latest_workspace</code>。</p>
+      <div class="code-wrap">
+        <pre><code class="language-json">{
+  <span class="tok-str">&quot;schema&quot;</span>: <span class="tok-num">1</span>,
+  <span class="tok-str">&quot;updated_at&quot;</span>: <span class="tok-str">&quot;2026-06-13T14:30:15+08:00&quot;</span>,
+  <span class="tok-str">&quot;active_terminals&quot;</span>: {
+    <span class="tok-str">&quot;za_terminal_a1b2c3d4&quot;</span>: {
+      <span class="tok-str">&quot;marker&quot;</span>: <span class="tok-str">&quot;__zagent_terminal_a1b2c3d4__&quot;</span>,
+      <span class="tok-str">&quot;agent&quot;</span>: <span class="tok-str">&quot;codex&quot;</span>,
+      <span class="tok-str">&quot;cwd&quot;</span>: <span class="tok-str">&quot;/Users/markz/code/tools/iplugin&quot;</span>,
+      <span class="tok-str">&quot;session_id&quot;</span>: <span class="tok-str">&quot;019e9d90-07e9-79c3-93c3-a5b6952aaf4f&quot;</span>,
+      <span class="tok-str">&quot;session_file&quot;</span>: <span class="tok-str">&quot;~/.codex/sessions/2026/06/13/rollout-...jsonl&quot;</span>,
+      <span class="tok-str">&quot;restore_cmd&quot;</span>: <span class="tok-str">&quot;codex resume 019e9d90-07e9-79c3-93c3-a5b6952aaf4f&quot;</span>,
+      <span class="tok-str">&quot;last_seen_at&quot;</span>: <span class="tok-str">&quot;2026-06-13T14:29:42+08:00&quot;</span>,
+      <span class="tok-str">&quot;source&quot;</span>: <span class="tok-str">&quot;agent_hook&quot;</span>
+    }
+  },
+  <span class="tok-str">&quot;latest_workspace&quot;</span>: {
+    <span class="tok-str">&quot;snapshot_id&quot;</span>: <span class="tok-str">&quot;ws_20260613_143015&quot;</span>,
+    <span class="tok-str">&quot;captured_at&quot;</span>: <span class="tok-str">&quot;2026-06-13T14:30:15+08:00&quot;</span>,
+    <span class="tok-str">&quot;terminal_app&quot;</span>: <span class="tok-str">&quot;Ghostty&quot;</span>,
+    <span class="tok-str">&quot;windows&quot;</span>: [
+      {
+        <span class="tok-str">&quot;window_index&quot;</span>: <span class="tok-num">1</span>,
+        <span class="tok-str">&quot;tabs&quot;</span>: [
+          {
+            <span class="tok-str">&quot;tab_index&quot;</span>: <span class="tok-num">1</span>,
+            <span class="tok-str">&quot;name&quot;</span>: <span class="tok-str">&quot;iplugin&quot;</span>,
+            <span class="tok-str">&quot;split_tree&quot;</span>: {
+              <span class="tok-str">&quot;direction&quot;</span>: <span class="tok-str">&quot;horizontal&quot;</span>,
+              <span class="tok-str">&quot;children&quot;</span>: [
+                {
+                  <span class="tok-str">&quot;terminal_key&quot;</span>: <span class="tok-str">&quot;za_terminal_a1b2c3d4&quot;</span>,
+                  <span class="tok-str">&quot;ghostty_terminal_id&quot;</span>: <span class="tok-str">&quot;terminal-42&quot;</span>,
+                  <span class="tok-str">&quot;marker&quot;</span>: <span class="tok-str">&quot;__zagent_terminal_a1b2c3d4__&quot;</span>,
+                  <span class="tok-str">&quot;binding_method&quot;</span>: <span class="tok-str">&quot;terminal_marker&quot;</span>,
+                  <span class="tok-str">&quot;binding_confidence&quot;</span>: <span class="tok-str">&quot;high&quot;</span>,
+                  <span class="tok-str">&quot;cwd&quot;</span>: <span class="tok-str">&quot;/Users/markz/code/tools/iplugin&quot;</span>,
+                  <span class="tok-str">&quot;agent&quot;</span>: <span class="tok-str">&quot;codex&quot;</span>,
+                  <span class="tok-str">&quot;session_id&quot;</span>: <span class="tok-str">&quot;019e9d90-07e9-79c3-93c3-a5b6952aaf4f&quot;</span>,
+                  <span class="tok-str">&quot;restore_cmd&quot;</span>: <span class="tok-str">&quot;codex resume 019e9d90-07e9-79c3-93c3-a5b6952aaf4f&quot;</span>
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  <span class="tok-str">&quot;previous_workspace&quot;</span>: <span class="tok-key">null</span>
+}</code></pre>
+        <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+      </div>
+      <p><code>active_terminals</code> 用于保存当前 terminal 与 Agent session 的绑定关系。<code>latest_workspace</code> 是恢复布局和启动 resume 命令的唯一入口。<code>previous_workspace</code> 保留一份上次快照，供手动回退。</p>
+      <p>布局数据以 Ghostty AppleScript 暴露的对象和属性为稳定契约。本期快照记录 split 方向、pane 顺序、cwd、title、process、terminal_key 和 session 绑定；不承诺保存 pane 的像素尺寸或 60/40 这类精确分屏比例。</p>
+    </section>
+
+    <h2 id="review">Review 后执行路径</h2>
+    <section class="issue">
+      <ol>
+        <li>先跑 <code>python3 src/z_agent/cli.py doctor</code>，确认 Codex binary、Claude Code binary 和原生 session 目录探测是否符合预期。</li>
+        <li>执行 <code>zagent install codex</code> 或 <code>zagent install claude</code> 写入 hook ingest 和原生 hook 配置示例。</li>
+        <li>检查生成的 <code>config/hooks/*-native-hooks.json</code> 和 <code>*-hook-ingest.sh</code>；确认后再把 hook 配置合并到对应 agent 的原生 hook 配置里。</li>
+        <li>用 <code>zagent codex</code> 或 <code>zagent claude</code> 启动 Codex / Claude Code，并在 Ghostty 的多个 tab / split 中建立几组真实 Agent session。</li>
+        <li>执行 <code>zagent snapshot capture --name review-case</code>，授权 macOS Automation 访问 Ghostty，并生成当前 Ghostty 工作区快照。</li>
+        <li>执行 <code>zagent state show --json</code> 检查快照是否包含预期 window、tab、terminal、cwd 和 resume 命令。</li>
+        <li>执行 <code>zagent restore</code>，确认 Ghostty 能重建布局并恢复智能体会话。</li>
+      </ol>
+    </section>
+
+    <h2 id="extension">扩展性</h2>
+    <section class="issue">
+      <div class="grid">
+        <div class="mini">
+          <span class="tag p2">Agent spec</span>
+          <b>新增 AI CLI</b>
+          新工具可按独立 agent spec 加入 binary、session roots 和 resume template，不影响 Codex / Claude Code。
+        </div>
+        <div class="mini">
+          <span class="tag p2">Native hook</span>
+          <b>生命周期接入</b>
+          agent 原生 hook 通过 <code>zagent hook ingest</code> 更新当前 terminal 元数据；snapshot collector 按 <code>terminal_key</code> 把它绑定到具体 Ghostty terminal。
+        </div>
+        <div class="mini">
+          <span class="tag p1">Planner</span>
+          <b>未来多 Agent 编排</b>
+          可在 workspace state 上增加计划层：根据技术文档创建 window/tab/split terminal、启动子 Agent、分派任务、回收状态。
+        </div>
+        <div class="mini">
+          <span class="tag p1">Ghostty layout</span>
+          <b>布局表达能力</b>
+          本期保留 Ghostty 布局树字段；后续可扩展为按项目、agent 类型、任务阶段生成可复用布局模板。
+        </div>
+      </div>
+    </section>
+
+    <h2 id="risk">风险与验证</h2>
+    <section class="issue">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>风险</th>
+              <th>控制方式</th>
+              <th>当前状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Ghostty 布局采集不完整</td>
+              <td>用真实 window / tab / split 组合生成快照，检查 <code>split_tree</code>、pane 顺序、cwd 和 tab 归属是否稳定。</td>
+              <td><span class="warn">需真实 Ghostty 回归</span></td>
+            </tr>
+            <tr>
+              <td>分屏比例无法精确还原</td>
+              <td>快照契约以 split 方向和 pane 顺序为主；pane 像素尺寸和比例字段只有在 AppleScript dictionary 暴露稳定属性时才纳入 schema。</td>
+              <td><span class="p2 tag">边界明确</span></td>
+            </tr>
+            <tr>
+              <td>pane 与 session 绑定错误</td>
+              <td>wrapper 注入 <code>terminal_key</code> 和 terminal name/title marker；hook 更新 <code>active_terminals</code>；snapshot capture 绑定时保留绑定依据和置信度。</td>
+              <td><span class="warn">需代码对齐后验证</span></td>
+            </tr>
+            <tr>
+              <td>terminal title marker 读取失败</td>
+              <td>优先从 terminal name/title 读取 <code>__zagent_terminal_...__</code>；失败时可用 cwd、process、启动时间窗做低置信度兜底，恢复时拒绝自动执行低置信绑定。</td>
+              <td><span class="warn">需真实 Ghostty 回归</span></td>
+            </tr>
+            <tr>
+              <td>快照过期</td>
+              <td><code>latest_workspace</code> 记录 <code>captured_at</code>、window/tab/terminal 数量和 session 状态；恢复前使用最近一次快照。</td>
+              <td><span class="warn">需在 restore 输出中呈现</span></td>
+            </tr>
+            <tr>
+              <td>误执行命令</td>
+              <td>只允许脚本生成的 <code>codex resume</code> / <code>claude --resume</code>；restore 执行前做白名单校验。</td>
+              <td><span class="ok">命令白名单保留</span></td>
+            </tr>
+            <tr>
+              <td>Ghostty AppleScript 版本差异</td>
+              <td>基于官方 AppleScript API；真实执行前先验证 layout capture 和恢复白名单。</td>
+              <td><span class="warn">需目标机授权和版本验证</span></td>
+            </tr>
+            <tr>
+              <td>macOS Automation 权限缺失</td>
+              <td>首次调用 <code>osascript</code> 控制 Ghostty 时依赖系统授权；doctor 或 snapshot capture 应输出可读错误和恢复指引。</td>
+              <td><span class="warn">需真实授权流程验证</span></td>
+            </tr>
+            <tr>
+              <td>pane 中没有 Agent session</td>
+              <td><code>latest_workspace</code> 保留该 pane 的 cwd 和 shell 信息；restore 时只恢复 shell pane，不生成 agent resume 命令。</td>
+              <td><span class="p2 tag">按设计处理</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2 id="sources">证据来源</h2>
+    <section class="summary">
+      <ul>
+        <li>用户提供的输入文档：<code>file:///Users/markz/Desktop/ghostty_agent_session_restore_plan.html</code>。</li>
+        <li>关联版本记录：<code>../versions/v0.1.0.md</code>；代码实施方案：<code>z_agent_code_implementation_plan_v0_1.md</code>。</li>
+        <li>实现文件：<code>src/z_agent/</code>、<code>pyproject.toml</code>、<code>README.md</code>、<code>CHANGELOG.md</code>。</li>
+        <li>本地能力探测：<code>codex resume --help</code> 确认可接受 <code>codex resume [SESSION_ID]</code>、<code>--last</code>、<code>--all</code>；Claude Code 侧按 <code>claude --resume &lt;SESSION_ID&gt;</code> 作为目标 resume 命令模板。</li>
+        <li>Ghostty AppleScript 官方文档：确认 macOS 支持 <code>application -> windows -> tabs -> terminals</code> 对象模型、<code>new surface configuration</code>、<code>new window</code>、<code>new tab</code>、<code>split</code>、<code>input text</code>、<code>initial working directory</code>、<code>initial input</code> 和 Automation 权限约束。<a href="https://ghostty.org/docs/features/applescript">https://ghostty.org/docs/features/applescript</a></li>
+        <li>Ghostty 配置参考：确认 <code>link-url</code>、<code>link-previews</code>、<code>window-save-state</code> 等配置项存在。<a href="https://ghostty.org/docs/config/reference">https://ghostty.org/docs/config/reference</a></li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>后续未纳入本次 MVP 的方向</summary>
+      <div class="details-body">
+        <ul>
+          <li>不做 launchd / daemon：本期由用户显式执行 snapshot capture 和 restore。</li>
+          <li>不做任务编排 DSL：本期只恢复已经存在过的 Ghostty 工作区布局和对应 Agent session。</li>
+          <li>不支持任意历史命令回放：只恢复 agent 原生 session 和普通 shell pane 的工作目录，避免把终端历史变成自动执行入口。</li>
+        </ul>
+      </div>
+    </details>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll(".layout-with-toc").forEach(layout => {
+    const button = layout.querySelector(".toc-toggle");
+    if (!button) return;
+    button.addEventListener("click", () => {
+      const collapsed = layout.classList.toggle("toc-collapsed");
+      button.setAttribute("aria-expanded", String(!collapsed));
+      button.setAttribute("title", collapsed ? "展开目录" : "收起目录");
+      button.textContent = collapsed ? "›" : "‹";
+    });
+  });
+  document.querySelectorAll(".copy-btn").forEach(button => {
+    button.addEventListener("click", async () => {
+      const block = button.closest(".code-wrap");
+      const code = block ? block.querySelector("code") : null;
+      if (!code) return;
+      await navigator.clipboard.writeText(code.innerText);
+      const old = button.textContent;
+      button.textContent = "已复制";
+      window.setTimeout(() => { button.textContent = old; }, 1500);
+    });
+  });
+</script>
+</body>
+</html>

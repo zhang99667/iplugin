@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>z-agent 代码执行链路导读</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --accent-soft: #eef2ff;
+      --p1: #ea580c;
+      --p2: #2563eb;
+      --ok: #047857;
+      --warn: #b45309;
+      --code-bg: #10231f;
+      --code: #a9b5af;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+    img, svg, canvas, video { max-width: 100%; height: auto; }
+    .layout-with-toc {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 24px;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+      transition: grid-template-columns .2s ease;
+    }
+    .layout-with-toc.toc-collapsed { grid-template-columns: 52px minmax(0, 1fr); }
+    main { max-width: none; min-width: 0; }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+      padding: 16px;
+    }
+    .toc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+    .toc-title { margin: 0; color: var(--muted); font-size: 14px; font-weight: 800; }
+    .toc-toggle {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #64748b;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .toc a {
+      display: block;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: #334155;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .toc a:hover { background: #f1f5f9; color: var(--accent); }
+    .layout-with-toc.toc-collapsed .toc { padding: 10px; overflow: visible; }
+    .layout-with-toc.toc-collapsed .toc-header { justify-content: center; margin-bottom: 0; }
+    .layout-with-toc.toc-collapsed .toc-title,
+    .layout-with-toc.toc-collapsed .toc a { display: none; }
+    .layout-with-toc.toc-collapsed .toc-toggle { width: 32px; height: 32px; }
+    h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.25; }
+    h2 {
+      margin: 30px 0 14px;
+      font-size: 22px;
+      border-left: 5px solid var(--accent);
+      padding-left: 10px;
+    }
+    h3 { margin: 0 0 10px; font-size: 18px; }
+    p { margin: 8px 0; }
+    section[id], h2[id] { scroll-margin-top: 24px; }
+    .doc-header {
+      margin-bottom: 18px;
+      padding: 28px 30px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 58%, #60a5fa 100%);
+      color: #ffffff;
+      box-shadow: 0 14px 32px rgba(37, 99, 235, .22);
+    }
+    .doc-subtitle { margin: 0 0 18px; color: rgba(255,255,255,.86); font-size: 15px; }
+    .doc-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .doc-chip {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      min-height: 30px;
+      padding: 3px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.15);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .summary, .issue {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+      padding: 18px 20px;
+      margin: 16px 0;
+      min-width: 0;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+    .grid > * { min-width: 0; }
+    .mini {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fbfdff;
+    }
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .p1 { background: var(--p1); }
+    .p2 { background: var(--p2); }
+    .ok { color: var(--ok); font-weight: 800; }
+    .warn { color: var(--warn); font-weight: 800; }
+    .muted { color: var(--muted); }
+    .path {
+      display: inline-block;
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      word-break: break-all;
+      text-decoration: none;
+    }
+    a.path.file-link:hover {
+      background: #e0e7ff;
+      color: #312e81;
+      box-shadow: inset 0 0 0 1px rgba(67, 56, 202, .18);
+    }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: .92em;
+      white-space: nowrap;
+    }
+    .code-wrap { position: relative; max-width: 100%; min-width: 0; }
+    .code-wrap pre {
+      max-width: 100%;
+      margin: 10px 0 14px;
+      padding: 38px 16px 14px;
+      overflow: auto;
+      background: var(--code-bg);
+      color: var(--code);
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      tab-size: 4;
+    }
+    .code-wrap pre code {
+      background: transparent;
+      color: inherit;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      font-size: inherit;
+      white-space: pre;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: rgba(255,255,255,.10);
+      color: #8fa59c;
+      border: 1px solid rgba(143,165,156,.22);
+      border-radius: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .code-wrap:hover .copy-btn,
+    .code-wrap:focus-within .copy-btn { opacity: 1; }
+    .copy-btn.copied { color: #83b986; border-color: #83b986; }
+    .tok-key { color: #d955a2; font-weight: 700; }
+    .tok-str { color: #83b986; }
+    .tok-num { color: #d7c96f; }
+    .tok-cmt { color: #5f947d; font-style: italic; }
+    .tok-fn { color: #6fa0ff; }
+    .tok-var { color: #8f79bd; }
+    .tok-type { color: #d2d66f; font-weight: 700; }
+    .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      background: #f1f5f9;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    td { padding: 8px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:hover td { background: #f8fafc; }
+    details { margin: 12px 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    summary {
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      background: #f8fafc;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: "▸";
+      display: inline-block;
+      font-size: 10px;
+      transition: transform .2s;
+      color: var(--muted);
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+    .details-body { padding: 12px 16px; }
+    .flow-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fbfdff;
+      padding: 16px;
+    }
+    .flow-title { fill: #0f172a; font-weight: 800; font-size: 13px; }
+    .flow-text { fill: #334155; font-size: 12px; }
+    .flow-box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.4; rx: 10; }
+    .flow-blue { stroke: #93c5fd; fill: #eff6ff; }
+    .flow-green { stroke: #86efac; fill: #f0fdf4; }
+    .flow-orange { stroke: #fdba74; fill: #fff7ed; }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+    @media (max-width: 900px) {
+      .layout-with-toc { display: block; padding: 20px 16px 44px; }
+      .toc { position: static; max-height: none; margin-bottom: 16px; overflow: visible; }
+      .layout-with-toc.toc-collapsed .toc { padding: 16px; }
+      .layout-with-toc.toc-collapsed .toc-header { justify-content: space-between; }
+      .layout-with-toc.toc-collapsed .toc-title { display: block; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+      .summary, .issue { padding: 14px; border-radius: 12px; }
+      .doc-header { padding: 22px 18px; border-radius: 14px; }
+      .doc-header h1 { font-size: 23px; }
+      .grid { grid-template-columns: 1fr; }
+      .copy-btn { opacity: 1; }
+    }
+    @media print {
+      body { background: #ffffff; color: #111827; }
+      .layout-with-toc { display: block; padding: 0; max-width: none; }
+      .toc { position: static; max-height: none; box-shadow: none; }
+      .summary, .issue, .doc-header { box-shadow: none; break-inside: avoid; }
+      .doc-header { background: #ffffff; color: #111827; border: 1px solid #d1d5db; }
+      .doc-subtitle, .muted { color: #374151; }
+      .doc-chip { background: #f3f4f6; color: #111827; border: 1px solid #d1d5db; }
+      .copy-btn, .toast { display: none !important; }
+      a { color: #111827; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+<div id="toast" class="toast">已复制到剪贴板</div>
+
+<div class="layout-with-toc">
+  <aside class="toc" aria-label="目录">
+    <div class="toc-header">
+      <p class="toc-title">目录</p>
+      <button class="toc-toggle" type="button" aria-label="收起目录" aria-expanded="true" title="收起目录">
+        <span class="toc-toggle-icon" aria-hidden="true">‹</span>
+      </button>
+    </div>
+    <a href="#summary">核心结论</a>
+    <a href="#boundary">阅读边界</a>
+    <a href="#flow">完整主线</a>
+    <a href="#entry">入口分发</a>
+    <a href="#install">安装阶段</a>
+    <a href="#agent-spec">Agent 契约</a>
+    <a href="#wrapper">显式启动</a>
+    <a href="#hook">Hook 回写</a>
+    <a href="#state">状态存储</a>
+    <a href="#snapshot">快照绑定</a>
+    <a href="#restore">恢复执行</a>
+    <a href="#tests">验证覆盖</a>
+    <a href="#sources">证据来源</a>
+  </aside>
+
+  <main>
+    <header class="doc-header">
+      <h1>z-agent 代码执行链路导读</h1>
+      <p class="doc-subtitle">从 CLI 入口到 Ghostty 恢复执行，按真实代码顺序梳理 z-agent 的对象来源、状态流转、触发机制和安全边界。</p>
+      <div class="doc-meta">
+        <span class="doc-chip">文档类型：代码导读报告</span>
+        <span class="doc-chip">仓库：tools/iplugin · tools/z-agent</span>
+        <span class="doc-chip">版本：0.1.0</span>
+        <span class="doc-chip">整理日期：2026-06-14</span>
+        <span class="doc-chip">状态：基于当前本地源码</span>
+      </div>
+    </header>
+
+    <p class="muted">行号基于当前本地源码定位，若后续继续修改文件，以文件路径和代码上下文为准。</p>
+
+    <section id="summary" class="summary">
+      <h2>核心结论</h2>
+      <p>z-agent 的主设计不是接管原始 <code>codex</code> / <code>claude</code> 命令，而是让用户显式通过 <code>zagent codex</code> 或 <code>zagent claude</code> 启动一次可记录的 Agent 会话。wrapper 注入 pane 身份，hook 回写 session 元数据，Ghostty snapshot 把终端窗格和会话绑定，restore 最后只执行白名单内的 resume 命令。</p>
+      <div class="grid">
+        <div class="mini"><span class="tag p2">主入口</span> <b>显式 wrapper</b><br/>只有 <code>zagent codex/claude</code> 进入注入链路，原始命令不被替换。</div>
+        <div class="mini"><span class="tag p2">状态核心</span> <b>workspace_state.json</b><br/>保存 <code>active_terminals</code>、<code>latest_workspace</code> 和一份 previous 快照。</div>
+        <div class="mini"><span class="tag p2">恢复安全</span> <b>结构化 argv</b><br/>自动恢复只允许 <code>codex resume &lt;id&gt;</code> 和 <code>claude --resume &lt;id&gt;</code>。</div>
+        <div class="mini"><span class="tag p1">边界</span> <b>Ghostty 集成仍需实测</b><br/>单测覆盖纯逻辑，真实 GUI 自动化和 macOS Automation 权限需要手动验证。</div>
+      </div>
+    </section>
+
+    <h2 id="boundary">阅读边界</h2>
+    <section class="issue">
+      <h3>本次重点阅读范围</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>模块</th><th>角色</th><th>关键文件</th></tr></thead>
+          <tbody>
+            <tr><td>入口与分发</td><td>把用户命令分派到 install、hook、snapshot、restore 或 wrapper。</td><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/cli.py:163">src/z_agent/cli.py:163</a></td></tr>
+            <tr><td>显式启动</td><td>生成 terminal_key/run_id，写 terminal marker，启动真实 Agent。</td><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/wrapper.py:55">src/z_agent/wrapper.py:55</a></td></tr>
+            <tr><td>Hook 回写</td><td>从 Agent 原生 hook 中提取 session 元数据，生成 restore argv。</td><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/hooks.py:94">src/z_agent/hooks.py:94</a></td></tr>
+            <tr><td>状态存储</td><td>加锁、读改写、原子替换，保存 active terminals 和 workspace。</td><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/state.py:123">src/z_agent/state.py:123</a></td></tr>
+            <tr><td>Ghostty 适配</td><td>生成 AppleScript，采集窗格，绑定 session，执行恢复。</td><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/ghostty.py:39">src/z_agent/ghostty.py:39</a></td></tr>
+            <tr><td>恢复计划</td><td>把 latest_workspace 转成可审查计划并执行白名单校验。</td><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/planner.py:48">src/z_agent/planner.py:48</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>背景文件包括 <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/agent_specs.py:35">src/z_agent/agent_specs.py:35</a>、<a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/models.py:13">src/z_agent/models.py:13</a>、<a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/config.py:13">src/z_agent/config.py:13</a>、<a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/doctor.py:12">src/z_agent/doctor.py:12</a> 和测试目录。</p>
+    </section>
+
+    <h2 id="flow">完整主线</h2>
+    <section class="summary">
+      <p>完整链路可以压缩成一句话：安装只生成 hook 入口，真实运行时由 <code>zagent codex/claude</code> 显式启动 Agent，wrapper 和 hook 共同填充状态，snapshot 绑定 Ghostty pane，restore 经过内部白名单校验后直接执行安全命令。</p>
+      <div class="flow-wrap" aria-label="z-agent 代码执行链路图">
+        <svg width="1080" height="430" role="img" aria-labelledby="flow-title flow-desc">
+          <title id="flow-title">z-agent 从启动到恢复的执行链路</title>
+          <desc id="flow-desc">展示 install、wrapper、hook、snapshot、planner 和 Ghostty restore 的顺序。</desc>
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#64748b"></path>
+            </marker>
+          </defs>
+          <rect class="flow-box flow-blue" x="24" y="34" width="178" height="70"></rect>
+          <text class="flow-title" x="42" y="62">install</text>
+          <text class="flow-text" x="42" y="84">只生成 hook 文件</text>
+
+          <rect class="flow-box flow-blue" x="24" y="170" width="178" height="84"></rect>
+          <text class="flow-title" x="42" y="198">zagent codex/claude</text>
+          <text class="flow-text" x="42" y="220">显式进入 wrapper</text>
+          <text class="flow-text" x="42" y="240">不替换原始命令</text>
+
+          <rect class="flow-box flow-orange" x="258" y="170" width="184" height="84"></rect>
+          <text class="flow-title" x="276" y="198">WrapperContext</text>
+          <text class="flow-text" x="276" y="220">terminal_key / run_id</text>
+          <text class="flow-text" x="276" y="240">marker / cwd / env</text>
+
+          <rect class="flow-box flow-orange" x="498" y="170" width="180" height="84"></rect>
+          <text class="flow-title" x="516" y="198">真实 Agent</text>
+          <text class="flow-text" x="516" y="220">继承 Z_AGENT_*</text>
+          <text class="flow-text" x="516" y="240">原样透传用户参数</text>
+
+          <rect class="flow-box flow-green" x="736" y="162" width="208" height="98"></rect>
+          <text class="flow-title" x="754" y="190">hook ingest</text>
+          <text class="flow-text" x="754" y="212">提取 session_id</text>
+          <text class="flow-text" x="754" y="234">生成 restore.argv</text>
+          <text class="flow-text" x="754" y="252">更新 active_terminals</text>
+
+          <rect class="flow-box flow-blue" x="258" y="314" width="184" height="72"></rect>
+          <text class="flow-title" x="276" y="342">snapshot capture</text>
+          <text class="flow-text" x="276" y="364">Ghostty AppleScript</text>
+
+          <rect class="flow-box flow-green" x="498" y="314" width="180" height="72"></rect>
+          <text class="flow-title" x="516" y="342">bind panes</text>
+          <text class="flow-text" x="516" y="364">marker high / cwd low</text>
+
+          <rect class="flow-box flow-green" x="736" y="314" width="208" height="72"></rect>
+          <text class="flow-title" x="754" y="342">latest_workspace</text>
+          <text class="flow-text" x="754" y="364">保存可恢复快照</text>
+
+          <rect class="flow-box flow-orange" x="736" y="34" width="208" height="84"></rect>
+          <text class="flow-title" x="754" y="62">restore</text>
+          <text class="flow-text" x="754" y="84">内部白名单校验</text>
+          <text class="flow-text" x="754" y="104">直接控制 Ghostty</text>
+
+          <line x1="202" y1="212" x2="258" y2="212" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="442" y1="212" x2="498" y2="212" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="678" y1="212" x2="736" y2="212" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="202" y1="212" x2="258" y2="350" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="442" y1="350" x2="498" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="678" y1="350" x2="736" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="840" y1="314" x2="840" y2="118" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"></line>
+        </svg>
+      </div>
+    </section>
+
+    <h2 id="entry">1. 入口分发：先判断是不是 Agent 快捷入口</h2>
+    <section class="issue">
+      <h3>准备阶段：包入口和 CLI 入口</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/pyproject.toml:13">pyproject.toml:13-14</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/cli.py:163">src/z_agent/cli.py:163-172</a>
+      </div>
+      <p><code>pyproject.toml</code> 把命令行入口注册为 <code>zagent = "z_agent.cli:main"</code>。进入 <code>main()</code> 后，代码先看第一个参数是不是 <code>codex</code> 或 <code>claude</code>。如果是，就直接走 wrapper 快捷入口；如果不是，才进入 argparse 子命令树。</p>
+      <div class="code-wrap">
+  <pre><code class="language-python">argv = <span class="tok-type">list</span>(sys.argv[<span class="tok-num">1</span>:] <span class="tok-key">if</span> argv <span class="tok-key">is</span> <span class="tok-key">None</span> <span class="tok-key">else</span> argv)
+<span class="tok-key">if</span> argv <span class="tok-key">and</span> argv[<span class="tok-num">0</span>] <span class="tok-key">in</span> AGENT_SPECS:
+    agent = argv[<span class="tok-num">0</span>]
+    <span class="tok-key">try</span>:
+        binary, agent_args = <span class="tok-fn">_parse_wrapper_args</span>(argv[<span class="tok-num">1</span>:])
+        <span class="tok-key">return</span> <span class="tok-fn">run_agent</span>(agent, agent_args, explicit_binary=binary)
+    <span class="tok-key">except</span> WrapperError <span class="tok-key">as</span> exc:
+        <span class="tok-fn">print</span>(<span class="tok-str">f&quot;zagent: {exc}&quot;</span>, file=sys.stderr)
+        <span class="tok-key">return</span> <span class="tok-num">2</span></code></pre>
+  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+</div>
+      <p><b>执行阶段：</b>这里直接决定两条世界线：<code>zagent codex</code> 是“启动真实 Agent 并注入元数据”；<code>zagent install/snapshot/restore</code> 是普通管理命令。</p>
+    </section>
+
+    <h2 id="install">2. 安装阶段：只生成 hook 文件，不接管原始命令</h2>
+    <section class="issue">
+      <h3>准备阶段：生成安装计划</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/install.py:48">src/z_agent/install.py:48-56</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/tests/test_install.py:16">tests/test_install.py:16-30</a>
+      </div>
+      <p><code>zagent install codex</code> 不会创建 <code>bin/codex</code>，也不会生成需要 source 的 PATH wrapper。它只写入 hook ingest 脚本和原生 hook 配置示例。这样原始 <code>codex</code> / <code>claude</code> 仍保持原样，只有显式输入 <code>zagent codex</code> 才进入记录链路。</p>
+      <div class="code-wrap">
+  <pre><code class="language-python"><span class="tok-key">def</span> <span class="tok-fn">build_install_plan</span>(agent: <span class="tok-type">str</span>) -&gt; Dict[<span class="tok-type">str</span>, <span class="tok-type">str</span>]:
+    spec = <span class="tok-fn">get_agent_spec</span>(agent)
+    root = <span class="tok-fn">install_root</span>()
+    agent_root = root / spec.name
+    <span class="tok-key">return</span> {
+        <span class="tok-type">str</span>(agent_root / <span class="tok-str">&quot;config&quot;</span> / <span class="tok-str">&quot;hooks&quot;</span> / <span class="tok-str">f&quot;{spec.name}-hook-ingest.sh&quot;</span>): <span class="tok-fn">_hook_ingest_script</span>(spec.name),
+        <span class="tok-type">str</span>(agent_root / <span class="tok-str">&quot;config&quot;</span> / <span class="tok-str">&quot;hooks&quot;</span> / <span class="tok-str">f&quot;{spec.name}-native-hooks.json&quot;</span>): <span class="tok-fn">_native_hooks_template</span>(spec.name),
+    }</code></pre>
+  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+</div>
+      <p><b>副作用：</b><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/install.py:59">install_agent():59-73</a> 创建目录、写文本，并只给 <code>*-hook-ingest.sh</code> 加执行权限。</p>
+    </section>
+
+    <h2 id="agent-spec">3. Agent 契约：把 Codex 和 Claude 的差异收拢成配置</h2>
+    <section class="issue">
+      <h3>数据来源：AgentSpec</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/agent_specs.py:14">src/z_agent/agent_specs.py:14-32</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/agent_specs.py:35">src/z_agent/agent_specs.py:35-52</a>
+      </div>
+      <p><code>AgentSpec</code> 是恢复命令和真实 binary 查找的唯一配置源。Codex 和 Claude 的差异只在这里定义：binary 名称、环境变量名、session 根目录和 resume 命令模板。</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Agent</th><th>真实 binary 查找</th><th>恢复 argv 模板</th><th>session 根目录</th></tr></thead>
+          <tbody>
+            <tr><td>codex</td><td><code>--binary</code>、<code>Z_AGENT_CODEX_BINARY</code>、PATH 中的 <code>codex</code></td><td><code>["codex", "resume", session_id]</code></td><td><code>~/.codex/sessions</code></td></tr>
+            <tr><td>claude</td><td><code>--binary</code>、<code>Z_AGENT_CLAUDE_BINARY</code>、PATH 中的 <code>claude</code></td><td><code>["claude", "--resume", session_id]</code></td><td><code>~/.claude/projects</code>、<code>~/.claude</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><b>关键点：</b><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/agent_specs.py:24">build_resume():24-32</a> 生成结构化 <code>argv</code>，<code>display</code> 只负责展示，restore 执行不会信任字符串命令。</p>
+    </section>
+
+    <h2 id="wrapper">4. 显式启动：生成 pane 身份并启动真实 Agent</h2>
+    <section class="issue">
+      <h3>准备阶段：WrapperContext</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/wrapper.py:17">src/z_agent/wrapper.py:17-28</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/wrapper.py:55">src/z_agent/wrapper.py:55-97</a>
+      </div>
+      <p>用户输入 <code>zagent codex</code> 后，wrapper 复制当前环境，找到真实 binary，生成或复用 <code>terminal_key</code>，每次启动刷新 <code>run_id</code>，并把 <code>Z_AGENT_*</code> 注入子进程环境。</p>
+      <div class="code-wrap">
+  <pre><code class="language-python">terminal_key = base_env.<span class="tok-fn">get</span>(<span class="tok-str">&quot;Z_AGENT_TERMINAL_KEY&quot;</span>) <span class="tok-key">or</span> <span class="tok-fn">new_terminal_key</span>()
+run_id = <span class="tok-fn">new_run_id</span>()
+cwd = os.<span class="tok-fn">getcwd</span>()
+marker = <span class="tok-fn">marker_for_terminal_key</span>(terminal_key)
+child_env.<span class="tok-fn">update</span>({
+    <span class="tok-str">&quot;Z_AGENT_AGENT&quot;</span>: spec.name,
+    <span class="tok-str">&quot;Z_AGENT_TERMINAL_KEY&quot;</span>: terminal_key,
+    <span class="tok-str">&quot;Z_AGENT_RUN_ID&quot;</span>: run_id,
+    <span class="tok-str">&quot;Z_AGENT_CWD&quot;</span>: cwd,
+})</code></pre>
+  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+</div>
+      <h3>执行阶段：写状态、写 marker、启动真实 CLI</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/wrapper.py:100">src/z_agent/wrapper.py:100-130</a>
+      </div>
+      <p><code>record_wrapper_start()</code> 先把 pane 登记到 <code>active_terminals</code>，但此时还没有 session_id，所以 <code>resumable=False</code>。随后 <code>write_terminal_marker()</code> 用 OSC 0 控制序列把 marker 写入终端标题，供 Ghostty snapshot 读回。最后使用 <code>subprocess.call([context.binary, *context.args], env=context.env)</code> 启动真实 Agent，不经过 shell。</p>
+      <div class="grid">
+        <div class="mini"><b>terminal_key</b><br/>pane 级稳定身份，例如 <code>za_terminal_a1b2c3d4</code>。</div>
+        <div class="mini"><b>marker</b><br/>写进终端标题的可搜索编码，例如 <code>__zagent_terminal_a1b2c3d4__</code>。</div>
+        <div class="mini"><b>run_id</b><br/>单次真实 Agent 进程启动身份，同一 pane 重启时会刷新。</div>
+      </div>
+    </section>
+
+    <h2 id="hook">5. Hook 回写：从 Agent 事件补齐 session_id 和 restore.argv</h2>
+    <section class="issue">
+      <h3>触发入口：Agent 原生 hook 调用 hook ingest</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/install.py:19">src/z_agent/install.py:19-30</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/hooks.py:135">src/z_agent/hooks.py:135-143</a>
+      </div>
+      <p>安装生成的 hook shell 脚本把 stdin 原样交给 <code>zagent hook ingest --agent ... --json</code>。ingest 先解析 JSON，再进入 <code>ingest_hook_event()</code>。这一步依赖 wrapper 注入的 <code>Z_AGENT_TERMINAL_KEY</code> 来确定“这个 hook 属于哪个 pane”。</p>
+      <div class="code-wrap">
+  <pre><code class="language-python">terminal_key = env.<span class="tok-fn">get</span>(<span class="tok-str">&quot;Z_AGENT_TERMINAL_KEY&quot;</span>)
+<span class="tok-key">if</span> <span class="tok-key">not</span> terminal_key:
+    <span class="tok-key">raise</span> <span class="tok-fn">HookIngestError</span>(<span class="tok-str">&quot;缺少 Z_AGENT_TERMINAL_KEY；请先通过 z-agent 包装器启动 agent&quot;</span>)
+
+cwd = env.<span class="tok-fn">get</span>(<span class="tok-str">&quot;Z_AGENT_CWD&quot;</span>) <span class="tok-key">or</span> os.<span class="tok-fn">getcwd</span>()
+run_id = env.<span class="tok-fn">get</span>(<span class="tok-str">&quot;Z_AGENT_RUN_ID&quot;</span>)
+session_id, session_file = <span class="tok-fn">extract_session_metadata</span>(payload)
+
+patch = {
+    <span class="tok-str">&quot;terminal_key&quot;</span>: terminal_key,
+    <span class="tok-str">&quot;marker&quot;</span>: <span class="tok-fn">marker_for_terminal_key</span>(terminal_key),
+    <span class="tok-str">&quot;agent&quot;</span>: spec.name,
+    <span class="tok-str">&quot;cwd&quot;</span>: cwd,
+    <span class="tok-str">&quot;run_id&quot;</span>: run_id,
+    <span class="tok-str">&quot;session_id&quot;</span>: session_id,
+    <span class="tok-str">&quot;resumable&quot;</span>: <span class="tok-type">bool</span>(session_id),
+}</code></pre>
+  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+</div>
+      <p><b>数据来源：</b><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/hooks.py:17">SESSION_KEYS:17-25</a> 和 <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/hooks.py:26">SESSION_FILE_KEYS:26-35</a> 定义兼容字段。若 payload 没有显式 session_id，则 <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/hooks.py:67">_derive_session_id():67-81</a> 从 transcript 路径里提取 UUID 或文件名 stem。</p>
+      <p><b>副作用：</b>拿到 session 后，<a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/hooks.py:121">hooks.py:121-125</a> 通过 <code>spec.build_resume(session_id)</code> 写入结构化 <code>restore</code> 和展示用 <code>restore_cmd</code>。</p>
+    </section>
+
+    <h2 id="state">6. 状态存储：所有写入统一走读改写</h2>
+    <section class="issue">
+      <h3>队列/状态准备：workspace_state.json</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/config.py:13">src/z_agent/config.py:13-35</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/models.py:24">src/z_agent/models.py:24-32</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/state.py:34">src/z_agent/state.py:34-49</a>
+      </div>
+      <p>状态默认放在 <code>~/.local/share/z-agent/workspace_state.json</code>，也可以用 <code>Z_AGENT_STATE_DIR</code> 隔离。空状态包含 <code>active_terminals</code>、<code>latest_workspace</code>、<code>previous_workspace</code>。</p>
+      <div class="code-wrap">
+  <pre><code class="language-python"><span class="tok-key">def</span> <span class="tok-fn">mutate_state</span>(mutator: Callable[[StateDict], Any], root: Path | <span class="tok-key">None</span> = <span class="tok-key">None</span>) -&gt; StateDict:
+    path = <span class="tok-fn">state_file_path</span>(root)
+    <span class="tok-key">with</span> <span class="tok-fn">_lock</span>(path):
+        <span class="tok-key">try</span>:
+            state = <span class="tok-fn">_read_without_lock</span>(path)
+        <span class="tok-key">except</span> StateError:
+            state = <span class="tok-fn">empty_state</span>()
+        <span class="tok-fn">mutator</span>(state)
+        <span class="tok-fn">_write_without_lock</span>(path, state)
+        <span class="tok-key">return</span> state</code></pre>
+  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+</div>
+      <p><b>防覆盖机制：</b><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/state.py:138">update_active_terminal():138-150</a> 会先复制旧记录再覆盖 patch，避免 wrapper 写入的 cwd/marker 被后续 hook 更新 session_id 时丢掉。</p>
+      <p><b>原子写：</b><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/state.py:77">_write_without_lock():77-98</a> 使用同目录临时文件、<code>fsync</code> 和 <code>os.replace</code>，坏 JSON 会由 <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/state.py:52">backup_broken_state():52-59</a> 先备份。</p>
+    </section>
+
+    <h2 id="snapshot">7. 快照采集：Ghostty pane 绑定到 active_terminals</h2>
+    <section class="issue">
+      <h3>触发入口：zagent snapshot capture</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/cli.py:192">src/z_agent/cli.py:192-195</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/ghostty.py:39">src/z_agent/ghostty.py:39-105</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/ghostty.py:228">src/z_agent/ghostty.py:228-248</a>
+      </div>
+      <p><code>build_capture_script()</code> 生成 AppleScript，读取 Ghostty 的 window、tab、terminal、title 和 cwd。<code>capture_workspace()</code> 解析 JSON 后加上 <code>snapshot_id</code>、<code>captured_at</code>，再把 Ghostty pane 和 <code>active_terminals</code> 绑定。</p>
+      <div class="code-wrap">
+  <pre><code class="language-python">marker_source = <span class="tok-str">&quot; &quot;</span>.<span class="tok-fn">join</span>(<span class="tok-type">str</span>(pane.<span class="tok-fn">get</span>(key) <span class="tok-key">or</span> <span class="tok-str">&quot;&quot;</span>) <span class="tok-key">for</span> key <span class="tok-key">in</span> (<span class="tok-str">&quot;marker&quot;</span>, <span class="tok-str">&quot;title&quot;</span>, <span class="tok-str">&quot;name&quot;</span>))
+terminal_key = <span class="tok-fn">terminal_key_from_marker</span>(marker_source)
+<span class="tok-key">if</span> terminal_key <span class="tok-key">and</span> terminal_key <span class="tok-key">in</span> active_terminals:
+    pane.<span class="tok-fn">update</span>({
+        <span class="tok-str">&quot;terminal_key&quot;</span>: terminal_key,
+        <span class="tok-str">&quot;binding_method&quot;</span>: <span class="tok-str">&quot;terminal_marker&quot;</span>,
+        <span class="tok-str">&quot;binding_confidence&quot;</span>: <span class="tok-str">&quot;high&quot;</span>,
+        <span class="tok-str">&quot;agent&quot;</span>: active.<span class="tok-fn">get</span>(<span class="tok-str">&quot;agent&quot;</span>),
+        <span class="tok-str">&quot;session_id&quot;</span>: active.<span class="tok-fn">get</span>(<span class="tok-str">&quot;session_id&quot;</span>),
+        <span class="tok-str">&quot;restore&quot;</span>: active.<span class="tok-fn">get</span>(<span class="tok-str">&quot;restore&quot;</span>),
+    })</code></pre>
+  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+</div>
+      <p><b>状态变化：</b>marker 命中是 <span class="ok">high</span> 置信；marker 不可读时，代码只在 cwd 唯一匹配时做 <span class="warn">low</span> 置信兜底；没有可靠绑定时保留 pane，但不给它附加恢复命令。绑定后的 workspace 通过 <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/state.py:153">save_latest_workspace():153-160</a> 写入状态。</p>
+    </section>
+
+    <h2 id="restore">8. 恢复执行：先计划，后校验，再生成 AppleScript</h2>
+    <section class="issue">
+      <h3>触发入口：zagent restore</h3>
+      <div class="meta">
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/cli.py:136">src/z_agent/cli.py:136-160</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/planner.py:31">src/z_agent/planner.py:31-45</a>
+        <a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/ghostty.py:108">src/z_agent/ghostty.py:108-150</a>
+      </div>
+      <p><code>_restore()</code> 总是先读 <code>latest_workspace</code> 并构建内部计划。命令行不再暴露查看计划、只输入不回车或只打印脚本的模式；进入 GhosttyAdapter 前必须跑 <code>assert_plan_executable()</code>。</p>
+      <div class="code-wrap">
+  <pre><code class="language-python"><span class="tok-key">def</span> <span class="tok-fn">validate_restore</span>(restore: Any) -&gt; <span class="tok-type">tuple</span>[<span class="tok-type">bool</span>, <span class="tok-type">str</span>]:
+    <span class="tok-key">if</span> <span class="tok-key">not</span> <span class="tok-fn">isinstance</span>(restore, <span class="tok-type">dict</span>):
+        <span class="tok-key">return</span> <span class="tok-key">False</span>, <span class="tok-str">&quot;缺少结构化恢复命令&quot;</span>
+    agent = restore.<span class="tok-fn">get</span>(<span class="tok-str">&quot;agent&quot;</span>)
+    argv = restore.<span class="tok-fn">get</span>(<span class="tok-str">&quot;argv&quot;</span>)
+    <span class="tok-key">if</span> agent == <span class="tok-str">&quot;codex&quot;</span> <span class="tok-key">and</span> <span class="tok-fn">isinstance</span>(argv, <span class="tok-type">list</span>) <span class="tok-key">and</span> <span class="tok-fn">len</span>(argv) == <span class="tok-num">3</span>:
+        <span class="tok-key">if</span> argv[<span class="tok-num">0</span>] == <span class="tok-str">&quot;codex&quot;</span> <span class="tok-key">and</span> argv[<span class="tok-num">1</span>] == <span class="tok-str">&quot;resume&quot;</span> <span class="tok-key">and</span> <span class="tok-fn">_is_safe_session_token</span>(<span class="tok-type">str</span>(argv[<span class="tok-num">2</span>])):
+            <span class="tok-key">return</span> <span class="tok-key">True</span>, <span class="tok-str">&quot;通过&quot;</span>
+    <span class="tok-key">if</span> agent == <span class="tok-str">&quot;claude&quot;</span> <span class="tok-key">and</span> <span class="tok-fn">isinstance</span>(argv, <span class="tok-type">list</span>) <span class="tok-key">and</span> <span class="tok-fn">len</span>(argv) == <span class="tok-num">3</span>:
+        <span class="tok-key">if</span> argv[<span class="tok-num">0</span>] == <span class="tok-str">&quot;claude&quot;</span> <span class="tok-key">and</span> argv[<span class="tok-num">1</span>] == <span class="tok-str">&quot;--resume&quot;</span> <span class="tok-key">and</span> <span class="tok-fn">_is_safe_session_token</span>(<span class="tok-type">str</span>(argv[<span class="tok-num">2</span>])):
+            <span class="tok-key">return</span> <span class="tok-key">True</span>, <span class="tok-str">&quot;通过&quot;</span>
+    <span class="tok-key">return</span> <span class="tok-key">False</span>, <span class="tok-str">&quot;恢复命令不在白名单内&quot;</span></code></pre>
+  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+</div>
+      <p><b>执行阶段：</b><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/ghostty.py:108">build_restore_script():108-150</a> 再次构建并校验 plan，只为 <code>allowed=True</code> 的 pane 生成 <code>input text</code>。普通 shell pane、低置信 pane、旧字符串 restore_cmd 都不会自动输入命令。</p>
+      <p><b>副作用：</b><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/src/z_agent/ghostty.py:250">restore_workspace():250-262</a> 生成恢复脚本后直接调用 <code>osascript</code>，不再保留额外执行模式。</p>
+    </section>
+
+    <h2 id="tests">验证覆盖</h2>
+    <section class="summary">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>测试文件</th><th>覆盖点</th><th>关键断言</th></tr></thead>
+          <tbody>
+            <tr><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/tests/test_install.py:16">tests/test_install.py:16-30</a></td><td>install 不接管原始 Agent 命令</td><td>安装计划只包含两个 hook 文件，不包含 <code>/bin/codex</code> 或 <code>codex.zsh</code>。</td></tr>
+            <tr><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/tests/test_wrapper.py:14">tests/test_wrapper.py:14-40</a></td><td>wrapper 环境构造</td><td>注入 <code>Z_AGENT_CWD</code>、<code>Z_AGENT_AGENT</code>，并复用已有 terminal_key。</td></tr>
+            <tr><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/tests/test_hooks.py:16">tests/test_hooks.py:16-62</a></td><td>hook 元数据提取与状态更新</td><td>能从显式字段或 transcript 路径提取 session_id，缺 terminal_key 会失败。</td></tr>
+            <tr><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/tests/test_state.py:16">tests/test_state.py:16-57</a></td><td>状态文件读写</td><td>缺状态不创建目录、active_terminal 局部更新不丢字段、坏 JSON 会备份。</td></tr>
+            <tr><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/tests/test_planner.py:49">tests/test_planner.py:49-86</a></td><td>恢复白名单与低置信拦截</td><td>非白名单命令、低置信绑定、旧字符串 restore_cmd 都不能自动执行。</td></tr>
+            <tr><td><a class="path file-link" href="vscode://file//Users/markz/code/tools/iplugin/tools/z-agent/tests/test_ghostty.py:12">tests/test_ghostty.py:12-45</a></td><td>恢复 AppleScript 生成</td><td>恢复命令会追加回车，进入终端后立即执行。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ok">本地已验证：<code>python3 -m unittest discover -s tools/z-agent/tests</code> 通过 21 个测试；<code>python3 scripts/validate-plugin.py</code> 通过 10 项插件结构校验。</p>
+      <p class="warn">尚需手动验证：真实 Ghostty Automation 授权、真实 Codex/Claude hook payload、真实 snapshot capture 和 <code>zagent restore</code>。</p>
+    </section>
+
+    <h2 id="sources">证据来源</h2>
+    <section class="summary">
+      <ul>
+        <li>源码：<code>tools/z-agent/src/z_agent/*.py</code>，读取时间为 2026-06-14。</li>
+        <li>测试：<code>tools/z-agent/tests/test_*.py</code>。</li>
+        <li>配置与文档：<code>tools/z-agent/pyproject.toml</code>、<code>tools/z-agent/README.md</code>、<code>tools/z-agent/versions/v0.1.0.md</code>。</li>
+        <li>命令验证：<code>python3 -m unittest discover -s tools/z-agent/tests</code>、<code>python3 scripts/validate-plugin.py</code>、隔离目录 install 和 fake binary wrapper 启动。</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.layout-with-toc').forEach(layout => {
+    const btn = layout.querySelector('.toc-toggle');
+    if (!btn) return;
+    const icon = btn.querySelector('.toc-toggle-icon');
+    const setCollapsed = collapsed => {
+      layout.classList.toggle('toc-collapsed', collapsed);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', collapsed ? '展开目录' : '收起目录');
+      btn.title = collapsed ? '展开目录' : '收起目录';
+      if (icon) icon.textContent = collapsed ? '›' : '‹';
+    };
+    btn.addEventListener('click', () => setCollapsed(!layout.classList.contains('toc-collapsed')));
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const wrap = btn.closest('.code-wrap');
+      const code = wrap ? wrap.querySelector('pre').innerText : '';
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '已复制';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '复制';
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+  });
+</script>
+</body>
+</html>

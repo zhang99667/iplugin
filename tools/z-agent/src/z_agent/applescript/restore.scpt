@@ -1,0 +1,2 @@
+-- 参考恢复脚本；运行时脚本由 z_agent.ghostty 动态生成。
+-- zagent restore 会直接执行运行时生成的恢复脚本。
