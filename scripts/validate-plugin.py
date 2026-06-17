@@ -397,6 +397,7 @@ README_TREE_REQUIRED_TOP_LEVEL = {
     "versions",
     "scripts",
     "hooks",
+    "tools",
     "CLAUDE.md",
     "AGENTS.md",
     "README.md",

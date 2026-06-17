@@ -1,3 +1,9 @@
+## [0.18.3] - 2026-06-17
+### Fixed
+- README: 将目录树改为仓库顶层结构，补充 `tools/`，并将 `skills/` 改为目录模板，避免手写 skill 清单与 Skills 表重复漂移
+- validate-plugin.py: 将 `tools/` 纳入 README 目录树闸门
+- manifest: 插件版本升级到 `0.18.3`
+
 ## [0.18.2] - 2026-06-17
 ### Fixed
 - html-report: 将当前触发命令文案统一为 `/html-report`

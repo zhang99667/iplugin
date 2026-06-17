@@ -2,9 +2,9 @@
 
 toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
 
-## 插件核心目录结构
+## 仓库顶层目录结构
 
-以下结构只描述插件 manifest、skills、hooks 和维护流程直接依赖的核心文件；仓库内独立工具子项目不在这里展开。
+以下结构描述 Git 仓库中跟踪的顶层目录和关键文件；本地缓存、IDE 配置、空目录不列入。
 
 ```
 iplugin/
@@ -13,28 +13,13 @@ iplugin/
 ├── .codex-plugin/
 │   └── plugin.json
 ├── skills/
-│   ├── code-reading/       # 带我读代码，追踪执行链路
-│   ├── aidisheng-xueba/    # 爱迪生学霸，按题库快速回答选择题
-│   ├── ask-user-question/   # 结构化询问，把阻塞性决策交给 AskUserQuestion
-│   ├── best-of-web/        # 联网精选，结合高质量公开资料综合回答
-│   ├── delegated-search/   # 广域检索任务委派、证据收集与执行前委派判断
-│   ├── html-report/        # 生成带内容类型判断的独立 HTML 工程报告
-│   ├── html2md/             # 将本地 HTML 或 file:// 页面转换成 Markdown
-│   ├── sql-exp-replace/    # SQL 实验号与日期批量替换
-│   ├── commercial-sql-writer/ # 商业广告 SQL 写作、改写与检查
-│   ├── datapilot-sql-runner/ # DataPilot SQL 提交、任务 ID 回收与状态汇报
-│   ├── nad-acx-pivot-table/ # 商业 AB 实验数据透视表 xlsx 生成
-│   ├── project-summary/    # 项目/需求总结整理
-│   ├── obsidian/           # Obsidian 笔记写作格式规范
-│   ├── icafe-delivery-archive/ # iCafe 需求交付材料归档
-│   ├── lite-diff-marker/   # 矩阵产品差异化标记
-│   ├── karpathy-guidelines/ # Karpathy 风格编码准则
-│   ├── mgit/               # 百度 MGIT 多仓库管理
-│   ├── session-rename/     # Claude Code 会话自动命名
-│   └── <name>/references/  # 按需读取的长规则、示例和模板
-├── versions/               # 版本规划与决策文档
+│   └── <name>/             # 每个 skill 目录包含 SKILL.md，可按需带 references/ 或 scripts/
+├── hooks/                  # 全局横切 hooks，区分 Claude / Codex 配置
 ├── scripts/                # 共享脚本和提交前校验
-├── hooks/                  # 全局横切 hooks，区分 Claude/Codex 配置
+├── tools/                  # 独立工具子项目，不自动进入插件 manifest
+│   ├── remote-android-build/
+│   └── z-agent/
+├── versions/               # 插件版本规划与决策文档
 ├── CLAUDE.md               # 插件维护指南（Claude 在此目录下生效）
 ├── AGENTS.md               # 插件维护指南（Codex 在此目录下生效）
 ├── README.md
