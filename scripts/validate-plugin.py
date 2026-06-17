@@ -390,6 +390,69 @@ def check_readme_skills(skills: list[Path]) -> CheckResult:
     return result
 
 
+README_TREE_REQUIRED_TOP_LEVEL = {
+    ".claude-plugin",
+    ".codex-plugin",
+    "skills",
+    "versions",
+    "scripts",
+    "hooks",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "README.md",
+    "CHANGELOG.md",
+    ".gitignore",
+}
+
+
+def extract_readme_tree_top_level() -> tuple[set[str], list[str]]:
+    """从 README 目录结构代码块中提取顶层路径。"""
+
+    try:
+        text = read_text(README)
+    except FileNotFoundError:
+        return set(), [f"{rel(README)} does not exist"]
+
+    section_match = re.search(r"^## .*目录结构\s*$([\s\S]*?)(?=^## |\Z)", text, re.MULTILINE)
+    if not section_match:
+        return set(), [f"{rel(README)} is missing a directory structure section"]
+
+    block_match = re.search(r"```(?:[A-Za-z0-9_-]+)?\n([\s\S]*?)```", section_match.group(1))
+    if not block_match:
+        return set(), [f"{rel(README)} directory structure section has no fenced tree"]
+
+    entries: set[str] = set()
+    for line in block_match.group(1).splitlines():
+        match = re.match(r"^[├└]──\s+([^#]+)", line)
+        if not match:
+            continue
+        entry = match.group(1).strip().rstrip("/")
+        if entry and not entry.startswith("<"):
+            entries.add(entry)
+
+    return entries, []
+
+
+def check_readme_directory_tree() -> CheckResult:
+    """检查 README 目录结构代码块列出的核心顶层路径是否仍然存在。"""
+
+    result = CheckResult("README directory tree matches repository")
+    entries, errors = extract_readme_tree_top_level()
+    result.details.extend(errors)
+    if errors:
+        return result
+
+    missing_required = sorted(README_TREE_REQUIRED_TOP_LEVEL - entries)
+    if missing_required:
+        result.details.append(f"{rel(README)} directory tree is missing core entries: {', '.join(missing_required)}")
+
+    for entry in sorted(entries):
+        if not (ROOT / entry).exists():
+            result.details.append(f"{rel(README)} directory tree lists missing path: {entry}")
+
+    return result
+
+
 def required_keyword_tokens(skills: list[Path]) -> set[str]:
     """生成 manifest keywords 至少应覆盖的 skill 名称和拆分词。"""
 
@@ -594,6 +657,7 @@ def main() -> int:
         check_manifest_common_fields(claude_manifest, codex_manifest),
         check_hooks_configs(codex_manifest),
         frontmatter_result,
+        check_readme_directory_tree(),
         check_readme_skills(skills),
         check_manifest_keywords(claude_manifest, codex_manifest, skills),
         check_changelog_versions(),

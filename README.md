@@ -2,7 +2,9 @@
 
 toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
 
-## 目录结构
+## 插件核心目录结构
+
+以下结构只描述插件 manifest、skills、hooks 和维护流程直接依赖的核心文件；仓库内独立工具子项目不在这里展开。
 
 ```
 iplugin/
@@ -30,11 +32,11 @@ iplugin/
 │   ├── mgit/               # 百度 MGIT 多仓库管理
 │   ├── session-rename/     # Claude Code 会话自动命名
 │   └── <name>/references/  # 按需读取的长规则、示例和模板
-├── commands/               # slash command 入口
 ├── versions/               # 版本规划与决策文档
 ├── scripts/                # 共享脚本和提交前校验
 ├── hooks/                  # 全局横切 hooks，区分 Claude/Codex 配置
 ├── CLAUDE.md               # 插件维护指南（Claude 在此目录下生效）
+├── AGENTS.md               # 插件维护指南（Codex 在此目录下生效）
 ├── README.md
 ├── CHANGELOG.md
 └── .gitignore
@@ -65,7 +67,7 @@ iplugin/
 
 ## Commands
 
-以下 slash command 已整合进同名 skill，输入命令名即可触发对应 skill：
+当前没有独立 `commands/*.md` 入口。以下 slash command 触发语义已整合进同名 skill，输入命令名即可触发对应 skill：
 
 | 命令 | 对应 skill |
 |------|-----------|

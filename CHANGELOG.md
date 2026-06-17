@@ -1,3 +1,9 @@
+## [0.18.1] - 2026-06-17
+### Fixed
+- README: 将目录结构改为插件核心结构，移除已删除的 `commands/` 目录引用，并说明 slash command 触发语义由同名 skill 承载
+- validate-plugin.py: 新增 README 目录树闸门，拒绝目录结构代码块列出不存在的顶层路径
+- manifest: 插件版本升级到 `0.18.1`
+
 ## [0.18.0] - 2026-06-16
 ### Added
 - nad-acx-pivot-table: 新增商业 AB 实验数据透视表 skill，用于从 CSV/TXT/XLSX 生成 Excel 原生透视表，支持多文件合并、字段别名映射、相对差指标和自动命名
