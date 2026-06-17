@@ -1,3 +1,11 @@
+## [0.18.2] - 2026-06-17
+### Fixed
+- html-report: 将当前触发命令文案统一为 `/html-report`
+- best-of-web: 移除已不存在 command 文件的触发说明，并将 Codex 默认示例改为显式 `/best-of-web`
+- AGENTS.md / CLAUDE.md: 将 `commands/` 描述收敛为可选目录，强调不要和同名 skill 重复注册
+- validate-plugin.py: 新增当前命令触发文案和 Codex defaultPrompt 一致性闸门
+- manifest: 插件版本升级到 `0.18.2`
+
 ## [0.18.1] - 2026-06-17
 ### Fixed
 - README: 将目录结构改为插件核心结构，移除已删除的 `commands/` 目录引用，并说明 slash command 触发语义由同名 skill 承载

@@ -1,6 +1,6 @@
 ---
 name: best-of-web
-version: 0.1.2
+version: 0.1.3
 description: 命令式联网精选助手。仅当用户通过 /best-of-web slash command 显式调用时触发，用于从公开互联网筛选高质量来源、核验证据并综合回答。不要因自然语言里的“找权威资料”“最佳实践”“结合互联网”“best of web”等普通表达自动触发；这些表达只有出现在 /best-of-web 命令参数中才使用本技能。
 tags: [best-of-web, web, internet, research, curation, sources]
 ---
@@ -11,7 +11,7 @@ tags: [best-of-web, web, internet, research, curation, sources]
 
 这个技能不是普通搜索命令。它强调“精选”和“综合”：少列链接，多判断来源质量、证据强弱和内容取舍。
 
-这个技能也是命令式技能：不要因为普通对话中出现“权威资料”“最佳实践”“互联网”“best of web”等词就自动使用。只有 `/best-of-web` 命令，或命令文件明确要求使用 `best-of-web` skill 时，才进入本流程。
+这个技能也是命令式技能：不要因为普通对话中出现“权威资料”“最佳实践”“互联网”“best of web”等词就自动使用。只有用户显式调用 `/best-of-web`，或上游规则明确指定使用 `best-of-web` skill 时，才进入本流程。
 
 ## 触发边界
 
@@ -19,7 +19,7 @@ tags: [best-of-web, web, internet, research, curation, sources]
 
 - 用户调用 `/best-of-web`，并提供主题、问题或输出要求。
 - 用户调用 `/best-of-web` 但参数为空；此时从上一轮用户请求或上下文推断研究目标。
-- slash command 文件明确要求使用 `best-of-web` skill。
+- 上游规则明确指定使用 `best-of-web` skill。
 
 ### 不适用
 

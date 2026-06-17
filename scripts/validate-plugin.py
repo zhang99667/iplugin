@@ -556,7 +556,7 @@ def slash_command_candidates(path: Path) -> set[str]:
 
 
 def check_commands(skill_names: set[str]) -> CheckResult:
-    """检查 command 文件引用的 skill 存在，且文档声明的 slash command 有入口文件。"""
+    """检查 command 文件引用的 skill 存在，且 slash command 可由 command 或同名 skill 承载。"""
 
     result = CheckResult("Command references are valid")
     commands = command_files()
@@ -580,6 +580,50 @@ def check_commands(skill_names: set[str]) -> CheckResult:
                 result.details.append(
                     f"{rel(scan_file)} mentions /{command_name}, but {rel(COMMANDS_DIR / (command_name + '.md'))} does not exist"
                 )
+
+    return result
+
+
+def check_current_trigger_text(codex: dict[str, Any] | None) -> CheckResult:
+    """检查当前触发文案是否和无独立 command 文件的约定一致。"""
+
+    result = CheckResult("Current trigger text is consistent")
+
+    html_report_files = [
+        SKILLS_DIR / "html-report" / "SKILL.md",
+        SKILLS_DIR / "html-report" / "references" / "content-rules.md",
+    ]
+    for path in html_report_files:
+        if path.is_file() and "/htmlreport" in read_text(path):
+            result.details.append(f"{rel(path)} should use /html-report instead of /htmlreport")
+
+    best_of_web = SKILLS_DIR / "best-of-web" / "SKILL.md"
+    if best_of_web.is_file() and "命令文件" in read_text(best_of_web):
+        result.details.append(f"{rel(best_of_web)} should not reference removed command files")
+
+    if codex is None:
+        result.details.append("Skipped Codex defaultPrompt checks because Codex manifest could not be loaded")
+        return result
+
+    default_prompts = codex.get("interface", {}).get("defaultPrompt", [])
+    if default_prompts and not isinstance(default_prompts, list):
+        result.details.append(f"{rel(CODEX_MANIFEST)} interface.defaultPrompt must be a list when present")
+        return result
+
+    for prompt in default_prompts:
+        if not isinstance(prompt, str):
+            result.details.append(f"{rel(CODEX_MANIFEST)} interface.defaultPrompt entries must be strings")
+            continue
+        lower_prompt = prompt.lower()
+        if (
+            ("互联网上最优秀" in prompt or "best of web" in lower_prompt or "联网精选" in prompt)
+            and not prompt.startswith("/best-of-web")
+        ):
+            result.details.append(
+                f"{rel(CODEX_MANIFEST)} best-of-web defaultPrompt must start with /best-of-web: {prompt!r}"
+            )
+        if "/htmlreport" in prompt:
+            result.details.append(f"{rel(CODEX_MANIFEST)} defaultPrompt should use /html-report: {prompt!r}")
 
     return result
 
@@ -662,6 +706,7 @@ def main() -> int:
         check_manifest_keywords(claude_manifest, codex_manifest, skills),
         check_changelog_versions(),
         check_commands(skill_names),
+        check_current_trigger_text(codex_manifest),
         check_claude_agents_sync(),
         check_no_hardcoded_homedir(skills),
     ]

@@ -8,7 +8,7 @@
 - `.codex-plugin/plugin.json` — Codex 插件 manifest
 - `skills/<name>/SKILL.md` — 技能定义，两边共用，目录名必须与 `SKILL.md` 中的 `name` 字段一致
 - `skills/<name>/references/` — 按需读取的长规则、示例和模板，用于 progressive disclosure，避免 `SKILL.md` 过长
-- `commands/<name>.md` — slash command 入口，优先调用 `skills/` 中的通用能力，不承载大段重复逻辑
+- `commands/<name>.md` — 可选 slash command 入口；仅在需要非重复命令编排时创建，优先调用 `skills/` 中的通用能力，不承载大段重复逻辑
 - `versions/vX.Y.Z.md` — 每个版本的规划和决策记录
 - `scripts/` — 共享脚本（需要确定性执行的代码）
 - `hooks/` — 全局钩子（横切关注点）；Claude Code 默认扫描 `hooks/hooks.json`，Codex manifest 指向 `hooks/codex-hooks.json`
@@ -41,7 +41,7 @@
 
 1. `mkdir -p commands`
 2. 编写 `commands/<command-name>.md`，YAML frontmatter 至少包含 `description`
-3. 命令正文只做参数解析和编排，通用能力沉淀到 `skills/<name>/SKILL.md`
+3. 命令正文只做参数解析和编排，通用能力沉淀到 `skills/<name>/SKILL.md`；不要为同名 skill 创建重复 command
 4. 如新增用户可见能力，更新 README、CHANGELOG 和 `versions/vX.Y.Z.md`
 5. 需要改变插件定位时，同步检查 `.claude-plugin/plugin.json` 与 `.codex-plugin/plugin.json`
 
@@ -69,5 +69,5 @@
 - versions/vX.Y.Z.md 已写好（如果是新版本）
 - `skills/*/SKILL.md` 的 `name` 与目录名一致
 - 长规则和长示例优先放到 `skills/<name>/references/`，`SKILL.md` 只保留触发、导航和核心流程
-- `commands/*.md` 只保留轻量编排逻辑，未复制大段 skill 正文
+- 如存在 `commands/*.md`，只保留轻量编排逻辑，未复制大段 skill 正文，且不与同名 skill 重复注册
 - 每次完成文件改动并做完必要校验后，必须通过 `/ask-user-question` 询问用户是否要把本次改动提交；用户确认前不要主动执行 `git commit`
