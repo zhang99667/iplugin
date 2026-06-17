@@ -194,7 +194,12 @@ ssh "$REMOTE" "mkdir -p $remote_root_q"
 # 但延迟到传输结束后执行，降低中途失败导致远端处于半删除状态的概率。
 # 首次使用前建议 DRY_RUN=1，确认排除规则不会删掉远端需要保留的文件。
 echo "[2/5] 同步源码"
-rsync_args=(-az --delete-delay --human-readable --info=stats1,progress2)
+rsync_args=(-az --delete-delay --human-readable)
+if command rsync --info=help >/dev/null 2>&1; then
+  rsync_args+=(--info=stats1,progress2)
+else
+  rsync_args+=(--stats)
+fi
 if [[ "$DRY_RUN" == "1" ]]; then
   rsync_args+=(--dry-run)
 fi
