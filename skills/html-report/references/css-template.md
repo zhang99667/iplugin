@@ -146,6 +146,27 @@
     white-space: pre;
     overflow-x: auto;
   }
+  .diagram-block {
+    margin: 16px 0 18px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #ffffff;
+    overflow-x: auto;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+  }
+  .diagram-block .tech-diagram {
+    display: block;
+    width: 100%;
+    min-width: 720px;
+    height: auto;
+  }
+  .diagram-block figcaption {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
   .code-wrap {
     position: relative;
     max-width: 100%;
@@ -325,6 +346,8 @@
     .doc-header { padding: 22px 18px; border-radius: 14px; }
     .doc-header h1 { font-size: 23px; }
     .doc-chip { font-size: 12px; }
+    .diagram-block { padding: 10px; border-radius: 12px; }
+    .diagram-block .tech-diagram { min-width: 640px; }
     .grid { grid-template-columns: 1fr; }
     .copy-btn { opacity: 1; }
   }
@@ -349,6 +372,13 @@
     }
     .toc { position: static; max-height: none; }
     .copy-btn, .toast { display: none !important; }
+    .diagram-block {
+      box-shadow: none;
+      break-inside: avoid;
+    }
+    .diagram-block .tech-diagram {
+      min-width: 0;
+    }
     pre, .ascii-diagram {
       white-space: pre-wrap;
       overflow: visible;

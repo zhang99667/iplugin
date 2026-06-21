@@ -34,6 +34,51 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 - 长文档使用旧版左侧浮动目录固定导航，快速跳转到各章节；目录默认展开，并且必须能通过点击按钮收起/展开整个目录侧栏。
 - 中文说明简洁准确，突出问题、影响和修复方案。
 
+## SVG 技术图协作
+
+当报告需要复杂技术图时，`html-report` 是编排方，`svg-tech-diagram` 是绘图方。不要要求用户同时显式调用两个 skill；由 `html-report` 判断是否需要图，并在需要时读取 `skills/svg-tech-diagram/SKILL.md` 及其相关 references。
+
+适合使用 `svg-tech-diagram` 的场景：
+
+- 技术方案里的架构图、模块关系图、数据流图。
+- 问题排查/修复方案里的根因链路、修复路径、风险隔离关系。
+- 代码导读报告里的执行链路、状态流转、调用分发关系。
+- 多角色或多系统协作流程，表格/Mermaid/ASCII 难以在最终 HTML 中清楚表达。
+
+不需要使用 SVG 技术图的场景：
+
+- 2 到 4 项简单对比，用表格或网格卡片即可。
+- 线性 3 到 5 步流程，用短列表或 Mermaid 已足够清楚。
+- 只是装饰、封面或氛围图，不承担结构解释。
+
+协作流程：
+
+1. `html-report` 先确定报告章节和图要回答的问题。
+2. 读取 `svg-tech-diagram`，让它按朴素技术图规范生成 SVG。
+3. SVG 必须先渲染 PNG 并完成自审；有箭头穿文字、文字越界、信息拥挤时，先修图。
+4. 自审通过后，优先把 `<svg>...</svg>` 内联进 HTML，外层使用 `.diagram-block`，SVG 使用 `.tech-diagram`。
+5. 图下必须有 `<figcaption>`，说明图表达的结论或读图方式。
+6. 最终仍由 `html-report` 运行 `check_html_report.py` 做单文件、响应式和代码块校验。
+
+内联结构示例：
+
+```html
+<figure class="diagram-block">
+  <svg class="tech-diagram" viewBox="0 0 1200 675" role="img" aria-labelledby="diagram-title diagram-desc">
+    <title id="diagram-title">渲染链路架构图</title>
+    <desc id="diagram-desc">展示输入、处理、校验和输出之间的关系。</desc>
+    ...
+  </svg>
+  <figcaption>图 1：渲染链路从 SVG 生成、PNG 自审到 HTML 内联交付。</figcaption>
+</figure>
+```
+
+注意：
+
+- SVG 内部 class 建议加前缀，例如 `svgd-node`、`svgd-arrow`，避免和报告全局 `.tag`、`.grid` 等样式冲突。
+- SVG 自身应包含 `<title>`、`<desc>`、`viewBox` 和内联样式，不能依赖页面外部 CSS 才能看懂。
+- 如果不得不使用外部 `.svg` 文件，必须说明报告不再是完全单文件离线交付；默认不要这样做。
+
 ## 响应式、打印与可访问性
 
 HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足这些底线：

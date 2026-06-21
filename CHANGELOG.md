@@ -1,3 +1,9 @@
+## [0.19.1] - 2026-06-21
+### Changed
+- html-report: 增加与 `svg-tech-diagram` 的软依赖协作规则，复杂技术图由 SVG 绘图 skill 生成、渲染自审后内联到 HTML 报告
+- html-report: CSS 模板新增 `.diagram-block` / `.tech-diagram` 图块样式，支持响应式横向滚动和打印降级
+- README / manifest: 插件版本升级到 `0.19.1`
+
 ## [0.19.0] - 2026-06-21
 ### Added
 - svg-tech-diagram: 新增 SVG 技术绘图 skill，用于为技术长文、HTML 报告、架构说明和代码链路生成统一风格的矢量图
