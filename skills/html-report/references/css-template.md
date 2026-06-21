@@ -549,6 +549,20 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 ## 3. 可选交互（仅在内容确实需要时选入）
 
+### 3.0 离线批注审核模式 —— 用户明确需要批注/提问包时使用
+
+不要在报告里手写批注相关 CSS/JS。先按本模板生成普通单文件 HTML 并通过校验，再运行确定性注入脚本：
+
+```bash
+python3 skills/html-report/scripts/check_html_report.py <html-file>
+python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>
+python3 skills/html-report/scripts/check_html_report.py <html-file>
+```
+
+注入后的审核版 HTML 会提供选区 `提问` / `批注` 气泡、单按钮 `提交` 输入浮层、右侧批注栏、Markdown/JSON 提问包导出和 `导出发布版`。Markdown/JSON 会写入原 HTML 的文件名、绝对路径和 `file://` URL。发布版导出会物理剥离批注 UI、批注 JS、批注样式和批注高亮。
+
+详细契约见 `references/annotation-mode.md`。
+
 ### 3.1 左侧目录 —— 长文档使用，浮动侧栏，可整体收起
 
 当报告章节超过 5 个、内容包含多组问题/方案/链路/验证结果，或读者需要频繁跨章节查阅时使用。目录沿用旧版浮动卡片样式：固定在左侧，正文放在右侧；默认展开，读者点击按钮时收起/展开整个目录侧栏。不要把目录包进 `<details>`，那只会隐藏目录里的链接，不是侧栏级收起。小屏幕下目录退化为顶部卡片，不遮挡正文。

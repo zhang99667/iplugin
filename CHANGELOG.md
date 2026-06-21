@@ -1,3 +1,17 @@
+## [0.19.2] - 2026-06-21
+### Added
+- html-report: 新增离线批注审核模式注入脚本，支持选区提问/批注、右侧批注栏、Markdown/JSON 提问包导出和导出发布版 HTML
+- html-report: 新增批注模式 reference，明确轻量浮层、单按钮提交、点击外侧关闭、发布版物理剥离和 Agent 提问包路径字段契约
+
+### Changed
+- html-report: 校验脚本新增批注模式结构检查，确保提问包包含原 HTML 文件名、绝对路径和 `file://` URL，并避免批注 UI 交互漂移
+- html-report: 批注注入脚本在生成阶段写入输出 HTML 的绝对路径和 `file://` URL，避免本地 HTTP 预览时提问包丢失文件上下文
+- html-report: skill 版本升级到 `0.3.0`
+- README / manifest: 插件版本按现有 skill 功能升级规则递增到 `0.19.2`
+
+### Fixed
+- html-report: 删除或清空批注后同步清理正文高亮、块级边框和浏览器选区，避免右侧栏已删除但正文仍显示选中状态
+
 ## [0.19.1] - 2026-06-21
 ### Changed
 - html-report: 增加与 `svg-tech-diagram` 的软依赖协作规则，复杂技术图由 SVG 绘图 skill 生成、渲染自审后内联到 HTML 报告

@@ -164,6 +164,62 @@ def check_diff_viewer_tokens(html: str, css: str) -> list[str]:
     return errors
 
 
+def check_annotation_mode(html: str, css: str) -> list[str]:
+    """检查离线批注模式的关键结构，避免审核版 HTML 交互缺件。"""
+    errors: list[str] = []
+    has_annotation = "QA_ANNOTATION" in html or "data-qa-script" in html or "qa-launcher" in html
+    if not has_annotation:
+        return errors
+
+    required_fragments = {
+        "QA_ANNOTATION_CSS_START": "批注模式缺少 CSS 起始标记，导出发布版无法稳定剥离样式",
+        "QA_ANNOTATION_HTML_START": "批注模式缺少 HTML 起始标记，导出发布版无法稳定剥离 UI",
+        "QA_ANNOTATION_SCRIPT_START": "批注模式缺少脚本起始标记，导出发布版无法稳定剥离 JS",
+        "data-qa-script": "批注模式缺少 data-qa-script，导出发布版无法从 DOM 中移除批注脚本",
+        "data-qa-ui": "批注模式缺少 data-qa-ui，导出发布版无法从 DOM 中移除批注 UI",
+        'id="qaSelectionPopover"': "批注模式缺少选中文本气泡",
+        'id="qaComposer"': "批注模式缺少轻量输入浮层",
+        'id="qaSidebar"': "批注模式缺少右侧批注栏",
+        'id="qaExportPublic"': "批注模式缺少导出发布版按钮",
+        "buildPublicHtml": "批注模式缺少发布版 HTML 剥离逻辑",
+        "buildMarkdownPack": "批注模式缺少 Markdown 批注包导出逻辑",
+        "buildJsonPack": "批注模式缺少 JSON 批注包导出逻辑",
+        "injectedReportMeta": "批注模式必须在生成时注入原 HTML 路径元数据，避免打开方式改变后丢失绝对路径",
+        "reportAbsolutePath": "批注模式导出包必须包含原 HTML 绝对路径",
+        "reportFileUrl": "批注模式导出包必须包含 file URL",
+        "File URL：": "Markdown 批注包必须写入 file URL，方便 Agent 回查原文件",
+        "绝对路径：": "Markdown 批注包必须写入绝对路径，方便 Agent 回查原文件",
+        "cachedSelectionTarget": "批注模式必须缓存选区，避免点击气泡后选区丢失",
+        "syncAnnotatedState": "批注模式必须在保存、删除、清空后同步正文高亮和边框状态",
+        "removeAllRanges": "批注模式删除批注后必须清理浏览器选区，避免正文残留选中态",
+        ">提交<": "批注输入浮层只保留一个“提交”按钮",
+    }
+    for fragment, message in required_fragments.items():
+        if fragment not in html:
+            errors.append(message)
+
+    forbidden_fragments = {
+        "qaComposerCancel": "批注输入浮层不要保留取消按钮；点击浮层外侧即关闭",
+        ">保存<": "批注输入浮层按钮文案应为“提交”，不要使用“保存”",
+    }
+    for fragment, message in forbidden_fragments.items():
+        if fragment in html:
+            errors.append(message)
+
+    compact_css = re.sub(r"\s+", " ", css)
+    for fragment, message in {
+        ".qa-selection-popover": "批注模式缺少选区气泡样式",
+        ".qa-composer": "批注模式缺少输入浮层样式",
+        ".qa-sidebar": "批注模式缺少右侧栏样式",
+        ".qa-highlight": "批注模式缺少选中文本高亮样式",
+        ".qa-panel-open": "批注模式缺少右侧栏打开时的正文避让样式",
+    }.items():
+        if fragment not in compact_css:
+            errors.append(message)
+
+    return errors
+
+
 def check_document_chrome(parser: ReportParser) -> list[str]:
     errors: list[str] = []
     css = "\n".join(parser.style_chunks)
@@ -228,6 +284,7 @@ def validate(path: Path) -> list[str]:
     css = "\n".join(parser.style_chunks)
     errors.extend(check_code_wrap_blocks(html, css))
     errors.extend(check_diff_viewer_tokens(html, css))
+    errors.extend(check_annotation_mode(html, css))
     return errors
 
 
