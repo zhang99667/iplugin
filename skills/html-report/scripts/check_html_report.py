@@ -181,6 +181,11 @@ def check_annotation_mode(html: str, css: str) -> list[str]:
         'id="qaComposer"': "批注模式缺少轻量输入浮层",
         'id="qaSidebar"': "批注模式缺少右侧批注栏",
         'id="qaExportPublic"': "批注模式缺少导出发布版按钮",
+        'id="qaLauncherLabel"': "批注模式右上角入口必须能在 0 批注时显示“导出发布版”而不是“批注 0”",
+        "updateLauncherMode": "批注模式必须根据批注数量切换右上角“导出发布版”/“批注 N”入口",
+        "publish-mode": "批注模式必须给 0 批注发布入口提供更醒目的视觉状态",
+        "qa-publish-btn": "批注侧栏中的发布按钮必须作为醒目的主按钮展示",
+        "取消：取消导出": "导出发布版确认框的取消动作必须真正取消，不能触发下载",
         "buildPublicHtml": "批注模式缺少发布版 HTML 剥离逻辑",
         "buildMarkdownPack": "批注模式缺少 Markdown 批注包导出逻辑",
         "buildJsonPack": "批注模式缺少 JSON 批注包导出逻辑",
@@ -201,6 +206,8 @@ def check_annotation_mode(html: str, css: str) -> list[str]:
     forbidden_fragments = {
         "qaComposerCancel": "批注输入浮层不要保留取消按钮；点击浮层外侧即关闭",
         ">保存<": "批注输入浮层按钮文案应为“提交”，不要使用“保存”",
+        "_public.html": "导出发布版取消分支不能下载 _public 文件；取消必须取消导出",
+        "取消：下载": "导出发布版确认框不能把取消解释为下载",
     }
     for fragment, message in forbidden_fragments.items():
         if fragment in html:
@@ -216,6 +223,9 @@ def check_annotation_mode(html: str, css: str) -> list[str]:
     }.items():
         if fragment not in compact_css:
             errors.append(message)
+
+    if ".qa-launcher-count[hidden]" not in compact_css and ".qa-launcher.publish-mode .qa-launcher-count" not in compact_css:
+        errors.append("发布模式下必须强制隐藏右上角批注数量徽标，避免导出发布版按钮残留蓝色圆点")
 
     return errors
 

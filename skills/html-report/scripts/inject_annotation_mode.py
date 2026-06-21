@@ -57,6 +57,21 @@ ANNOTATION_CSS = r'''
       cursor: pointer;
     }
     .qa-launcher:hover { background: var(--qa-accent-soft); }
+    .qa-launcher.publish-mode {
+      border-color: rgba(37, 99, 235, .34);
+      background: #ffffff;
+      color: #1d4ed8;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .14);
+    }
+    .qa-launcher.publish-mode:hover { background: var(--qa-accent-soft); }
+    .qa-launcher-icon {
+      display: none;
+      width: 15px;
+      height: 15px;
+      stroke-width: 2.4;
+    }
+    .qa-launcher.publish-mode .qa-launcher-icon { display: block; }
+    .qa-launcher-label { line-height: 1; }
     .qa-launcher-count {
       display: inline-flex;
       align-items: center;
@@ -69,6 +84,10 @@ ANNOTATION_CSS = r'''
       color: #ffffff;
       font-size: 12px;
       line-height: 1;
+    }
+    .qa-launcher-count[hidden],
+    .qa-launcher.publish-mode .qa-launcher-count {
+      display: none !important;
     }
     .qa-selection-popover,
     .qa-context-menu,
@@ -285,6 +304,19 @@ ANNOTATION_CSS = r'''
       margin-top: 12px;
     }
     .qa-actions .qa-wide { grid-column: 1 / -1; }
+    .qa-publish-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 42px;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, .18);
+    }
+    .qa-publish-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.4;
+    }
     .qa-list {
       flex: 1;
       overflow: auto;
@@ -448,7 +480,9 @@ ANNOTATION_CSS = r'''
 ANNOTATION_HTML = r'''
   <!-- QA_ANNOTATION_HTML_START: 离线批注审核模式，导出发布版时会被移除。 -->
   <button class="qa-launcher" type="button" id="qaLauncher" aria-controls="qaSidebar" aria-expanded="false" data-qa-ui>
-    批注 <span class="qa-launcher-count" id="qaLauncherCount">0</span>
+    <svg class="qa-launcher-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 8 5-5 5 5"></path><path d="M5 15v4h14v-4"></path></svg>
+    <span class="qa-launcher-label" id="qaLauncherLabel">导出发布版</span>
+    <span class="qa-launcher-count" id="qaLauncherCount" hidden>0</span>
   </button>
 
   <div class="qa-selection-popover" id="qaSelectionPopover" role="menu" aria-label="选中文本操作" data-qa-ui>
@@ -489,10 +523,13 @@ ANNOTATION_HTML = r'''
       </div>
       <p class="qa-help">选中文本后点小气泡提问/批注。发布给外部前，可导出物理剥离批注能力的发布版 HTML。</p>
       <div class="qa-actions">
-        <button class="qa-primary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
+        <button class="qa-primary-btn qa-publish-btn qa-wide" type="button" id="qaExportPublic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 8 5-5 5 5"></path><path d="M5 15v4h14v-4"></path></svg>
+          导出发布版
+        </button>
+        <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
         <button class="qa-secondary-btn" type="button" id="qaDownloadMarkdown">下载 Markdown</button>
         <button class="qa-secondary-btn" type="button" id="qaDownloadJson">下载 JSON</button>
-        <button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>
         <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空批注</button>
       </div>
     </div>
@@ -529,6 +566,7 @@ ANNOTATION_JS = r'''
       const storageKey = 'agent-report-annotations:' + (reportAbsolutePath || location.pathname) + ':' + reportTitle;
       const main = document.querySelector('main');
       const launcher = document.getElementById('qaLauncher');
+      const launcherLabel = document.getElementById('qaLauncherLabel');
       const launcherCount = document.getElementById('qaLauncherCount');
       const sidebar = document.getElementById('qaSidebar');
       const closeBtn = document.getElementById('qaClose');
@@ -563,7 +601,13 @@ ANNOTATION_JS = r'''
       renderAnnotations();
       syncAnnotatedState();
 
-      launcher?.addEventListener('click', () => setSidebarOpen(!sidebar.classList.contains('open')));
+      launcher?.addEventListener('click', () => {
+        if (!annotations.length) {
+          exportPublicHtml();
+          return;
+        }
+        setSidebarOpen(!sidebar.classList.contains('open'));
+      });
       closeBtn?.addEventListener('click', () => setSidebarOpen(false));
       composerSave?.addEventListener('click', saveDraftAnnotation);
       copyClose?.addEventListener('click', () => copyBackdrop.classList.remove('show'));
@@ -884,7 +928,7 @@ ANNOTATION_JS = r'''
       }
 
       function renderAnnotations() {
-        launcherCount.textContent = String(annotations.length);
+        updateLauncherMode();
         if (!list) return;
         if (!annotations.length) {
           list.innerHTML = '<div class="qa-empty">还没有批注。选中文本后点击小气泡，或在正文中右键，对段落、表格、图表发起提问。</div>';
@@ -923,6 +967,18 @@ ANNOTATION_JS = r'''
         });
       }
 
+      function updateLauncherMode() {
+        const count = annotations.length;
+        const publishMode = count === 0;
+        if (launcherLabel) launcherLabel.textContent = publishMode ? '导出发布版' : '批注';
+        if (launcherCount) {
+          launcherCount.textContent = publishMode ? '' : String(count);
+          launcherCount.hidden = publishMode;
+        }
+        launcher?.classList.toggle('publish-mode', publishMode);
+        launcher?.setAttribute('aria-label', publishMode ? '导出发布版 HTML' : '打开报告批注，当前 ' + count + ' 条');
+      }
+
       function locateAnnotation(item) {
         const el = main.querySelector('[data-block-id="' + cssEscape(item.blockId) + '"]');
         if (!el) return;
@@ -954,11 +1010,11 @@ ANNOTATION_JS = r'''
       }
 
       async function exportPublicHtml() {
-        const replaceCurrent = confirm('导出发布版 HTML。\n\n确定：建议用当前文件名保存，适合不需要保留审核批注能力时覆盖当前文件。\n取消：下载一个带 _public 后缀的发布版。');
+        const shouldExport = confirm('导出发布版 HTML。\n\n确定：选择保存位置，建议使用当前文件名覆盖原审核版。\n取消：取消导出。');
+        if (!shouldExport) return;
         const publicHtml = buildPublicHtml();
         const currentName = currentFileName();
-        const targetName = replaceCurrent ? currentName : currentName.replace(/\.html?$/i, '') + '_public.html';
-        if (replaceCurrent && window.showSaveFilePicker) {
+        if (window.showSaveFilePicker) {
           try {
             const handle = await window.showSaveFilePicker({
               suggestedName: currentName,
@@ -973,8 +1029,9 @@ ANNOTATION_JS = r'''
             if (error && error.name === 'AbortError') return;
           }
         }
-        downloadText(targetName, publicHtml, 'text/html');
-        showToast(replaceCurrent ? '已下载发布版，请在保存时选择覆盖' : '已下载发布版');
+        // 不支持 File System Access API 的浏览器无法静默覆盖本地文件，只能下载当前文件名作为兜底。
+        downloadText(currentName, publicHtml, 'text/html');
+        showToast('浏览器不支持直接覆盖，已下载发布版，请在保存时覆盖原文件');
       }
 
       function buildPublicHtml() {
