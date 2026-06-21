@@ -1,3 +1,12 @@
+## [0.19.0] - 2026-06-21
+### Added
+- svg-tech-diagram: 新增 SVG 技术绘图 skill，用于为技术长文、HTML 报告、架构说明和代码链路生成统一风格的矢量图
+- svg-tech-diagram: 沉淀朴素浅色优先的视觉规范、少量强调色建议、SVG 组件骨架、布局模式、渲染 PNG 自审清单和用户反馈映射
+- svg-tech-diagram: 新增 `render_svg.py`，优先通过本机 `rsvg-convert` 将 SVG 渲染为 PNG，辅助交付前视觉自审
+
+### Changed
+- README / manifest: 插件能力清单加入 SVG 技术图生成，版本升级到 `0.19.0`
+
 ## [0.18.3] - 2026-06-17
 ### Fixed
 - README: 将目录树改为仓库顶层结构，补充 `tools/`，并将 `skills/` 改为目录模板，避免手写 skill 清单与 Skills 表重复漂移
