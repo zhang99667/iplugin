@@ -1,29 +1,36 @@
-## [0.19.7] - 2026-06-23
+## [0.19.8] - 2026-06-23
 ### Changed
 - html-report: 明确没有行号的超长文件路径也不能完整塞进普通 `<code>`，应使用 `.path` chip 和 `...` 省略中间目录，同时保留仓库/模块、文件名和必要的方法指向
 - html-report: 完成前检查增加“长文件路径块截断展示”要求，避免证据来源、表格或摘要卡片被完整目录撑破
 - html-report: skill 版本升级到 `0.3.4`
-- manifest: 插件版本按现有 skill 规则优化递增到 `0.19.7`
+- manifest: 插件版本按现有 skill 规则优化递增到 `0.19.8`
 
-## [0.19.6] - 2026-06-23
+## [0.19.7] - 2026-06-23
 ### Changed
 - svg-tech-diagram: 补充内容驱动的 `viewBox` 规则，单行流程图和横向生命周期图不再默认套用 `1200x675`
 - svg-tech-diagram: 自审清单增加“大面积空白”检查，要求画布高度与内容匹配并同步背景 rect 尺寸
 - svg-tech-diagram: skill 版本升级到 `0.1.1`
+- manifest: 插件版本按现有 skill 规则优化递增到 `0.19.7`
+
+## [0.19.6] - 2026-06-23
+### Changed
+- html-report: 普通行内 `<code>` 默认允许换行和断词，避免长命令、路径、Gradle task 或参数串撑破摘要卡片、证据列表和表格单元格
+- html-report: skill 版本升级到 `0.3.3`
 - manifest: 插件版本按现有 skill 规则优化递增到 `0.19.6`
 
 ## [0.19.5] - 2026-06-23
 ### Changed
-- html-report: 普通行内 `<code>` 默认允许换行和断词，避免长命令、路径、Gradle task 或参数串撑破摘要卡片、证据列表和表格单元格
-- html-report: skill 版本升级到 `0.3.3`
+- html-report: 文件定位链接支持用 `...` 省略展示文本中的中间目录，保留仓库/模块语义、完整文件名和行号，同时通过 `href` 与 `title` 保持完整跳转定位
+- html-report: 路径 chip 样式增加宽度约束和 `overflow-wrap:anywhere`，降低超长链接在窄屏或分屏下撑破正文的风险
+- html-report: skill 版本升级到 `0.3.2`
 - manifest: 插件版本按现有 skill 规则优化递增到 `0.19.5`
 
 ## [0.19.4] - 2026-06-23
 ### Changed
-- html-report: 文件定位链接支持用 `...` 省略展示文本中的中间目录，保留仓库/模块语义、完整文件名和行号，同时通过 `href` 与 `title` 保持完整跳转定位
-- html-report: 路径 chip 样式增加宽度约束和 `overflow-wrap:anywhere`，降低超长链接在窄屏或分屏下撑破正文的风险
-- html-report: skill 版本升级到 `0.3.2`
-- manifest: 插件版本按现有 skill 规则优化递增到 `0.19.4`
+- datapilot-sql-runner: 新增运行中心跳检查规则，任务处于排队中、执行中或运行中时可按默认 3 分钟间隔复查状态
+- datapilot-sql-runner: 明确心跳终止边界，终态停止，无明确长时间等待时最多 10 次或 30 分钟
+- datapilot-sql-runner: skill 版本升级到 `0.1.1`
+- README / manifest: 插件版本升级到 `0.19.4`
 
 ## [0.19.3] - 2026-06-21
 ### Changed

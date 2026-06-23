@@ -41,7 +41,7 @@ iplugin/
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |
-| `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，处理 Chrome 登录态、Monaco 编辑器粘贴、任务 ID 回收和排队/执行状态汇报 | "DataPilot 跑一下这个 SQL"、"把这些 .sql 提交到 datapilot 并回收任务 ID" |
+| `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，处理 Chrome 登录态、Monaco 编辑器粘贴、任务 ID 回收、排队/执行状态汇报和运行中心跳检查 | "DataPilot 跑一下这个 SQL"、"把这些 .sql 提交到 datapilot 并回收任务 ID" |
 | `nad-acx-pivot-table` | 生成商业 AB 实验数据分析透视表 xlsx，支持 CSV/TXT/XLSX 合并、字段别名映射、原生 Excel 透视表和相对差指标 | "生成商业 AB 实验透视表"、"合并最近 3 个 csv/txt 生成透视表" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
 | `obsidian` | 写入 Obsidian Vault 时应用统一 Markdown 排版、标题层级、引用块、双链规范，并按清晰度选择 Mermaid / ASCII / SVG / 图像生成等示意图表达 | "写到 Obsidian"、"记到笔记里"、"加到 vault 里" |
