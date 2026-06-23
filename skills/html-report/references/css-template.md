@@ -131,11 +131,14 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     background: #f1f5f9; color: #334155;
     border: 1px solid #e2e8f0; border-radius: 6px;
-    padding: 1px 5px; font-size: .92em; white-space: nowrap;
+    padding: 1px 5px; font-size: .92em; max-width: 100%;
+    white-space: normal; overflow-wrap: anywhere; word-break: break-word;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
   }
   pre code {
     background: transparent; color: inherit; border: 0;
     border-radius: 0; padding: 0; font-size: inherit; white-space: pre;
+    overflow-wrap: normal; word-break: normal;
   }
   .ascii-diagram {
     background: #f8fafc; color: #0f172a;
