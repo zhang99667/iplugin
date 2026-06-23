@@ -96,7 +96,7 @@
 - 行内代码用灰色反引号样式，多行代码用接近 IDE 的深绿色背景块和 token 配色或 Pygments inline style，且每个代码块都有复制按钮。
 - 已运行 `scripts/check_html_report.py`，不存在外部 CSS/JS 依赖、未渲染的 Markdown 行内代码、裸 `<pre><code>`、缺少复制按钮、缺少必要静态高亮结构或 token CSS 的代码块，且页面包含 viewport、窄屏、横向滚动和打印样式。
 - 涉及代码改动的报告已经提供变更标识：新增行、删除行、修改行、上下文行可区分；真实 unified diff 使用 `.diff-card.diff-viewer` 固定样式；没有把旧代码和新代码混在一起。
-- 文件路径和行号以单个 `{path}:{line}`、`{path}:{start}-{end}` 或 `{path}:{line}:{column}` chip 展示；有绝对路径时已加 `idea://open` 超链接；没有把路径和行号拆成两个 chip，也没有把行号范围另起一行。
+- 文件路径和行号以单个 `{path}:{line}`、`{path}:{start}-{end}` 或 `{path}:{line}:{column}` chip 展示；有绝对路径时已加 `idea://open` 超链接；没有把路径和行号拆成两个 chip，也没有把行号范围另起一行。超长路径的展示文本可用 `...` 省略中间目录，但保留仓库/模块语义、文件名和行号，完整定位保存在 `href` 与 `title` 中。
 - ASCII 架构图在浏览器中保持缩进、连线和横向滚动，不出现自动换行导致的错位。
 - 长内容已折叠，首屏清爽。
 - 长文档已加入左侧目录，目录默认展开、可点击按钮整体收起/展开，目录链接能跳转到对应章节。

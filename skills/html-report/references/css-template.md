@@ -68,7 +68,8 @@
     display: inline-block; background: #eef2ff; color: #3730a3;
     border-radius: 8px; padding: 2px 8px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 12px; word-break: break-all;
+    font-size: 12px; max-width: 100%; box-sizing: border-box;
+    word-break: normal; overflow-wrap: anywhere;
     text-decoration: none;
   }
   a.path.file-link {
@@ -397,10 +398,10 @@
 <a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82&amp;column=7">/abs/path/File.java:82:7</a>
 ```
 
-行号范围链接跳到起始行，展示保留完整范围；可用 `title` 放完整绝对路径，正文展示更短的仓库相对路径。不要额外生成独立的 `43-50` 或 `106-111` 行号 badge：
+行号范围链接跳到起始行，展示保留完整范围；可用 `title` 放完整绝对路径，正文展示更短的仓库相对路径。超长路径可以在展示文本里用 `...` 省略中间目录，例如 `lib-ad-feed/.../UnitedSchemeADDispatcher.java:1350-1351`，但不能省略仓库/模块线索、文件名、行号或行号范围；同名文件可能混淆时，保留更多父级目录。不要额外生成独立的 `43-50` 或 `106-111` 行号 badge：
 
 ```html
-<a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50</a>
+<a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/.../FlowVideoLandscapeHelper.kt:43-50</a>
 ```
 
 ---

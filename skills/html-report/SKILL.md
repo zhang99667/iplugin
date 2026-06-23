@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.3.1
+version: 0.3.2
 tags:
   - report
   - html
@@ -18,7 +18,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 
 - `references/content-rules.md`：HTML vs Markdown 决策、文档类型、正式抬头、输出要求、写作规范、完成前检查。
 - `references/artifact-patterns.md`：按报告类型选择结构模板。当前覆盖技术方案、技术调研、问题排查/修复方案三个高频场景，其他场景先按通用报告规则处理。
-- `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、目录导航、ASCII/代码块、交互组件、场景速查。
+- `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、超长路径省略展示、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 模板、交互组件样式、可整体收起的浮动目录侧栏、复制按钮 JS 和 HTML 骨架。只有开始写 HTML 文件时再读取。
 - `references/annotation-mode.md`：当用户要求离线批注、审核模式、Agent 提问包、HTML 内选中文本提问/批注或发布版导出时读取。
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
@@ -80,4 +80,5 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - Markdown 来源中的反引号行内代码必须渲染成 `<code>...</code>`，例如 `` `d` `` 或 `` `support_full_screen` `` 不能作为原始反引号文本留在 HTML 正文里。
 - 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，不要手写 diff 表格或使用普通 `language-diff` 代码块。
 - 宽表格、代码块、ASCII 图和长路径必须在窄屏/分屏下可横向滚动或换行，不允许把正文撑出视口。
+- 超长文件定位链接的展示文本可以用 `...` 省略中间目录，但必须保留仓库/模块语义、完整文件名和行号，实际 `href` 跳转与 `title` 仍保留完整定位。
 - 如果用户指定其他视觉风格，以用户的新要求为准。

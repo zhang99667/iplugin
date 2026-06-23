@@ -107,7 +107,8 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 - **结构先于样式**：源码定位必须先在 HTML 结构里表达正确，CSS 只负责视觉样式。不要指望 CSS 把拆散的路径和行号“拼成”一个定位；生成 HTML 时就必须产出单个可点击定位元素。
 - 位置文本统一展示为单个 chip：`{displayPath}:{line}`、`{displayPath}:{start}-{end}` 或 `{displayPath}:{line}:{column}`；`line` 和 `column` 使用 1-based 数字。已有行号范围时必须展示完整范围，例如 `.../NadWrappedBrowserView.java:106-111`，不要写成 `...java:106` 后再另起一个 `106-111`。
 - `displayPath` 优先使用仓库相对路径或从工作区根目录开始的短路径，便于阅读，例如 `browser-android/searchbox-lite/repos/business/ad_business/.../FlowVideoLandscapeHelper.kt:43-50`；如果无法可靠缩短，再展示绝对路径。
-- 有绝对路径时，文件位置必须渲染成 IDEA 协议链接：`idea://open?file={encodedAbsolutePath}&line={startLine}&column={column}`。行号范围用起始行作为跳转行，展示文本保留完整范围。HTML 属性里的 `&` 写成 `&amp;`，路径参数做 URL 编码，展示文本保留可读路径。
+- 当路径过长导致 chip 挤占正文或换行难读时，展示文本可以用 `...` 省略中间目录，例如 `lib-ad-feed/.../UnitedSchemeADDispatcher.java:1350-1351`。省略只能发生在中间目录，不能省略仓库/模块线索、文件名、行号或行号范围；同名文件可能混淆时，保留更多父级目录。完整路径和完整定位放入 `title`，不要为了视觉省略破坏跳转信息。
+- 有绝对路径时，文件位置必须渲染成 IDEA 协议链接：`idea://open?file={encodedAbsolutePath}&line={startLine}&column={column}`。行号范围用起始行作为跳转行，展示文本保留完整范围。HTML 属性里的 `&` 写成 `&amp;`，路径参数做 URL 编码，展示文本可按上一条规则缩短，但 `href` 和 `title` 必须保留完整可跳转定位。
 - 必须使用同一个 `<a class="path file-link">` 同时承载路径和行号/行号范围。禁止把源码定位拆成 `<span class="path">...</span>` + `<span class="line">...</span>` 或“路径链接 + 单独行号 chip”；这种写法不能表达完整定位，也容易丢失跳转能力。
 
 ```html
@@ -123,10 +124,10 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 如果是行号范围，链接跳到起始行，展示保留范围：
 
 ```html
-<a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50</a>
+<a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/.../FlowVideoLandscapeHelper.kt:43-50</a>
 ```
 
-如果路径包含空格、`#`、`?`、`&` 或中文等非 ASCII 字符，`href` 里的 `file=` 参数必须做 URL 编码；展示文本仍用原始可读路径。
+如果路径包含空格、`#`、`?`、`&` 或中文等非 ASCII 字符，`href` 里的 `file=` 参数必须做 URL 编码；展示文本保持人类可读，必要时按上方省略规则缩短。
 
 如果只能拿到仓库相对路径且无法可靠还原绝对路径，可以先按 `{path}:{line}:{column}` 展示为 `.path` chip，但不要编造不可用的 `idea://open` 链接。
 
