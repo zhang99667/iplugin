@@ -2,7 +2,7 @@
 
 ## 画布骨架
 
-新图优先从这个浅色、朴素的骨架开始，按需要调整 `viewBox` 和标题。
+新图优先从这个浅色、朴素的骨架开始，按内容调整 `viewBox` 和标题。`1200 675` 只是通用横图示例，不是固定尺寸；如果只有一行节点或单行生命周期，先把高度收紧到内容高度加上下外边距。
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
@@ -27,6 +27,8 @@
   <rect width="1200" height="675" fill="#FFFFFF"/>
 </svg>
 ```
+
+调整 `viewBox` 时，同步调整背景 `<rect>` 的 `width` / `height`。例如单行流程可用 `viewBox="0 0 1200 400"` 和 `<rect width="1200" height="400" .../>`，不要保留 675 高导致下半屏空白。
 
 ## 节点组件
 

@@ -1,3 +1,10 @@
+## [0.19.6] - 2026-06-23
+### Changed
+- svg-tech-diagram: 补充内容驱动的 `viewBox` 规则，单行流程图和横向生命周期图不再默认套用 `1200x675`
+- svg-tech-diagram: 自审清单增加“大面积空白”检查，要求画布高度与内容匹配并同步背景 rect 尺寸
+- svg-tech-diagram: skill 版本升级到 `0.1.1`
+- manifest: 插件版本按现有 skill 规则优化递增到 `0.19.6`
+
 ## [0.19.5] - 2026-06-23
 ### Changed
 - html-report: 普通行内 `<code>` 默认允许换行和断词，避免长命令、路径、Gradle task 或参数串撑破摘要卡片、证据列表和表格单元格

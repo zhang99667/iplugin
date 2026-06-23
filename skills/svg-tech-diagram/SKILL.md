@@ -1,6 +1,6 @@
 ---
 name: svg-tech-diagram
-version: 0.1.0
+version: 0.1.1
 tags: [svg, diagram, visualization, technical-writing, architecture]
 description: SVG 技术绘图助手。当用户要求为技术长文、HTML 报告、架构说明、代码链路、流程/状态/模块关系配图，或明确说“画 SVG 图”“配张架构图”“生成技术示意图”“公众号配图”“矢量图”“统一风格图”时触发；通过朴素清晰的技术图规范、SVG 组件骨架、渲染 PNG 后读取自审和迭代，产出可嵌入 Markdown/HTML 的清晰矢量图。
 user_invocable: true
@@ -45,7 +45,7 @@ user_invocable: true
 1. 提炼图的目的：这张图要帮读者看懂什么？删掉不能降低理解成本的信息。
 2. 选择信息结构：从 `references/svg-patterns.md` 中选择 fork、垂直工作流、分层架构、泳道、对比矩阵、时间线或状态机。
 3. 读取 `references/style-system.md`，先用灰阶线框表达结构，只在主流程、风险、成功等必要语义上添加少量强调色。
-4. 写 SVG：使用明确 `viewBox`、内联 `<style>`、浅色背景、统一节点/容器、手工换行的 `<tspan>` 和边缘对齐的箭头。
+4. 写 SVG：使用明确且按内容收缩的 `viewBox`、内联 `<style>`、浅色背景、统一节点/容器、手工换行的 `<tspan>` 和边缘对齐的箭头。
 5. 渲染 PNG：优先运行 `python3 skills/svg-tech-diagram/scripts/render_svg.py <input.svg> <output.png>`。
 6. 读取 PNG：使用当前环境的图片查看能力真实检查渲染结果，不要只凭 SVG 源码判断。
 7. 读取 `references/review-checklist.md` 并逐项自审。任何 A 级项失败都必须修改 SVG、重新渲染、再次读取 PNG。
@@ -58,6 +58,7 @@ user_invocable: true
 - 箭头端点必须落在容器边缘或连接点上，不要穿过节点内容、标题或正文。
 - 中文文案先估宽再写入：粗略按 `字数 * 字号` 估算，英文按 `字符数 * 字号 * 0.58` 估算；不确定就手工换行。
 - 主标题字号不低于 22px，正文不低于 12px。公众号和分屏阅读场景优先 14px 正文。
+- 画布尺寸按内容选择，不要所有图都套同一个比例；单行流程图、横向生命周期图等内容应收紧高度，避免节点下方出现大面积空白。
 - 图中文字只写关键词、短句和状态名，解释性长句放到图下正文或报告段落里。
 - 不要交付没有渲染检查过的 SVG。若本机缺少渲染工具且无法替代，必须在最终说明“未完成视觉自审”的风险。
 
