@@ -26,6 +26,7 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 - 总结区和问题区使用白色圆角卡片（14px），轻微阴影。
 - 优先级、状态用彩色胶囊标签（P0 红 / P1 橙 / P2 蓝）。
 - 文件路径和行号用 chip 样式（缩进色块 + 等宽字体）。
+- 特别长的文件路径不要直接作为普通 `<code>` 完整展示；即使没有行号，也应按文件定位规则用 `...` 省略中间目录，保留仓库/模块线索、文件名和必要的方法/行号信息。
 - 行内代码用灰色小反引号样式（`<code>` 标签，`#f1f5f9` 底 + `#334155` 字色）。
 - 从 Markdown 内容生成 HTML 时，反引号包裹的短标识必须变成真实 `<code>` 标签，例如 `` `d` `` 输出为 `<code>d</code>`，不要把原始反引号文本留在正文里。
 - 多行代码用接近 IDE 的深绿色背景块（`#10231f`），旁边放 copy 按钮，并对关键字、字符串、数字、注释等做颜色区分；默认采用 JetBrains 深色主题观感，关键字偏玫红、类型/常量偏黄绿、注释偏低饱和绿色。
@@ -108,6 +109,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 - 位置文本统一展示为单个 chip：`{displayPath}:{line}`、`{displayPath}:{start}-{end}` 或 `{displayPath}:{line}:{column}`；`line` 和 `column` 使用 1-based 数字。已有行号范围时必须展示完整范围，例如 `.../NadWrappedBrowserView.java:106-111`，不要写成 `...java:106` 后再另起一个 `106-111`。
 - `displayPath` 优先使用仓库相对路径或从工作区根目录开始的短路径，便于阅读，例如 `browser-android/searchbox-lite/repos/business/ad_business/.../FlowVideoLandscapeHelper.kt:43-50`；如果无法可靠缩短，再展示绝对路径。
 - 当路径过长导致 chip 挤占正文或换行难读时，展示文本可以用 `...` 省略中间目录，例如 `lib-ad-feed/.../UnitedSchemeADDispatcher.java:1350-1351`。省略只能发生在中间目录，不能省略仓库/模块线索、文件名、行号或行号范围；同名文件可能混淆时，保留更多父级目录。完整路径和完整定位放入 `title`，不要为了视觉省略破坏跳转信息。
+- 对没有行号的长文件路径，也不要直接放完整 `<code>baiduapp-android/client/repos/business/lib_ad/lib-ad-feed/src/main/java/com/baidu/searchbox/feed/ad/scheme/UnitedSchemeAdDispatcher.java</code>`。优先生成单个 `.path` chip，例如 `<span class="path" title="baiduapp-android/client/repos/business/lib_ad/lib-ad-feed/src/main/java/com/baidu/searchbox/feed/ad/scheme/UnitedSchemeAdDispatcher.java">baiduapp-android/client/repos/business/lib_ad/lib-ad-feed/.../UnitedSchemeAdDispatcher.java</span>`；如果上下文指向方法，展示文本保留方法名，例如 `lib-ad-feed/.../UnitedSchemeAdDispatcher.java#makePhoneCall`。不要在路径中间硬换行。
 - 有绝对路径时，文件位置必须渲染成 IDEA 协议链接：`idea://open?file={encodedAbsolutePath}&line={startLine}&column={column}`。行号范围用起始行作为跳转行，展示文本保留完整范围。HTML 属性里的 `&` 写成 `&amp;`，路径参数做 URL 编码，展示文本可按上一条规则缩短，但 `href` 和 `title` 必须保留完整可跳转定位。
 - 必须使用同一个 `<a class="path file-link">` 同时承载路径和行号/行号范围。禁止把源码定位拆成 `<span class="path">...</span>` + `<span class="line">...</span>` 或“路径链接 + 单独行号 chip”；这种写法不能表达完整定位，也容易丢失跳转能力。
 
