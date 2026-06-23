@@ -27,6 +27,7 @@ usage() {
   APK_GLOB            相对 REMOTE_ROOT 的 APK 匹配表达式。默认：app/build/outputs/apk/debug/*.apk
   LOCAL_APK_DIR       拉回 APK 后存放的本地目录。默认：~/Downloads/android-artifacts
   INSTALL_APK         构建后安装填 1，只拉回填 0。默认：1
+  SYNC_GIT_METADATA   是否同步 .git/.mgit 元数据，保持远端分支和 HEAD 与本地一致。默认：1
   ADB_SERIAL          可选的本地 adb 设备 serial
   REMOTE_GRADLE_ARGS  可选的额外 Gradle 参数
   IGNORE_FILE         可选的 rsync 排除文件
@@ -94,6 +95,7 @@ APK_GLOB="${APK_GLOB:-app/build/outputs/apk/debug/*.apk}"
 LOCAL_APK_DIR="${LOCAL_APK_DIR:-$HOME/Downloads/android-artifacts}"
 INSTALL_APK="${INSTALL_APK:-1}"
 DRY_RUN="${DRY_RUN:-0}"
+SYNC_GIT_METADATA="${SYNC_GIT_METADATA:-1}"
 
 # 命令行开关优先级高于配置文件。这样即使项目配置 INSTALL_APK=1，
 # 临时执行 --no-install 也能只构建和拉包，不会误装到当前连接的设备。
@@ -104,6 +106,13 @@ if [[ -n "$DRY_RUN_CLI" ]]; then
   DRY_RUN="$DRY_RUN_CLI"
 fi
 REMOTE_GRADLE_ARGS="${REMOTE_GRADLE_ARGS:-}"
+case "$SYNC_GIT_METADATA" in
+  0|1) ;;
+  *)
+    echo "SYNC_GIT_METADATA 只能是 0 或 1：$SYNC_GIT_METADATA" >&2
+    exit 1
+    ;;
+esac
 
 # 优先使用项目自己的 .remote-buildignore；如果项目还没初始化，则退回到
 # 工具目录里的模板。这样可以直接 dry-run 一个未初始化项目，也能让项目
@@ -148,6 +157,7 @@ TASK=$TASK
 APK_GLOB=$APK_GLOB
 LOCAL_APK_DIR=$LOCAL_APK_DIR
 INSTALL_APK=$INSTALL_APK
+SYNC_GIT_METADATA=$SYNC_GIT_METADATA
 ADB_SERIAL=${ADB_SERIAL:-}
 REMOTE_GRADLE_ARGS=$REMOTE_GRADLE_ARGS
 IGNORE_FILE=$IGNORE_FILE
@@ -193,12 +203,43 @@ ssh "$REMOTE" "mkdir -p $remote_root_q"
 # 同步源码到远端。--delete-delay 会删除远端本地已经不存在的文件，
 # 但延迟到传输结束后执行，降低中途失败导致远端处于半删除状态的概率。
 # 首次使用前建议 DRY_RUN=1，确认排除规则不会删掉远端需要保留的文件。
-echo "[2/5] 同步源码"
+if [[ "$SYNC_GIT_METADATA" == "1" ]]; then
+  echo "[2/5] 同步源码和 Git 元数据"
+else
+  echo "[2/5] 同步源码（保留远端 Git 元数据）"
+fi
 rsync_args=(-az --delete-delay --human-readable)
 if command rsync --info=help >/dev/null 2>&1; then
   rsync_args+=(--info=stats1,progress2)
 else
   rsync_args+=(--stats)
+fi
+
+# 旧项目的 .remote-buildignore 可能仍排除了 .git/.mgit。默认同步 Git
+# 元数据时，用先匹配的 include 规则覆盖旧排除项，让远端分支、HEAD、
+# index 和本地一致；如果用户明确关闭，则显式排除，保留远端自己的 clone。
+if [[ "$SYNC_GIT_METADATA" == "1" ]]; then
+  rsync_args+=(
+    "--include=.git"
+    "--include=.git/***"
+    "--include=**/.git"
+    "--include=**/.git/***"
+    "--include=.mgit"
+    "--include=.mgit/***"
+    "--include=**/.mgit"
+    "--include=**/.mgit/***"
+  )
+else
+  rsync_args+=(
+    "--exclude=.git"
+    "--exclude=.git/***"
+    "--exclude=**/.git"
+    "--exclude=**/.git/***"
+    "--exclude=.mgit"
+    "--exclude=.mgit/***"
+    "--exclude=**/.mgit"
+    "--exclude=**/.mgit/***"
+  )
 fi
 if [[ "$DRY_RUN" == "1" ]]; then
   rsync_args+=(--dry-run)

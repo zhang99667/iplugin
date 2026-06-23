@@ -88,7 +88,7 @@ tools/remote-android-build/
 - 使用 zsh 而不是 Python：目标流程主要是 SSH、rsync、Gradle 和 adb 编排，shell 更直接。
 - 使用项目级 `.remote-build.zsh`：不同 Android 工程的模块、flavor、APK 输出路径差异较大，配置文件比命令行参数更可维护。
 - 使用 `--delete-delay`：保持远端镜像与本地一致，同时降低同步中断造成半删除状态的概率。
-- 默认排除 `.git` 和 `.mgit`：避免同步大量 Git 内部对象；需要 Git 元数据的项目应在远端保留 clone 或显式传入版本信息。
+- 默认同步 `.git` 和 `.mgit`：远端目录是本地工作区镜像，分支、HEAD、index 和构建读取到的 Git 信息应跟随本地；如明确要保留远端自己的 clone，可设置 `SYNC_GIT_METADATA=0`。
 - 安装步骤可关闭：split APK、AAB 和只拉包验证的场景不应被单 APK 安装逻辑阻塞。
 
 ## 5. 风险与处理
@@ -97,7 +97,8 @@ tools/remote-android-build/
 | --- | --- | --- |
 | rsync 删除远端私有文件 | 签名、local.properties 或临时配置丢失 | secrets 放在 `REMOTE_ROOT` 外，首次运行 `DRY_RUN=1` |
 | debug 签名不一致 | 覆盖安装失败 | 统一 debug keystore，或首次切换时卸载旧包 |
-| 远端 Git 元数据滞后 | 版本号或 commit id 错误 | 远端 clone 保持基线一致，或通过 Gradle 参数传入 |
+| Git 元数据同步变慢 | 首次同步或分支切换时传输较多对象 | 默认保证正确性；明确不需要时设置 `SYNC_GIT_METADATA=0` |
+| 远端 Git 元数据滞后 | 版本号、commit id 或分支名错误 | 保持默认 `SYNC_GIT_METADATA=1`；关闭后需自行维护远端 clone 或传入版本信息 |
 | APK 输出路径不匹配 | 构建成功但拉包失败 | 在 `.remote-build.zsh` 中修改 `APK_GLOB` |
 | 多设备连接 | adb 不知道安装到哪台设备 | 使用 `ADB_SERIAL` 指定设备 |
 

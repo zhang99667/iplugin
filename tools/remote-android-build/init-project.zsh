@@ -57,6 +57,10 @@ LOCAL_ROOT="$PROJECT_ROOT"
 # 不要把签名文件、local.properties 或其他远端私有配置放在这里。
 REMOTE_ROOT="~/remote-work/$PROJECT_NAME"
 
+# 是否同步 .git/.mgit 元数据。1 表示远端分支、HEAD 和暂存区跟随本地；
+# 如果你明确要保留远端自己的 clone 元数据，可改成 0。
+SYNC_GIT_METADATA="1"
+
 # 远端执行的 Gradle task。多 flavor 项目通常需要改成实际的 assemble task。
 TASK=":app:assembleDebug"
 

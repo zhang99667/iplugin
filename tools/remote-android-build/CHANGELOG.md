@@ -1,5 +1,21 @@
 # 变更日志
 
+## 0.1.3
+
+版本记录：`versions/v0.1.3.md`
+
+### 变更
+
+- `remote-build.zsh` 新增 `SYNC_GIT_METADATA`，默认同步 `.git/.mgit`，让远端分支、HEAD 和暂存区跟随本地。
+- rsync 同步时默认用 include 规则覆盖旧 `.remote-buildignore` 中的 `.git/`、`.mgit/` 排除项，避免已有项目继续保留远端旧分支状态。
+- `remote-buildignore.template` 不再默认排除 `.git/.mgit`；如需保留远端 clone，可在配置里设置 `SYNC_GIT_METADATA=0`。
+- README、配置示例和实施文档同步说明 Git 元数据同步策略。
+
+### 设计取舍
+
+- 默认优先保证远端镜像与本地工作区一致，而不是减少 Git 对象传输量。
+- 保留 `SYNC_GIT_METADATA=0` 兼容大仓库或特殊 worktree 场景。
+
 ## 0.1.2
 
 版本记录：`versions/v0.1.2.md`

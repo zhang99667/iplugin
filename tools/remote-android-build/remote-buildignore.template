@@ -1,5 +1,3 @@
-.git/
-.mgit/
 .gradle/
 **/build/
 .idea/

@@ -73,6 +73,9 @@ LOCAL_ROOT="/path/to/android-project"
 # 远端用于接收 rsync 同步源码的镜像目录。
 REMOTE_ROOT="~/remote-work/client"
 
+# 是否同步 .git/.mgit 元数据。
+SYNC_GIT_METADATA="1"
+
 # 远端执行的 Gradle task。
 TASK=":app:assembleDebug"
 
@@ -91,6 +94,7 @@ INSTALL_APK="1"
 - `REMOTE`：远端 M4 Mac 的 SSH alias。
 - `LOCAL_ROOT`：本地 Android Gradle 工程根目录。
 - `REMOTE_ROOT`：远端镜像目录，脚本会用 rsync 同步到这里。
+- `SYNC_GIT_METADATA`：`1` 表示同步 `.git/.mgit`，让远端分支、HEAD 和暂存区跟随本地；`0` 表示保留远端自己的 Git 元数据。
 - `TASK`：远端执行的 Gradle task。
 - `APK_GLOB`：相对 `REMOTE_ROOT` 的 APK 匹配表达式。
 - `LOCAL_APK_DIR`：拉回 APK 后存放的本地目录。
@@ -102,6 +106,7 @@ INSTALL_APK="1"
 
 - 不要把 `local.properties`、keystore、证书和机器私有配置同步到远端镜像目录。
 - 远端 `REMOTE_ROOT` 应该被视为可丢弃镜像；持久 SDK、签名文件和私有配置应放在镜像目录外。
+- 默认会同步 `.git/.mgit` 元数据，即使旧项目的 `.remote-buildignore` 里仍写了 `.git/` 或 `.mgit/`；如果你明确要保留远端自己的 clone 元数据，把 `SYNC_GIT_METADATA` 设为 `0`。
 - 如果 `adb install` 报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`，优先统一两台 Mac 的 debug keystore；不统一时只能首次切换时卸载旧包。
-- 如果构建逻辑读取 Git 元数据，远端 clone 需要和本地基线 commit 保持一致，或者通过 Gradle 参数显式传入版本信息。
+- 如果使用 Git worktree 或其他把 `.git` 指向外部目录的特殊布局，先用 `DRY_RUN=1` 确认同步内容；必要时把 `SYNC_GIT_METADATA` 设为 `0` 并通过 Gradle 参数显式传入版本信息。
 - 首次使用 `--delete-delay` 前务必先跑 `DRY_RUN=1`，确认不会删除远端需要保留的文件。
