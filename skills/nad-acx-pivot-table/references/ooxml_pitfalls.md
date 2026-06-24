@@ -21,6 +21,18 @@
 - `ref` 范围的总行数 = `num_header_rows + num_data_rows + 1(grand total)`
 - 如果行数不匹配，会导致空白行或 Excel 报错
 
+## 4. filter_fields 必须同时生成 pageFields
+
+如果某个字段在 `pivotFields` 中声明了 `axis="axisPage"`，必须在 `pivotTableDefinition` 中生成对应的 `<pageFields>`：
+
+```xml
+<pageFields count="1"><pageField fld="0"/></pageFields>
+```
+
+只给 `pivotField` 标记 `axisPage`，但省略 `<pageFields>`，会让 Excel 判定透视表定义不完整。此类文件常见表现是 ZIP 结构正常、`openpyxl` 可读取，但 Excel 打开时提示修复或删除 `pivotTable1.xml`。
+
+`pageFields` 在 XML 顺序上应放在 `colItems` 之后、`dataFields` 之前。
+
 ## 6. 字符串枚举字段的空值必须显式化（Strategy Z）
 
 **规则**：对字符串类型的枚举 cacheField，若原始数据含空值，不能使用 `containsBlank="1"` + 记录里 `<m/>` + pivotField `<item t="blank"/>` 的组合。Excel 会判定整个 pivotTable 部件结构损坏，直接删除，并连带清空 workbook.xml 的 `<pivotCaches>` 引用。

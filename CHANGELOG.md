@@ -1,3 +1,12 @@
+## [0.19.13] - 2026-06-24
+### Fixed
+- nad-acx-pivot-table: 修复自定义配置使用 `filter_fields` 时只生成 `axisPage`、未生成 `pageFields` 导致 Excel 打开提示修复的问题
+- nad-acx-pivot-table: 补充 OOXML 筛选字段兼容性记录，说明 `pageFields` 必须位于 `colItems` 与 `dataFields` 之间
+
+### Changed
+- nad-acx-pivot-table: skill 版本升级到 `0.1.1`
+- manifest: 插件版本升级到 `0.19.13`
+
 ## [0.19.12] - 2026-06-24
 ### Changed
 - html-report: diff viewer 的 `+/-` 轨道收敛为 25px，old/new 行号列改为 `width: 1%; min-width: 40px` 自适应宽度，减少窄屏下左侧指示器挤占代码区
