@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.3.4
+version: 0.3.5
 tags:
   - report
   - html
@@ -24,7 +24,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
 - `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
 - `scripts/inject_annotation_mode.py`：当需要审核批注模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线批注 UI、Markdown/JSON 提问包导出和“导出发布版”能力；不要手写批注 JS。
-- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 和可整体收起的目录侧栏结构。
+- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 结构/CSS 和可整体收起的目录侧栏结构。
 
 ## 触发边界
 
@@ -78,7 +78,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 代码块必须先转义再高亮，使用 `scripts/highlight_code.py` 生成静态 HTML；如果脚本语言参数不匹配，先换用受支持语言或修正脚本，不要降级成交付未高亮代码块。
 - 使用 `tok-*` class 的 builtin 高亮时，最终 HTML 的 `<style>` 必须包含对应 `.tok-*` 样式；缺少 token CSS 会导致代码实际无高亮。
 - Markdown 来源中的反引号行内代码必须渲染成 `<code>...</code>`，例如 `` `d` `` 或 `` `support_full_screen` `` 不能作为原始反引号文本留在 HTML 正文里。
-- 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，不要手写 diff 表格或使用普通 `language-diff` 代码块。
+- 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，并原样嵌入输出片段，不要手写 diff 表格、不要拆成普通 `<pre>`、不要把 diff 降级成 `language-diff` 或 `language-text` 代码块。
 - 宽表格、代码块、ASCII 图和长路径必须在窄屏/分屏下可横向滚动或换行，不允许把正文撑出视口。
 - 超长文件定位链接的展示文本可以用 `...` 省略中间目录，但必须保留仓库/模块语义、完整文件名和行号，实际 `href` 跳转与 `title` 仍保留完整定位。
 - 如果用户指定其他视觉风格，以用户的新要求为准。

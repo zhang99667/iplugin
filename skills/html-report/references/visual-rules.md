@@ -139,7 +139,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 优先级：
 
-1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，保持 old/new 行号、红绿整行背景、左侧变更轨道、hunk header 和代码列语法高亮的固定样式。不要手写 `.diff-card`，也不要把 diff 做成普通 `language-diff` 代码块。
+1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，保持 old/new 行号、红绿整行背景、左侧变更轨道、hunk header 和代码列语法高亮的固定样式。生成后的 `<section class="diff-card diff-viewer">...</section>` 片段要原样嵌入报告，不能重新包一层普通代码块，不能把行号列拆到外层，也不要手写 `.diff-card` 或把 diff 做成普通 `language-diff` / `language-text` 代码块。
 2. **Before / After 双栏**：适合结构变化较大、需要对比旧方案和新方案。左栏标题写“修改前”，右栏标题写“修改后”，两栏都必须只保留必要片段。
 3. **新增代码块**：适合纯新增文件、纯新增方法或纯新增配置。标题和 badge 必须写“新增”，左侧使用绿色竖线，不要让它看起来像普通代码摘录。
 4. **删除代码块**：适合删除旧逻辑。标题和 badge 必须写“删除”，左侧使用红色竖线，并说明删除原因或替代逻辑。
@@ -216,7 +216,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 - 优先用 `<span class="tok-key">`、`tok-str`、`tok-num`、`tok-cmt`、`tok-fn`、`tok-var` 等 class 标出关键字、字符串、数字、注释、函数名和变量名。
 - 不需要完整编译级语法分析，但至少要让读者一眼区分注释、字符串、关键逻辑和普通标识符。
-- 差异代码不要手工改成普通代码块；只有在脚本路径、临时文件和语言参数都修复后仍无法运行时，才按 `.diff-card.diff-viewer` 的结构手工补齐固定样式。
+- 差异代码不要手工改成普通代码块；只有在脚本路径、临时文件和语言参数都修复后仍无法运行时，才按 `.diff-card.diff-viewer` 的结构手工补齐固定样式。手工补齐时必须包含 `.diff-header`、`.diff-scroll`、`.diff-table`、`.diff-gutter`、`.diff-old-num`、`.diff-new-num`、`.diff-code`、`.diff-hunk` 和 `.diff-add` / `.diff-del`，并使用 `references/css-template.md` 中完整 diff viewer CSS。
 - 短代码块只高亮确定的核心 token；如果不确定，保持转义后的纯文本更好。
 - 代码内容必须先转义 HTML，再包高亮 span，避免 `<`、`>`、`&` 破坏页面。
 - 多行代码块必须放在 `.code-wrap` 容器中，使用 `<pre><code class="language-xxx">...</code></pre>`，右上角提供复制按钮。

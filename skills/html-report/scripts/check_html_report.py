@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import html as html_lib
 import re
 import sys
 from dataclasses import dataclass
@@ -21,6 +22,11 @@ TOKEN_SPAN_RE = re.compile(r'<span\b[^>]*\bclass=["\'][^"\']*\b(tok-[a-zA-Z0-9_-
 INLINE_STYLE_RE = re.compile(r'<span\b[^>]*\bstyle=["\'][^"\']+["\']', re.DOTALL)
 COPY_BTN_RE = re.compile(r'<button\b[^>]*class=["\'][^"\']*\bcopy-btn\b[^"\']*["\']', re.DOTALL)
 RAW_INLINE_CODE_RE = re.compile(r'`[^`\n]+`')
+TAG_RE = re.compile(r"<[^>]+>")
+RAW_UNIFIED_DIFF_RE = re.compile(
+    r"(?m)(?:^|\n)(?:diff --git [^\n]+\n)?--- [^\n]+\n\+\+\+ [^\n]+\n@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@"
+)
+HUNK_MARKER_RE = re.compile(r"@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
 
 TEXT_LIKE_LANGS = {"text", "txt", "log", "logs", "plain", "plaintext"}
 SUPPORTED_LANGS = {"kotlin", "java", "js", "python", "xml", "sql", "json", "yaml", "bash", "diff", "text"}
@@ -120,6 +126,18 @@ def class_set(value: str) -> set[str]:
     return {part for part in value.split() if part}
 
 
+def fragment_text(fragment: str) -> str:
+    return html_lib.unescape(TAG_RE.sub("", fragment))
+
+
+def has_class(fragment: str, class_name: str) -> bool:
+    return bool(re.search(rf'\bclass=["\'][^"\']*\b{re.escape(class_name)}\b[^"\']*["\']', fragment))
+
+
+def looks_like_unified_diff(text: str) -> bool:
+    return bool(RAW_UNIFIED_DIFF_RE.search(text) or ("diff --git " in text and HUNK_MARKER_RE.search(text)))
+
+
 def check_code_wrap_blocks(html: str, css: str) -> list[str]:
     errors: list[str] = []
     compact_css = re.sub(r"\s+", " ", css)
@@ -132,6 +150,11 @@ def check_code_wrap_blocks(html: str, css: str) -> list[str]:
         lang = lang_match.group(1).lower()
         if lang not in SUPPORTED_LANGS and lang not in TEXT_LIKE_LANGS:
             errors.append(f"第 {index} 个 .code-wrap 使用未支持的 language-{lang}；请用 highlight_code.py 支持的语言或映射到 text")
+        if looks_like_unified_diff(fragment_text(block)):
+            errors.append(
+                f"第 {index} 个 .code-wrap 包含 raw unified diff；真实 diff 必须用 highlight_code.py --lang diff --diff-view 生成 .diff-card.diff-viewer"
+            )
+            continue
         if lang == "diff":
             errors.append(f"第 {index} 个 .code-wrap 使用 language-diff；真实 diff 必须用 highlight_code.py --lang diff --diff-view 生成 .diff-card.diff-viewer")
             continue
@@ -147,6 +170,64 @@ def check_code_wrap_blocks(html: str, css: str) -> list[str]:
         if not COPY_BTN_RE.search(block):
             errors.append(f"第 {index} 个 .code-wrap 缺少 .copy-btn 复制按钮")
     return errors
+
+
+def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
+    errors: list[str] = []
+    blocks = DIFF_VIEWER_RE.findall(html)
+    if not blocks:
+        return errors
+
+    for index, block in enumerate(blocks, start=1):
+        required_classes = {
+            "diff-card": "必须同时使用 .diff-card 和 .diff-viewer，避免退化成普通代码块外壳",
+            "diff-header": "缺少 .diff-header，无法保持标准 diff 标题区",
+            "change-chip": "缺少 .change-chip，无法稳定展示“代码差异”标识",
+            "diff-scroll": "缺少 .diff-scroll，宽 diff 在窄屏下可能撑破正文",
+            "diff-table": "缺少 .diff-table，old/new 行号和代码列无法稳定对齐",
+            "diff-gutter": "缺少 .diff-gutter，无法展示左侧 +/- 变更轨道",
+            "diff-old-num": "缺少 .diff-old-num，无法展示 old 行号列",
+            "diff-new-num": "缺少 .diff-new-num，无法展示 new 行号列",
+            "diff-code": "缺少 .diff-code，代码列无法套用标准样式",
+            "diff-hunk": "缺少 .diff-hunk，无法展示 unified diff hunk header",
+        }
+        for class_name, message in required_classes.items():
+            if not has_class(block, class_name):
+                errors.append(f"第 {index} 个 diff viewer {message}")
+
+        if not (has_class(block, "diff-add") or has_class(block, "diff-del")):
+            errors.append(f"第 {index} 个 diff viewer 缺少 .diff-add 或 .diff-del 行，真实修改点不可见")
+        if "统一 diff · old/new 行号" not in fragment_text(block):
+            errors.append(f"第 {index} 个 diff viewer 标题区缺少“统一 diff · old/new 行号”说明")
+
+    compact_css = re.sub(r"\s+", " ", css)
+    required_diff_css = {
+        ".diff-card": "diff viewer 缺少 .diff-card 基础卡片样式",
+        ".diff-header": "diff viewer 缺少 .diff-header 标题区样式",
+        ".diff-scroll": "diff viewer 缺少 .diff-scroll 横向滚动容器样式",
+        ".diff-viewer .diff-table": "diff viewer 缺少固定表格样式",
+        ".diff-viewer .diff-num": "diff viewer 缺少 old/new 行号列样式",
+        ".diff-viewer .diff-code": "diff viewer 缺少代码列样式",
+        ".diff-viewer .diff-add .diff-num": "diff viewer 缺少新增行 old/new 行号背景样式",
+        ".diff-viewer .diff-del .diff-num": "diff viewer 缺少删除行 old/new 行号背景样式",
+        ".diff-viewer .diff-add .diff-gutter": "diff viewer 缺少新增行左侧绿色变更轨道",
+        ".diff-viewer .diff-del .diff-gutter": "diff viewer 缺少删除行左侧红色变更轨道",
+        ".diff-viewer .diff-hunk .diff-code": "diff viewer 缺少 hunk/meta 行样式",
+        "font-variant-numeric: tabular-nums": "diff viewer 行号列必须使用等宽数字，避免 old/new 列抖动",
+        "white-space: pre": "diff viewer 代码列必须保持原始空格，避免代码缩进漂移",
+    }
+    for fragment, message in required_diff_css.items():
+        if fragment not in compact_css:
+            errors.append(message)
+
+    return errors
+
+
+def check_raw_unified_diff_outside_viewer(html: str) -> list[str]:
+    without_diff_viewers = DIFF_VIEWER_RE.sub("", html)
+    if looks_like_unified_diff(fragment_text(without_diff_viewers)):
+        return ["发现未包在 .diff-card.diff-viewer 中的 raw unified diff；请用 highlight_code.py --lang diff --diff-view 生成标准 diff viewer"]
+    return []
 
 
 def check_diff_viewer_tokens(html: str, css: str) -> list[str]:
@@ -269,18 +350,6 @@ def check_document_chrome(parser: ReportParser) -> list[str]:
     if parser.has_non_viewer_diff_card:
         errors.append("发现非 .diff-card.diff-viewer 的 diff 卡片；真实 diff 必须由 highlight_code.py --lang diff --diff-view 生成，避免手写样式漂移")
 
-    if parser.has_diff_viewer:
-        required_diff_css = {
-            ".diff-card": "diff viewer 缺少 .diff-card 基础样式",
-            ".diff-viewer .diff-table": "diff viewer 缺少固定表格样式",
-            ".diff-add": "diff viewer 缺少新增行样式",
-            ".diff-del": "diff viewer 缺少删除行样式",
-            ".diff-gutter": "diff viewer 缺少左侧变更轨道样式",
-        }
-        for fragment, message in required_diff_css.items():
-            if fragment not in compact_css:
-                errors.append(message)
-
     return errors
 
 
@@ -293,6 +362,8 @@ def validate(path: Path) -> list[str]:
     errors.extend(check_document_chrome(parser))
     css = "\n".join(parser.style_chunks)
     errors.extend(check_code_wrap_blocks(html, css))
+    errors.extend(check_diff_viewer_blocks(html, css))
+    errors.extend(check_raw_unified_diff_outside_viewer(html))
     errors.extend(check_diff_viewer_tokens(html, css))
     errors.extend(check_annotation_mode(html, css))
     return errors

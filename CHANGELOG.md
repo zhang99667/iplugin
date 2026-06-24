@@ -1,3 +1,10 @@
+## [0.19.11] - 2026-06-24
+### Changed
+- html-report: 收紧真实 unified diff 的生成规则，要求脚本输出的 `.diff-card.diff-viewer` 原样嵌入，禁止降级成 `language-diff` 或 `language-text` 普通代码块
+- html-report: `check_html_report.py` 新增 diff viewer 结构和 CSS 闸门，检查 header、scroll、table、old/new 行号列、hunk、增删行和左侧红绿变更轨道，拦截样式漂移
+- html-report: skill 版本升级到 `0.3.5`
+- manifest: 插件版本按现有 skill 规则优化递增到 `0.19.11`
+
 ## [0.19.10] - 2026-06-23
 ### Changed
 - obsidian: 增加个人技术笔记写作风格规则，强调先定规模、先定位再展开、用段落解释并用列表收束

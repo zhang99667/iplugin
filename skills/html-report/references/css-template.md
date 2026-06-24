@@ -425,9 +425,9 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 需要更准确语法覆盖时，使用 `--engine auto` 尝试本机 Pygments 静态预渲染；如果 Pygments 不可用，脚本会回退到 `builtin`。最终报告仍然只包含静态 HTML/CSS/JS，不引入 highlight.js、Prism、Shiki CDN 或外部文件。
 
-展示修改点时必须使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道、hunk header，并根据 `---` / `+++` 文件路径后缀复用普通代码高亮逻辑给代码列生成 `tok-*` token。脚本不可用时先修复并重试；确实无法运行时，才按本模板的 `.diff-card.diff-viewer` 结构手工补齐，且必须先转义 HTML。
+展示修改点时必须使用 `--diff-view`，它会把 unified diff 渲染成 `.diff-card.diff-viewer`：带 old/new 行号、红绿整行背景、左侧变更轨道、hunk header，并根据 `---` / `+++` 文件路径后缀复用普通代码高亮逻辑给代码列生成 `tok-*` token。把脚本输出的 `<section class="diff-card diff-viewer">...</section>` 原样嵌入正文，不要再包成 `.code-wrap`、不要把行号列拆到外层，也不要把真实 diff 改成 `language-text` 代码块。脚本不可用时先修复并重试；确实无法运行时，才按本模板的 `.diff-card.diff-viewer` 结构手工补齐，且必须先转义 HTML。
 
-涉及代码变更时，真实 diff 统一使用 `.diff-card.diff-viewer` + `.diff-table` 展示聚焦 diff。新增、删除、修改、上下文必须有不同视觉状态；行内 token 变化可使用 `<ins>` / `<del>` 或 `.diff-mark-add` / `.diff-mark-del`。不要生成没有 `.diff-viewer` 的手写 `.diff-card`。
+涉及代码变更时，真实 diff 统一使用 `.diff-card.diff-viewer` + `.diff-table` 展示聚焦 diff。新增、删除、修改、上下文必须有不同视觉状态；行内 token 变化可使用 `<ins>` / `<del>` 或 `.diff-mark-add` / `.diff-mark-del`。不要生成没有 `.diff-viewer` 的手写 `.diff-card`。最终 HTML 的 `<style>` 必须保留上方完整 diff viewer CSS，尤其是 `.diff-header`、`.diff-scroll`、`.diff-viewer .diff-table`、`.diff-viewer .diff-num`、`.diff-viewer .diff-code`、`.diff-viewer .diff-add/.diff-del` 和左侧红绿 `border-left` 轨道；这些选择器缺失时 `check_html_report.py` 会失败。
 
 ### 2.1 可折叠区域
 
