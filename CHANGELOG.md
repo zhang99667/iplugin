@@ -1,3 +1,10 @@
+## [0.19.12] - 2026-06-24
+### Changed
+- html-report: diff viewer 的 `+/-` 轨道收敛为 25px，old/new 行号列改为 `width: 1%; min-width: 40px` 自适应宽度，减少窄屏下左侧指示器挤占代码区
+- html-report: `check_html_report.py` 增加自适应行号列宽度检查，避免后续回退到固定 54px 宽列
+- html-report: skill 版本升级到 `0.3.6`
+- manifest: 插件版本按现有 skill 规则优化递增到 `0.19.12`
+
 ## [0.19.11] - 2026-06-24
 ### Changed
 - html-report: 收紧真实 unified diff 的生成规则，要求脚本输出的 `.diff-card.diff-viewer` 原样嵌入，禁止降级成 `language-diff` 或 `language-text` 普通代码块

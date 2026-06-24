@@ -206,6 +206,7 @@ def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
         ".diff-header": "diff viewer 缺少 .diff-header 标题区样式",
         ".diff-scroll": "diff viewer 缺少 .diff-scroll 横向滚动容器样式",
         ".diff-viewer .diff-table": "diff viewer 缺少固定表格样式",
+        ".diff-viewer .diff-gutter": "diff viewer 缺少紧凑 +/- 轨道样式",
         ".diff-viewer .diff-num": "diff viewer 缺少 old/new 行号列样式",
         ".diff-viewer .diff-code": "diff viewer 缺少代码列样式",
         ".diff-viewer .diff-add .diff-num": "diff viewer 缺少新增行 old/new 行号背景样式",
@@ -213,6 +214,10 @@ def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
         ".diff-viewer .diff-add .diff-gutter": "diff viewer 缺少新增行左侧绿色变更轨道",
         ".diff-viewer .diff-del .diff-gutter": "diff viewer 缺少删除行左侧红色变更轨道",
         ".diff-viewer .diff-hunk .diff-code": "diff viewer 缺少 hunk/meta 行样式",
+        "width: 1%": "diff viewer 行号列必须使用自适应内容宽度，避免固定宽列挤占代码区",
+        "min-width: 40px": "diff viewer 行号列必须保留 40px 最小宽度，避免 2-4 位行号抖动",
+        "min-width: 25px": "diff viewer +/- 轨道必须保持 25px 紧凑宽度",
+        "white-space: nowrap": "diff viewer 行号列不能换行，避免 old/new 行号错位",
         "font-variant-numeric: tabular-nums": "diff viewer 行号列必须使用等宽数字，避免 old/new 列抖动",
         "white-space: pre": "diff viewer 代码列必须保持原始空格，避免代码缩进漂移",
     }

@@ -139,7 +139,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 优先级：
 
-1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，保持 old/new 行号、红绿整行背景、左侧变更轨道、hunk header 和代码列语法高亮的固定样式。生成后的 `<section class="diff-card diff-viewer">...</section>` 片段要原样嵌入报告，不能重新包一层普通代码块，不能把行号列拆到外层，也不要手写 `.diff-card` 或把 diff 做成普通 `language-diff` / `language-text` 代码块。
+1. **聚焦 diff**：适合行级修改、review 问题、补丁说明。有真实 unified diff 时必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，保持 old/new 行号、红绿整行背景、左侧变更轨道、hunk header 和代码列语法高亮的固定样式。生成后的 `<section class="diff-card diff-viewer">...</section>` 片段要原样嵌入报告，不能重新包一层普通代码块，不能把行号列拆到外层，也不要手写 `.diff-card` 或把 diff 做成普通 `language-diff` / `language-text` 代码块。old/new 行号列应按内容自适应，保留 40px 最小宽度；`+/-` 轨道保持 25px，避免左侧指示器在窄屏下挤占代码区。
 2. **Before / After 双栏**：适合结构变化较大、需要对比旧方案和新方案。左栏标题写“修改前”，右栏标题写“修改后”，两栏都必须只保留必要片段。
 3. **新增代码块**：适合纯新增文件、纯新增方法或纯新增配置。标题和 badge 必须写“新增”，左侧使用绿色竖线，不要让它看起来像普通代码摘录。
 4. **删除代码块**：适合删除旧逻辑。标题和 badge 必须写“删除”，左侧使用红色竖线，并说明删除原因或替代逻辑。
