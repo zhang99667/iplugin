@@ -1,3 +1,14 @@
+## [0.21.0] - 2026-06-25
+### Added
+- comate-image: 新增 Comate 图片生成 skill，内置标准库客户端，支持 Images、Responses image_generation 和 Banana/Gemini 三条链路
+
+### Changed
+- comate-image: 默认按 prompt 语义判断输出图片文件名，缺少或过期 API key 时通过 ask-user-question 询问用户设置或刷新方式
+- svg-tech-diagram: 补充垂直分区预算和上下留白阈值，把“上挤下空、文字堆叠”列为 A 级自审失败项
+- svg-tech-diagram: skill 版本升级到 `0.1.3`
+- README / manifest: 补充 Comate 图片生成能力入口、关键词和默认提示
+- manifest: 插件版本升级到 `0.21.0`
+
 ## [0.20.0] - 2026-06-25
 ### Added
 - android-mock: 新增 Android mock 自测验收 skill，覆盖真机 adb 执行、mockserver 请求核验、多链路分别验收、逐 case 证据留存、截图/录屏/logcat 采证和验收报告归档
