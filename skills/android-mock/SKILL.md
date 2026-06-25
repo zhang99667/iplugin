@@ -1,7 +1,7 @@
 ---
 name: android-mock
 version: 0.1.0
-description: Android mock 自测与验收闭环助手。用于用户提供 Android mock 文档、scheme 文档、测试用例、mockserver 脚本、接口 mock 配置，或要求“帮我自测”“跑完用例”“验收链路”“补截图/录屏证据”“生成验收报告”时；覆盖真机 adb 执行、mockserver 请求核验、多链路分别验收、逐 case 证据留存、截图/录屏/logcat 采证、HTML/Markdown 验收结果归档。
+description: Android mock 自测与验收闭环助手。用于用户提供 Android mock 文档、scheme 文档、测试用例、mockserver 脚本、接口 mock 配置，或要求“帮我自测”“跑完用例”“验收链路”“补截图/录屏证据”“生成验收报告”时；覆盖真机 adb 执行、mockserver 请求核验、多端/多模块/多链路完整验收、逐 case 证据留存、截图/录屏/logcat 采证，并强制使用 html-report 产出 HTML 验收报告。
 tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 ---
 
@@ -14,6 +14,7 @@ tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 - 以用户提供的 mock 方案、测试用例、技术文档、scheme 构造脚本、接口说明和实际包环境为准。
 - mock 方案和验收结果分开：方案写“怎么测”，验收结果写“测了什么、结果是什么、证据在哪里”。
 - 多条链路必须分别验收，例如宿主 App 链路、SDK 链路、内部入口、外部 scheme 入口；不要用一条链路的结果代替另一条链路。
+- 多端、多模块或多入口复用同一测试用例时，也要按“端 / 模块 / 链路 / 入口 × case”展开逐项执行；不能因为 case 名相同就合并、抽样或跳过。
 - 每个 case 都要有状态：`通过`、`通过*`、`差异`、`失败`、`未测`。`未测` 必须说明原因。
 - 每个结论都要有证据：mockserver 日志、设备截图、录屏、logcat、dumpsys、接口响应，或“没有收到请求”的观察窗口。
 - 临时 mockserver、代理、dev server、logcat tail 等进程，结束前要停止，除非用户明确要求保留。
@@ -23,14 +24,21 @@ tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 1. 梳理输入。
    - 找到测试用例表、mockserver、scheme 生成方式、目标包名、入口协议、设备要求。
    - 提取所有链路和 case：请求方式、接口路径、query/body、mock 返回、预期拨号/跳转/toast/兜底/上报。
+   - 建立执行矩阵：把端、包、模块、链路、入口、case、mock case、预期和证据要求拆成独立行；相同 case 出现在多个端/模块/链路时，每一行都必须执行和记录。
    - 如果文档和脚本不一致，记录差异；优先按实际可执行脚本或用户确认口径执行。
 2. 准备环境。
    - 启动 mockserver，记录端口和 base URL。
    - 如 App 内访问本机回环地址，执行 `adb reverse tcp:<port> tcp:<port>`。
    - 执行 `adb devices` 确认真机在线。
+   - 验证端上到 mockserver 的通路时，优先用设备 shell 非 UI 命令，不要为了 healthz 先打开浏览器：
+     - 首选：`adb shell toybox wget -q -O - http://127.0.0.1:<port>/healthz`
+     - 如果设备 toybox 不带 wget，依次尝试 `adb shell curl -sS http://127.0.0.1:<port>/healthz`、`adb shell busybox wget -q -O - http://127.0.0.1:<port>/healthz`。
+     - 只有设备 shell 没有可用 HTTP 工具时，才用 `adb shell am start -a android.intent.action.VIEW -d 'http://127.0.0.1:<port>/healthz'` 作为降级方案。
+   - 保存通路验证证据：命令输出和 mockserver 的 `/healthz` 请求日志。
    - 每个 case 前尽量清理残留状态：关闭拨号盘或目标 App、回到桌面、清空 logcat。
 3. 逐 case 执行。
-   - 一次只跑一个 case、一个链路。
+   - 一次只跑执行矩阵中的一行：一个端/模块/链路/入口 + 一个 case。
+   - 不要跳过矩阵行；如果时间、设备或包环境不足以全量执行，先向用户说明剩余矩阵和阻塞，不要自行把某条链路或模块标为“同上”。
    - 跑完立即采集 mockserver 输出、设备前台状态、关键 logcat。
    - 涉及视觉结果时截图或录屏。
    - 预期“不请求”的 case，要保留该时间窗口内 mockserver 没有新增请求的证据。
@@ -58,6 +66,8 @@ tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 ```bash
 adb devices
 adb reverse tcp:<port> tcp:<port>
+adb shell toybox wget -q -O - http://127.0.0.1:<port>/healthz
+adb shell curl -sS http://127.0.0.1:<port>/healthz
 adb shell input keyevent HOME
 adb shell logcat -c
 adb shell dumpsys activity activities
@@ -74,6 +84,13 @@ adb shell logcat -d -v time | rg -i "uri=tel|Toast|NotificationService|REQUEST_F
 ```
 
 ## 验收报告
+
+HTML 验收报告必须使用 `html-report` skill 生成，不要手写自定义 HTML 模板。流程要求：
+
+- 先按 `html-report` skill 读取并遵守其内容规则、视觉规则、CSS 模板和校验要求。
+- 输出 HTML 时使用 `html-report` 的正式文档抬头、摘要、链路分表、媒体证据结构、证据来源和清理确认。
+- 完成前运行 `html-report/scripts/check_html_report.py <html-file>`；校验失败必须修复后重跑，直到通过。
+- 只有用户明确要求不要 HTML 或只要 Markdown 时，才输出 Markdown 验收结果。
 
 复杂验收报告优先使用以下结构：
 
@@ -96,7 +113,7 @@ adb shell logcat -d -v time | rg -i "uri=tel|Toast|NotificationService|REQUEST_F
 
 证据附录单独维护，表格里只引用证据编号，避免把截图、视频、长日志全部塞进 case 表格。
 
-如果输出 HTML 报告且当前环境存在 `html-report` 能力，媒体证据优先使用它的标准结构：
+HTML 报告中的媒体证据使用 `html-report` 标准结构：
 
 - 图片：`<figure class="media-evidence" data-case="..." data-conclusion="...">` + `<img alt="...">` + `<figcaption class="media-caption">`。
 - 录屏：同一个媒体证据块里放关键帧截图和 `<video controls preload="metadata">`，视频使用相对路径，不要 base64。
@@ -107,9 +124,11 @@ adb shell logcat -d -v time | rg -i "uri=tel|Toast|NotificationService|REQUEST_F
 不要在以下条件满足前宣布验收完成：
 
 - 每条链路的每个 case 都有状态。
+- 执行矩阵中的每一行都有状态；多端、多模块或多入口的相同 case 也要分别有结果和证据，不能用其他链路的结论代替。
 - 每个状态都有证据或明确阻塞原因。
 - 证据路径存在，截图/录屏命名可追溯到 case。
 - 报告中多链路结果分开呈现。
+- HTML 验收报告由 `html-report` 生成，并通过 `check_html_report.py`。
 - mock 方案、验收结果、临时改动清理项分别呈现，不混在一张密集大表里。
 - 临时日志、mock-only 代码、待回退改动已经列入提交前清理项。
 - 临时服务已停止，或已说明仍在运行。
