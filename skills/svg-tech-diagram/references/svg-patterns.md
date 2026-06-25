@@ -28,7 +28,7 @@
 </svg>
 ```
 
-调整 `viewBox` 时，同步调整背景 `<rect>` 的 `width` / `height`。例如单行流程可用 `viewBox="0 0 1200 400"` 和 `<rect width="1200" height="400" .../>`，不要保留 675 高导致下半屏空白。
+调整 `viewBox` 时，同步调整背景 `<rect>` 的 `width` / `height`。例如单行流程可用 `viewBox="0 0 1200 400"` 和 `<rect width="1200" height="400" .../>`，不要保留 675 高导致下半屏空白。若主体节点集中在上半屏，先整体下移主体或裁短画布；不要只把说明区往下放来消耗空白。
 
 ## 节点组件
 
@@ -160,16 +160,21 @@ SVG 不会自动换行。写节点正文前先按节点宽度估算：
 
 ## 文本和说明区占位
 
-写完整 SVG 前，先用一小段草稿列出关键包围盒：
+写完整 SVG 前，先用一小段草稿列出关键包围盒和垂直 band：
 
 ```text
-title: x=80 y=70 w=760 h=36
-node.resources: x=430 y=360 w=300 h=150 bottom=510
-footer-note: x=80 baselineY=560 lines=1 lineHeight=20 bottom≈566
+viewBox: 1200x430
+title-band: y=40..86
+route-label-band: y=102..134
+main-band: top=162 bottom=332
+footer-note: baselineY=382 lines=1 lineHeight=20 bottom≈388
+topWhitespace≈76 bottomWhitespace≈42
 ```
 
 检查口径：
 
+- 主体区不要贴着标题或顶部标签；标题区、标签区、主体区之间至少保留 `24px`。
+- 横向单行图的 `bottomWhitespace` 不应比 `topWhitespace` 多 `80px` 以上，也不应超过 `topWhitespace * 2`。
 - `footer-note baselineY` 必须大于所有节点、箭头和分组容器底部至少 `24px`。
 - 任意自由文字的 `bottom` 不能进入节点、箭头标签或图例的包围盒。
 - 如果说明文字会贴近某个节点底边，不要降低字号或压行距；优先把说明区整体下移，并同步增加 `viewBox` 和背景 `<rect>` 高度。

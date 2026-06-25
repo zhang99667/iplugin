@@ -108,6 +108,14 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC
 - 竖向流程：`viewBox="0 0 900 1100"` 或按步骤数扩展高度。
 - 背景 `<rect>` 的宽高必须和 `viewBox` 对应；内容完成后根据最上/最下元素再裁掉多余空白，保留外边距即可。
 
+垂直平衡规则：
+
+- 先把画布拆成标题区、主体区、说明区三个 band，再放节点；不要先把节点贴到上半屏，最后把剩余空白留在底部。
+- 完成坐标后计算主体包围盒：`mainTop` 是节点、箭头和关键标签的最小 y，`mainBottom` 是最大 y；不把外边距和空白背景算进主体。
+- 若没有底部说明，`bottomWhitespace = viewBoxHeight - mainBottom`；若有底部说明，用 `noteTop - mainBottom` 检查主体和说明之间的间距，再用 `viewBoxHeight - noteBottom` 检查画布底边。
+- 对横向单行图，主体上方空白和主体下方空白差异不应超过 `80px`；下方空白超过上方空白 2 倍时，必须下移主体或裁短画布。
+- 顶部有请求路径、阶段标签或红框标注时，为它们单独预留 `32px` 到 `56px` 的 band；它们不能和标题、节点顶边或分组容器挤在同一行。
+
 布局间距：
 
 - 外边距：至少 `40px`，标题区下方至少 `28px`。
