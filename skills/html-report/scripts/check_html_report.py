@@ -10,9 +10,10 @@ import argparse
 import html as html_lib
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 
 CODE_WRAP_RE = re.compile(r'<div\b[^>]*class=["\'][^"\']*\bcode-wrap\b[^"\']*["\'][^>]*>.*?</div>', re.DOTALL)
@@ -30,12 +31,43 @@ HUNK_MARKER_RE = re.compile(r"@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
 
 TEXT_LIKE_LANGS = {"text", "txt", "log", "logs", "plain", "plaintext"}
 SUPPORTED_LANGS = {"kotlin", "java", "js", "python", "xml", "sql", "json", "yaml", "bash", "diff", "text"}
+MEDIA_EXTENSIONS = {".apng", ".avif", ".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".ogg", ".ogv", ".png", ".svg", ".webm", ".webp"}
 
 
 @dataclass
 class TagFrame:
     tag: str
     classes: set[str]
+
+
+@dataclass
+class MediaResource:
+    tag: str
+    src: str
+    line: int
+
+
+@dataclass
+class MediaItem:
+    tag: str
+    attrs: dict[str, str]
+    line: int
+    figure_index: int | None
+    source_count: int = 0
+
+
+@dataclass
+class FigureState:
+    index: int
+    attrs: dict[str, str]
+    classes: set[str]
+    media_indices: list[int] = field(default_factory=list)
+    has_figcaption: bool = False
+    figcaption_text_chunks: list[str] = field(default_factory=list)
+
+    @property
+    def figcaption_text(self) -> str:
+        return " ".join(chunk.strip() for chunk in self.figcaption_text_chunks if chunk.strip())
 
 
 class ReportParser(HTMLParser):
@@ -54,17 +86,59 @@ class ReportParser(HTMLParser):
         self.raw_inline_code_samples: list[str] = []
         self.has_diff_viewer = False
         self.has_non_viewer_diff_card = False
+        self.media_items: list[MediaItem] = []
+        self.media_resources: list[MediaResource] = []
+        self.figures: list[FigureState] = []
+        self.figure_stack: list[FigureState] = []
+        self.video_media_stack: list[int] = []
+        self.figcaption_depth = 0
+        self.next_figure_index = 1
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attr_map = {name.lower(): value or "" for name, value in attrs}
         classes = class_set(attr_map.get("class", ""))
         inside_toc = "toc" in classes or any("toc" in frame.classes for frame in self.stack)
+        current_figure = self.figure_stack[-1] if self.figure_stack else None
 
         if tag == "meta" and attr_map.get("name", "").lower() == "viewport":
             self.has_viewport_meta = True
 
         if tag == "style":
             self.in_style = True
+
+        if tag == "figure":
+            figure = FigureState(index=self.next_figure_index, attrs=attr_map, classes=classes)
+            self.next_figure_index += 1
+            self.figure_stack.append(figure)
+            current_figure = figure
+        if tag == "figcaption" and current_figure:
+            current_figure.has_figcaption = True
+            self.figcaption_depth += 1
+
+        line, _ = self.getpos()
+        if tag in {"img", "video"}:
+            media = MediaItem(
+                tag=tag,
+                attrs=attr_map,
+                line=line,
+                figure_index=current_figure.index if current_figure else None,
+            )
+            self.media_items.append(media)
+            media_index = len(self.media_items) - 1
+            if current_figure:
+                current_figure.media_indices.append(media_index)
+            if attr_map.get("src"):
+                self.media_resources.append(MediaResource(tag=tag, src=attr_map["src"], line=line))
+            if tag == "video":
+                self.video_media_stack.append(media_index)
+                if attr_map.get("poster"):
+                    self.media_resources.append(MediaResource(tag="video poster", src=attr_map["poster"], line=line))
+        elif tag == "source" and self.video_media_stack:
+            if attr_map.get("src"):
+                self.media_resources.append(MediaResource(tag="source", src=attr_map["src"], line=line))
+                self.media_items[self.video_media_stack[-1]].source_count += 1
+        elif tag == "a" and attr_map.get("href") and is_media_url(attr_map["href"]):
+            self.media_resources.append(MediaResource(tag="a", src=attr_map["href"], line=line))
 
         if tag == "script" and attr_map.get("src"):
             self.errors.append(f"外部脚本依赖不符合单文件要求: {attr_map['src']}")
@@ -104,6 +178,12 @@ class ReportParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag == "style":
             self.in_style = False
+        if tag == "figcaption" and self.figcaption_depth:
+            self.figcaption_depth -= 1
+        if tag == "video" and self.video_media_stack:
+            self.video_media_stack.pop()
+        if tag == "figure" and self.figure_stack:
+            self.figures.append(self.figure_stack.pop())
         for index in range(len(self.stack) - 1, -1, -1):
             if self.stack[index].tag == tag:
                 del self.stack[index:]
@@ -113,6 +193,9 @@ class ReportParser(HTMLParser):
         if self.in_style:
             self.style_chunks.append(data)
             return
+
+        if self.figcaption_depth and self.figure_stack:
+            self.figure_stack[-1].figcaption_text_chunks.append(data)
 
         if any(frame.tag in {"code", "pre", "script", "style"} for frame in self.stack):
             return
@@ -124,6 +207,33 @@ class ReportParser(HTMLParser):
 
 def class_set(value: str) -> set[str]:
     return {part for part in value.split() if part}
+
+
+def is_media_url(url: str) -> bool:
+    parsed = urlparse(html_lib.unescape(url))
+    path = parsed.path.lower()
+    return any(path.endswith(extension) for extension in MEDIA_EXTENSIONS)
+
+
+def local_resource_path(url: str, report_path: Path) -> Path | None:
+    parsed = urlparse(html_lib.unescape(url))
+    scheme = parsed.scheme.lower()
+    if scheme in {"about", "blob", "data", "http", "https", "idea", "javascript", "mailto"}:
+        return None
+    if parsed.netloc:
+        return None
+    if scheme == "file":
+        return Path(unquote(parsed.path))
+    if scheme:
+        return None
+
+    raw_path = unquote(parsed.path)
+    if not raw_path or raw_path.startswith("#"):
+        return None
+    candidate = Path(raw_path)
+    if not candidate.is_absolute():
+        candidate = report_path.parent / candidate
+    return candidate
 
 
 def fragment_text(fragment: str) -> str:
@@ -316,6 +426,55 @@ def check_annotation_mode(html: str, css: str) -> list[str]:
     return errors
 
 
+def check_media_support(parser: ReportParser, report_path: Path, css: str) -> tuple[list[str], list[str]]:
+    """检查已出现在报告里的图片/视频证据。
+
+    媒体不是所有报告的必需内容；这里不要求报告必须有图片或视频。只有当报告已经使用
+    <img>/<video> 或媒体文件链接时，才检查断链、基础可访问性和响应式保护。
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not parser.media_items and not parser.media_resources:
+        return errors, warnings
+
+    for resource in parser.media_resources:
+        local_path = local_resource_path(resource.src, report_path)
+        if local_path and not local_path.is_file():
+            errors.append(f"第 {resource.line} 行 {resource.tag} 引用的媒体文件不存在: {resource.src}")
+
+    compact_css = re.sub(r"\s+", " ", css)
+    if not ("img" in compact_css and "video" in compact_css and "max-width: 100%" in compact_css and "height: auto" in compact_css):
+        errors.append("报告使用了图片/视频，但 CSS 缺少图片/视频响应式保护（建议 img, svg, canvas, video { max-width: 100%; height: auto; }）")
+
+    figure_by_index = {figure.index: figure for figure in parser.figures}
+    for index, media in enumerate(parser.media_items, start=1):
+        if media.tag == "img":
+            alt = media.attrs.get("alt", "")
+            if not alt.strip():
+                errors.append(f"第 {media.line} 行第 {index} 个图片缺少非空 alt，影响无障碍阅读和证据理解")
+        elif media.tag == "video":
+            if "controls" not in media.attrs:
+                errors.append(f"第 {media.line} 行第 {index} 个视频缺少 controls，报告内无法直接播放预览")
+            if not media.attrs.get("src") and media.source_count == 0:
+                errors.append(f"第 {media.line} 行第 {index} 个视频没有 src 或 <source src>，无法定位媒体文件")
+            if media.attrs.get("preload", "").lower() != "metadata":
+                warnings.append(f"第 {media.line} 行第 {index} 个视频建议使用 preload=\"metadata\"，避免打开报告时加载完整视频")
+
+        figure = figure_by_index.get(media.figure_index or -1)
+        if figure and ("media-evidence" in figure.classes or "media-card" in figure.classes):
+            if not figure.figcaption_text:
+                warnings.append(f"第 {media.line} 行媒体证据卡建议提供 figcaption，说明标题、内容和结论")
+            if not figure.attrs.get("data-case"):
+                warnings.append(f"第 {media.line} 行媒体证据卡建议用 data-case 标注对应 case")
+            if not figure.attrs.get("data-conclusion"):
+                warnings.append(f"第 {media.line} 行媒体证据卡建议用 data-conclusion 标注证据结论")
+        elif media.tag == "video" and (not figure or not figure.figcaption_text):
+            warnings.append(f"第 {media.line} 行视频建议配关键帧截图、标题或说明，避免读者必须播放后才知道证据内容")
+
+    return errors, warnings
+
+
 def check_document_chrome(parser: ReportParser) -> list[str]:
     errors: list[str] = []
     css = "\n".join(parser.style_chunks)
@@ -358,12 +517,13 @@ def check_document_chrome(parser: ReportParser) -> list[str]:
     return errors
 
 
-def validate(path: Path) -> list[str]:
+def validate_with_warnings(path: Path) -> tuple[list[str], list[str]]:
     html = path.read_text(encoding="utf-8")
     parser = ReportParser()
     parser.feed(html)
 
     errors = parser.errors
+    warnings: list[str] = []
     errors.extend(check_document_chrome(parser))
     css = "\n".join(parser.style_chunks)
     errors.extend(check_code_wrap_blocks(html, css))
@@ -371,11 +531,19 @@ def validate(path: Path) -> list[str]:
     errors.extend(check_raw_unified_diff_outside_viewer(html))
     errors.extend(check_diff_viewer_tokens(html, css))
     errors.extend(check_annotation_mode(html, css))
+    media_errors, media_warnings = check_media_support(parser, path, css)
+    errors.extend(media_errors)
+    warnings.extend(media_warnings)
+    return errors, warnings
+
+
+def validate(path: Path) -> list[str]:
+    errors, _ = validate_with_warnings(path)
     return errors
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="校验 html-report 单文件 HTML 的代码块和外部依赖。")
+    parser = argparse.ArgumentParser(description="校验 html-report 单文件 HTML 的代码块、外部依赖和已使用的媒体资源。")
     parser.add_argument("html", help="待检查的 HTML 文件路径。")
     return parser.parse_args()
 
@@ -383,14 +551,18 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     path = Path(args.html)
-    errors = validate(path)
+    errors, warnings = validate_with_warnings(path)
     if errors:
         print(f"FAIL {path}")
         for error in errors:
             print(f"- {error}")
+        for warning in warnings:
+            print(f"WARN {warning}")
         raise SystemExit(1)
 
     print(f"PASS {path}")
+    for warning in warnings:
+        print(f"WARN {warning}")
 
 
 if __name__ == "__main__":

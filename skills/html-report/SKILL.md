@@ -1,11 +1,11 @@
 ---
 name: html-report
-version: 0.3.6
+version: 0.3.7
 tags:
   - report
   - html
   - output
-description: 生成独立 HTML 报告文件，支持离线批注审核模式和可导出给 Agent 的 Markdown/JSON 提问包。用户明确要求 HTML 输出（如“生成 HTML”“HTML 报告”“写成 HTML”“放到桌面”）、HTML 内批注/审核/提问，或调用 `/html-report` 时必须触发；用户未明说 HTML，但任务明显更适合独立可视化交付物时，也应自动触发或由其他 skill 调用，例如多章节长报告、代码评审报告、问题排查/修复方案、技术方案、方案对比、包含 diff/表格/时间线/证据链的归档材料。普通简短的“总结一下”“整理一下”“直接给结论”默认用 Markdown，不触发。
+description: 生成独立 HTML 报告文件，支持图片/视频证据预览、离线批注审核模式和可导出给 Agent 的 Markdown/JSON 提问包。用户明确要求 HTML 输出（如“生成 HTML”“HTML 报告”“写成 HTML”“放到桌面”）、HTML 内批注/审核/提问，或调用 `/html-report` 时必须触发；用户未明说 HTML，但任务明显更适合独立可视化交付物时，也应自动触发或由其他 skill 调用，例如多章节长报告、代码评审报告、问题排查/修复方案、技术方案、方案对比、包含 diff/表格/时间线/图片/视频证据链的归档材料。普通简短的“总结一下”“整理一下”“直接给结论”默认用 Markdown，不触发。
 ---
 
 # HTML 报告
@@ -24,7 +24,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
 - `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
 - `scripts/inject_annotation_mode.py`：当需要审核批注模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线批注 UI、Markdown/JSON 提问包导出和“导出发布版”能力；不要手写批注 JS。
-- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 结构/CSS 和可整体收起的目录侧栏结构。
+- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
 
 ## 触发边界
 
@@ -62,6 +62,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 ## 输出契约
 
 - 生成单文件 `.html`，CSS 和 JS 内嵌在 `<style>` / `<script>` 中，不依赖外部 CSS、JS 或 CDN；图表优先使用表格、内联 SVG 或生成期静态内容。复杂技术图优先由 `svg-tech-diagram` 生成并自审后内联。
+- 图片/视频证据是可选能力，不是所有报告的强制结构；需要展示截图、录屏或关键帧时，默认用相对路径引用同目录 `evidence_YYYYMMDD/` 资源，小图可选 base64，视频不建议 base64。
 - 用户没有指定路径时，默认输出到桌面。
 - 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
 - 批注审核模式只在用户明确需要时加入。审核版 HTML 必须内置“导出发布版”，发布版要物理剥离批注 UI、批注 JS、批注高亮和本地批注数据入口。

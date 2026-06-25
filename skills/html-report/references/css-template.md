@@ -171,6 +171,74 @@
     font-size: 13px;
     line-height: 1.5;
   }
+  .media-evidence {
+    margin: 16px 0 18px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+  }
+  .media-frame {
+    overflow-x: auto;
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    background: #0f172a;
+  }
+  .media-frame + .media-frame {
+    margin-top: 10px;
+  }
+  .media-frame img,
+  .media-frame video {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 72vh;
+    object-fit: contain;
+    background: #0f172a;
+  }
+  .media-caption {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .media-caption-title {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text);
+    font-weight: 800;
+  }
+  .media-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .media-meta span,
+  .media-link {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .media-link {
+    color: #1d4ed8;
+    text-decoration: none;
+  }
+  .media-link:hover {
+    background: #dbeafe;
+    color: #1e40af;
+  }
   .code-wrap {
     position: relative;
     max-width: 100%;
@@ -358,6 +426,9 @@
     .doc-chip { font-size: 12px; }
     .diagram-block { padding: 10px; border-radius: 12px; }
     .diagram-block .tech-diagram { min-width: 640px; }
+    .media-evidence { padding: 10px; border-radius: 12px; }
+    .media-frame img,
+    .media-frame video { max-height: 62vh; }
     .grid { grid-template-columns: 1fr; }
     .copy-btn { opacity: 1; }
   }
@@ -386,6 +457,10 @@
       box-shadow: none;
       break-inside: avoid;
     }
+    .media-evidence {
+      box-shadow: none;
+      break-inside: avoid;
+    }
     .diagram-block .tech-diagram {
       min-width: 0;
     }
@@ -411,6 +486,52 @@
 
 ```html
 <a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/.../FlowVideoLandscapeHelper.kt:43-50</a>
+```
+
+### 1.1 可选媒体证据块
+
+当报告需要展示截图、录屏或关键帧时，可以使用 `.media-evidence`。这不是所有报告的必选结构；只在证据确实需要图片或视频时加入。默认使用相对路径引用同目录证据资源，例如 `evidence_20260625/login_case.png`。小图可以按需使用 `data:image/...;base64,...` 内嵌，大图和 MP4 不建议 base64，避免 HTML 膨胀。
+
+截图示例：
+
+```html
+<figure class="media-evidence" data-case="case-01" data-conclusion="修复后按钮不再遮挡正文">
+  <div class="media-frame">
+    <img src="evidence_20260625/case_01_after.png" alt="case-01 修复后按钮不再遮挡正文的截图">
+  </div>
+  <figcaption class="media-caption">
+    <span class="media-caption-title">case-01 修复后截图</span>
+    <span>说明：按钮、正文和底部操作区在窄屏下保持单列布局。</span>
+    <span class="media-meta">
+      <span>case: case-01</span>
+      <span>结论: 通过</span>
+    </span>
+  </figcaption>
+</figure>
+```
+
+录屏示例。视频保留可播放预览和原文件链接；同时建议放一张关键帧截图，让读者不播放也能理解证据内容：
+
+```html
+<figure class="media-evidence" data-case="case-02" data-conclusion="录屏显示横竖屏切换无布局溢出">
+  <div class="media-frame">
+    <img src="evidence_20260625/case_02_keyframe.png" alt="case-02 录屏关键帧截图">
+  </div>
+  <div class="media-frame">
+    <video controls preload="metadata" poster="evidence_20260625/case_02_keyframe.png">
+      <source src="evidence_20260625/case_02_recording.mp4" type="video/mp4">
+    </video>
+  </div>
+  <figcaption class="media-caption">
+    <span class="media-caption-title">case-02 横竖屏切换录屏</span>
+    <span>说明：关键帧用于快速扫读，视频用于复核完整操作过程。</span>
+    <span class="media-meta">
+      <span>case: case-02</span>
+      <span>结论: 无横向撑破</span>
+      <a class="media-link" href="evidence_20260625/case_02_recording.mp4">打开原始录屏</a>
+    </span>
+  </figcaption>
+</figure>
 ```
 
 ---

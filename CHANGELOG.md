@@ -1,3 +1,13 @@
+## [0.19.17] - 2026-06-25
+### Added
+- html-report: 新增可选图片/视频证据块支持，提供截图、录屏、关键帧和原文件链接的推荐结构与响应式样式
+- html-report: `check_html_report.py` 在报告实际使用媒体时检查本地相对路径、图片 `alt`、视频 `controls` 和图片/视频响应式保护
+
+### Changed
+- html-report: 媒体证据的标题、说明、对应 case 和证据结论作为推荐结构输出 warning，不作为所有报告的强制失败条件
+- html-report: skill 版本升级到 `0.3.7`
+- manifest: 插件版本升级到 `0.19.17`
+
 ## [0.19.16] - 2026-06-25
 ### Fixed
 - nad-acx-pivot-table: 为筛选字段生成的 `<pageField>` 补齐 `hier="-1"`，避免 Mac Excel 对含 `filter_fields` 的原生透视表继续提示修复
