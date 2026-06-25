@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、HTML 报告生成、图片/视频证据预览与离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、广域检索委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
 
 ## 仓库顶层目录结构
 
@@ -35,6 +35,7 @@ iplugin/
 | `code-reading` | 逐步详解代码执行链路，追踪创建→初始化→注册→触发→分发全过程 | "带我读代码"、"从入口到触发完整讲一遍" |
 | `aidisheng-xueba` | 按已背题库匹配爱迪生考试题干和选项语义，快速输出单选/多选答案 | "爱迪生学霸"、"爱迪生考试这题选什么"、"帮我答爱迪生题库" |
 | `ask-user-question` | 把阻塞性决策、提交前确认、风险操作确认整理成结构化选择题，交给 AskUserQuestion / request_user_input | `/ask-user-question 这个 UI 改动应该怎么做`、"提交前让我确认" |
+| `android-mock` | 按 Android mock 文档和测试用例逐 case 执行真机验收，区分多条链路，沉淀截图/录屏/logcat/mockserver 证据并生成验收报告 | "帮我自测这个 Android mock 方案"、"跑完这些用例并补截图证据"、"生成链路分离的验收报告" |
 | `best-of-web` | 仅通过 `/best-of-web` 命令触发；联网搜索并按来源质量分层核验公开资料，再综合成可引用、可执行的回答 | `/best-of-web 结合互联网上最优秀的内容梳理这个主题` |
 | `delegated-search` | 将发散搜索、证据收集、多来源核验和高输出操作前置判断拆给 explorer/subagent，主线程负责判断与整合 | "帮我找全相关实现"、"这个链路可能在哪里断"、"查一下这些字段分别从哪来"、"先判断能不能拆给子 Agent" |
 | `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，可按需展示图片/视频证据，复杂技术图可调用 `svg-tech-diagram` 生成内联 SVG，可按需注入离线批注审核模式并导出 Markdown/JSON 提问包和发布版 HTML | "整理成 HTML 报告"、"给这个 HTML 加批注审核模式"、`/html-report` |

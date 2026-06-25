@@ -1,3 +1,11 @@
+## [0.20.0] - 2026-06-25
+### Added
+- android-mock: 新增 Android mock 自测验收 skill，覆盖真机 adb 执行、mockserver 请求核验、多链路分别验收、逐 case 证据留存、截图/录屏/logcat 采证和验收报告归档
+
+### Changed
+- README / manifest: 补充 Android mock 自测验收能力入口、关键词和默认提示
+- manifest: 插件版本升级到 `0.20.0`
+
 ## [0.19.18] - 2026-06-25
 ### Added
 - git-hooks: 新增版本化 `pre-push` hook，push 前转发到版本防撞检查脚本
