@@ -2,6 +2,15 @@
 
 修改 `pivot_tool/` 代码前必读。这些约束违反后会导致 Excel 打不开、布局异常或透视表为空白。
 
+生成器写完 xlsx 后会自动调用 `pivot_tool.ooxml_guard.assert_valid_pivot_xlsx()`。如果修改了 `pivot_cache.py`、`pivot_table.py`、`static_xml.py` 或相关配置结构，必须额外手动运行：
+
+```bash
+cd skills/nad-acx-pivot-table/scripts
+python3 -m pivot_tool.ooxml_guard <output.xlsx>
+```
+
+这个闸门不是完整 Excel 渲染器，但会检查本文件沉淀过的高风险结构：`refreshOnLoad`、多数据字段的 `colFields/-2` 与 `colItems`、页面筛选字段的 `pageFields hier="-1"`、枚举字段 `items` 覆盖、字符串枚举大小写重复、计算字段属性顺序等。
+
 ## 1. refreshOnLoad — 打开时自动刷新
 
 `pivotCacheDefinition` 必须包含 `refreshOnLoad="1"` 属性。否则打开 xlsx 后透视表为空白，需手动右键刷新。
@@ -26,10 +35,10 @@
 如果某个字段在 `pivotFields` 中声明了 `axis="axisPage"`，必须在 `pivotTableDefinition` 中生成对应的 `<pageFields>`：
 
 ```xml
-<pageFields count="1"><pageField fld="0"/></pageFields>
+<pageFields count="1"><pageField fld="0" hier="-1"/></pageFields>
 ```
 
-只给 `pivotField` 标记 `axisPage`，但省略 `<pageFields>`，会让 Excel 判定透视表定义不完整。此类文件常见表现是 ZIP 结构正常、`openpyxl` 可读取，但 Excel 打开时提示修复或删除 `pivotTable1.xml`。
+只给 `pivotField` 标记 `axisPage`，但省略 `<pageFields>`，会让 Excel 判定透视表定义不完整。`pageField` 本身也要带 `hier="-1"`；真实 Excel 生成的页面筛选字段会写这个属性，缺失时 Mac Excel 仍可能提示修复。此类文件常见表现是 ZIP 结构正常、`openpyxl` 可读取，但 Excel 打开时提示修复或删除 `pivotTable1.xml`。
 
 `pageFields` 在 XML 顺序上应放在 `colItems` 之后、`dataFields` 之前。
 

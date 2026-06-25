@@ -4,6 +4,9 @@
 支持预设配置和自定义 JSON 配置文件。
 """
 
-from pivot_tool.packager import create_xlsx_with_pivot
+def create_xlsx_with_pivot(*args, **kwargs):
+    from pivot_tool.packager import create_xlsx_with_pivot as _create_xlsx_with_pivot
+
+    return _create_xlsx_with_pivot(*args, **kwargs)
 
 __all__ = ["create_xlsx_with_pivot"]

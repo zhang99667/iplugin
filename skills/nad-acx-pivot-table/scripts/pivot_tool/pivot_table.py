@@ -113,7 +113,7 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
     # ── pageFields (筛选字段) ─────────────────────────────────────
     page_fields_xml = ""
     if filter_indices:
-        inner = "".join(f'<pageField fld="{i}"/>' for i in filter_indices)
+        inner = "".join(f'<pageField fld="{i}" hier="-1"/>' for i in filter_indices)
         page_fields_xml = f'<pageFields count="{len(filter_indices)}">{inner}</pageFields>'
 
     # ── colFields ────────────────────────────────────────────────

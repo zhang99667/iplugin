@@ -84,7 +84,7 @@
 |------|------|------|
 | `row_fields` | list[str] | 放在行区域的字段名（引用 columns 中的 name） |
 | `col_fields` | list[str] | 放在列区域的字段名。特殊值 `"__data__"` 表示数据字段标签 |
-| `filter_fields` | list[str] | 放在筛选区域的字段名；生成器会同时写入 `axisPage` 与 `pageFields` |
+| `filter_fields` | list[str] | 放在筛选区域的字段名；生成器会同时写入 `axisPage` 与带 `hier="-1"` 的 `pageFields` |
 | `data_fields` | list[DataFieldDef] | 数据区域字段定义（见下方） |
 | `row_item_order` | dict | 可选。指定行字段值的显示顺序 |
 
@@ -141,6 +141,12 @@ python3 -m pivot_tool /path/to/*.csv -c my_config.json
 ```
 
 **注意**: 多文件合并要求所有 CSV 文件的表头完全一致，否则会报 `ValueError: 表头不一致` 错误。
+
+生成后会自动运行 PivotTable OOXML 闸门。也可以手动检查已有文件：
+
+```bash
+python3 -m pivot_tool.ooxml_guard output.xlsx
+```
 
 ### 自动命名
 

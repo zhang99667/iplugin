@@ -13,6 +13,7 @@ from pivot_tool.data_sheet import build_data_sheet_xml
 from pivot_tool.pivot_cache import build_cache_definition, build_cache_records
 from pivot_tool.pivot_table import build_pivot_table_xml
 from pivot_tool.static_xml import build_static_xml
+from pivot_tool.ooxml_guard import assert_valid_pivot_xlsx
 
 
 def _format_date_segments(days: list[str]) -> str:
@@ -223,6 +224,8 @@ def create_xlsx_with_pivot(
             "xl/pivotTables/pivotTable1.xml",
             build_pivot_table_xml(config, fm),
         )
+
+    assert_valid_pivot_xlsx(output_path)
 
     if len(csv_paths) > 1:
         print(f"已合并 {len(csv_paths)} 个文件")

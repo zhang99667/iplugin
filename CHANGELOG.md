@@ -1,3 +1,13 @@
+## [0.19.16] - 2026-06-25
+### Fixed
+- nad-acx-pivot-table: 为筛选字段生成的 `<pageField>` 补齐 `hier="-1"`，避免 Mac Excel 对含 `filter_fields` 的原生透视表继续提示修复
+- nad-acx-pivot-table: 更新 OOXML 踩坑记录，明确 `axisPage`、`pageFields` 与 `hier="-1"` 需要成套出现
+
+### Changed
+- nad-acx-pivot-table: 新增 `pivot_tool.ooxml_guard` 兼容性闸门，生成 xlsx 后自动检查 PivotTable OOXML 高风险结构
+- nad-acx-pivot-table: skill 版本升级到 `0.1.3`
+- manifest: 插件版本升级到 `0.19.16`
+
 ## [0.19.15] - 2026-06-25
 ### Changed
 - nad-acx-pivot-table: 有实验名时自动输出文件名改为 `【MMdd-MMdd】实验名.xlsx`，例如 `【0621-0624】健康竞胜率.xlsx`
