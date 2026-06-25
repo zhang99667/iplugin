@@ -110,6 +110,12 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
         items.append('<i t="grand"><x/></i>')
         row_items_xml = f'<rowItems count="{num_row_items + 1}">{"".join(items)}</rowItems>'
 
+    # ── pageFields (筛选字段) ─────────────────────────────────────
+    page_fields_xml = ""
+    if filter_indices:
+        inner = "".join(f'<pageField fld="{i}"/>' for i in filter_indices)
+        page_fields_xml = f'<pageFields count="{len(filter_indices)}">{inner}</pageFields>'
+
     # ── colFields ────────────────────────────────────────────────
     col_fields_xml = ""
     col_items_xml = ""
@@ -192,6 +198,7 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
         f'{row_items_xml}\n'
         f'{col_fields_xml}\n'
         f'{col_items_xml}\n'
+        f'{page_fields_xml}\n'
         f'{data_fields_xml}\n'
         f'<pivotTableStyleInfo name="{config.pivot_style}" showRowHeaders="1" showColHeaders="1"\n'
         f' showRowStripes="0" showColStripes="0" showLastColumn="1"/>\n'
