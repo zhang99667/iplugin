@@ -1,3 +1,10 @@
+## [0.19.14] - 2026-06-25
+### Changed
+- commercial-sql-writer: 补充 `fc_nad.nativeads_als_every_log` 落地页性能日志口径，沉淀 `category_id = '1029'` 下 `f*` / `ef*` 字段映射
+- commercial-sql-writer: 新增落地页抵达率场景路由和自查项，明确 `f7=cmatch`、`f2=lp_real_url`、`ef2=clickTime`、`ef3=isbrowser`
+- commercial-sql-writer: skill 版本升级到 `0.1.1`
+- README / manifest: 插件版本升级到 `0.19.14`，补充落地页性能检索关键词
+
 ## [0.19.12] - 2026-06-24
 ### Changed
 - html-report: diff viewer 的 `+/-` 轨道收敛为 25px，old/new 行号列改为 `width: 1%; min-width: 40px` 自适应宽度，减少窄屏下左侧指示器挤占代码区

@@ -1,7 +1,7 @@
 ---
 name: commercial-sql-writer
-version: 0.1.0
-description: 商业广告 SQL 写作助手。当用户要求编写、改写或检查商业/NAD 广告分析 SQL，或提到展点消转、大盘、cmatch、实验分组、消费、转化、目标成本、下载漏斗、调起、半屏、优惠券、私信、预渲染、问题下钻等数据需求时触发。优先基于商业大盘展点消转母版做最小改写，再做需求拆解、表/字段选择、指标口径确认和 SQL 自查。只替换实验号或日期时使用 sql-exp-replace，不使用本技能。
+version: 0.1.1
+description: 商业广告 SQL 写作助手。当用户要求编写、改写或检查商业/NAD 广告分析 SQL，或提到展点消转、大盘、cmatch、实验分组、消费、转化、目标成本、下载漏斗、调起、半屏、优惠券、私信、预渲染、落地页性能、落地页抵达率、问题下钻等数据需求时触发。优先基于商业大盘展点消转母版做最小改写，再做需求拆解、表/字段选择、指标口径确认和 SQL 自查。只替换实验号或日期时使用 sql-exp-replace，不使用本技能。
 tags: [sql, commercial, ads, nad, hive, spark, analytics]
 user_invocable: true
 ---
@@ -18,7 +18,7 @@ user_invocable: true
 - 用户要把历史 SQL 改成新需求、新实验、新日期、新维度或新口径。
 - 用户要求检查 SQL 的表选择、join key、实验分组、分区过滤、消费/转化/目标成本口径。
 - 需求涉及 `cmatch`、`event_type`、`ovl_exp`、`ovl_id`、`ovid_eid_list`、`searchid`、`idea_id`、`trans_type`、`wosid`、`mt_id`、`place_id` 等商业广告字段。
-- 场景涉及下载漏斗、调起、半屏、优惠券、私信、预渲染、按 `userid` / `search_id` / `ideaid` 下钻排查。
+- 场景涉及下载漏斗、调起、半屏、优惠券、私信、预渲染、落地页性能/抵达率、按 `userid` / `search_id` / `ideaid` 下钻排查。
 
 ### 不适用
 
@@ -36,7 +36,7 @@ user_invocable: true
 - 表、字段、主键、分区不确定时，读取 `references/table-guide.md`。
 - 涉及 `charge`、`conv`、`tcharge`、`ctr`、`ecpm`、深转或目标成本时，读取 `references/metric-rules.md`。
 - 要生成完整 SQL 或改写历史 SQL 时，读取 `references/query-patterns.md`。
-- 出现半屏、优惠券、私信、下载、调起、预渲染、问题排查等场景词时，读取 `references/scenario-router.md`。
+- 出现半屏、优惠券、私信、下载、调起、预渲染、落地页性能/抵达率、问题排查等场景词时，读取 `references/scenario-router.md`。
 - 输出前按 `references/checklist.md` 自查。
 
 ## 工作流程

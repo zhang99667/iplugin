@@ -111,6 +111,26 @@
 - 预渲染成功/失败字段经常是扩展字段，不能凭空造字段。
 - 若用户提供历史 SQL，优先保持其中的字段解析逻辑。
 
+## 落地页性能 / 抵达率
+
+信号词：落地页性能、落地页抵达率、抵达率、落地页 URL、单个落地页地址、`lp_real_url`、`isbrowser`、`clickTime`。
+
+优先：
+- 表：`fc_nad.nativeads_als_every_log`
+- 字段映射：读 `table-guide.md` 的“落地页性能日志 `nativeads_als_every_log`”
+- 常见过滤：`category_id = '1029'`、`product_id = '8'`、`f1 = 'ad'`、`os_type`、`f7` 作为 `cmatch`、`f2` 作为落地页 URL
+
+常见指标：
+- 点击量：未去重时 `COUNT(*)`；需要去重时按用户口径使用 `COUNT(DISTINCT ...)`
+- 抵达量：`ef3` 和 `ef2` 合法，且 `ef3 - ef2` 在阈值内，常见阈值为 30000ms
+- 抵达率：`arrival / click`，要处理分母为 0
+
+注意：
+- 用户说 `cmatch=669` 时应过滤 `f7 = '669'`，不是 `category_id = '1029'`。
+- `f2` 是 URL；`search_id + idea_id` 对应 `f8 + f6`。
+- 默认明确说明“未去重可能偏大”；iOS 抵达日志尤其注意按 `cuid + ef2(clickTime)` 去重。
+- 抵达时间差建议加 `CAST(ef3 AS double) >= CAST(ef2 AS double)`，避免异常负差被算作抵达。
+
 ## 问题排查 / 下钻
 
 信号词：by userid、by search_id、下钻、排查、命中用户、ideaid、host、502。

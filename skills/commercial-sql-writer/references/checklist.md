@@ -14,6 +14,7 @@
 
 - 展点消是否使用 `fc_nad.nativeads_feed_asp_view`。
 - 行为事件是否使用 ALS common / normal 或用户明确的日志表。
+- 落地页性能/抵达率是否使用 `fc_nad.nativeads_als_every_log`，并确认 `category_id = '1029'` 下 `f*` / `ef*` 字段映射。
 - 转化是否选对 OCPX、视频转化或 all_convert 表。
 - `asp_view.ideaid` 和其他表 `idea_id` 是否区分。
 - 没有把不确定字段当作已知字段输出。
@@ -24,6 +25,7 @@
 - `nativeads_feed_asp_view` 是否尽量带 `event_type`。
 - `cmatch = '719'` 是否同步使用 `event_type = 'browser'`；`cmatch = '545'` 是否按上下文使用 `event_type = 'shoubai'`。
 - 是否按场景补了 `cmatch`、`log_type`、`page`、`product_id`、`wosid` / `os_type`。
+- 落地页性能日志中 `cmatch` 是否使用 `f7`，URL 是否使用 `f2`，没有把 `category_id = '1029'` 当成 `cmatch`。
 - 排查 SQL 是否限制了用户、`search_id`、日期或样本量。
 
 ## Join
@@ -40,6 +42,7 @@
 - 小时级 SQL 是否考虑 CPC 按计费时间落盘，而非 ASP 检索时间落盘。
 - `click` 是否用 `clk AS click` 或聚合 `SUM(clk)`。
 - `ctr`、`ecpm`、转化率是否处理分母为 0。
+- 落地页抵达率是否处理分母为 0；抵达条件是否同时要求 `ef2` / `ef3` 合法、`ef3 >= ef2`、时间差小于阈值。
 - 转化是否过滤 `convert_num IS NOT NULL` 和 `convert_num != '0'`。
 - 深转和浅转合并逻辑是否符合需求。
 - `convert_type_list` 分隔符是否按表区分：OCPX 常见 `\002`，视频转化常见 `#`。
@@ -61,6 +64,7 @@
 - 字段是 STRING 时，数值计算是否显式 `CAST`。
 - 保留了日期、实验号、`cmatch` 等易改条件。
 - 改写历史 SQL 时没有无关重构。
+- 使用 `nativeads_als_every_log` 直接 `COUNT(*)` 时，是否向用户说明未去重可能偏大；若用户要求去重，是否按 `cuid + ef2` 或 `f8 + f6` 等业务口径处理。
 
 ## 对账和排查
 
