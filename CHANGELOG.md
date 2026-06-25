@@ -1,3 +1,14 @@
+## [0.19.18] - 2026-06-25
+### Added
+- git-hooks: 新增版本化 `pre-push` hook，push 前转发到版本防撞检查脚本
+- scripts: 新增 `pre_push_version_check.py`，push 前 fetch 远端并检查本地是否包含远端最新提交、manifest 版本是否大于远端、远端是否已有同版本 CHANGELOG / versions 记录
+
+### Changed
+- README / 维护指南: 补充 `git config core.hooksPath git-hooks` 启用方式和版本冲突处理说明
+- 维护指南: 补充提交时只暂存并提交自己改动的边界规则，同一文件混合修改时必须按 hunk 控制
+- validate-plugin.py: 将 `git-hooks/` 纳入 README 顶层目录结构检查
+- manifest: 插件版本升级到 `0.19.18`
+
 ## [0.19.17] - 2026-06-25
 ### Added
 - html-report: 新增可选图片/视频证据块支持，提供截图、录屏、关键帧和原文件链接的推荐结构与响应式样式

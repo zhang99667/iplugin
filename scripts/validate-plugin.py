@@ -396,6 +396,7 @@ README_TREE_REQUIRED_TOP_LEVEL = {
     "skills",
     "versions",
     "scripts",
+    "git-hooks",
     "hooks",
     "tools",
     "CLAUDE.md",

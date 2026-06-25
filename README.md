@@ -15,6 +15,7 @@ iplugin/
 ├── skills/
 │   └── <name>/             # 每个 skill 目录包含 SKILL.md，可按需带 references/ 或 scripts/
 ├── hooks/                  # 全局横切 hooks，区分 Claude / Codex 配置
+├── git-hooks/              # 可版本化 Git hooks，启用后在 push 前做版本防撞检查
 ├── scripts/                # 共享脚本和提交前校验
 ├── tools/                  # 独立工具子项目，不自动进入插件 manifest
 │   ├── remote-android-build/
@@ -130,3 +131,19 @@ python3 scripts/validate-plugin.py
 ```
 
 校验会检查 manifest JSON 合法性、两个 manifest 公共字段一致性、skill 目录名与 frontmatter name 一致性、README 与实际 skills 清单一致性、CHANGELOG 版本记录完整性，以及 command 引用的 skill 是否存在。
+
+## Push 前版本防撞
+
+本仓库提供版本化的 pre-push hook。每个本地 clone 需要手动启用一次，因为 `.git/config` 不会进入 Git 提交；启用后后续 `git push` 会自动运行检查。在仓库根目录执行：
+
+```bash
+git config core.hooksPath git-hooks
+```
+
+也可以在提交后、push 前手动预跑同一套检查：
+
+```bash
+python3 scripts/pre_push_version_check.py
+```
+
+检查会在 push 前 `git fetch --prune <remote>` 获取远端状态；如果本地没有包含远端最新提交、本地 manifest 版本没有大于远端版本，或远端已经存在同版本 `CHANGELOG` / `versions` 记录，就拒绝 push。脚本不会在 hook 中自动 merge 或 rebase；被拦截后先执行 `git pull --rebase` 或 `git pull --ff-only`，再重新选择版本号。

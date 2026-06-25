@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+# Git hook 可能从子目录触发，先定位仓库根目录。
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+if [ -z "$repo_root" ]; then
+  exit 0
+fi
+
+# 真正的版本防撞逻辑放在 Python 脚本里，便于复用和单独调试。
+exec python3 "$repo_root/scripts/pre_push_version_check.py" "$@"

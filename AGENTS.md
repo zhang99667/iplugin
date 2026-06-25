@@ -12,6 +12,7 @@
 - `versions/vX.Y.Z.md` — 每个版本的规划和决策记录
 - `scripts/` — 共享脚本（需要确定性执行的代码）
 - `hooks/` — 全局钩子（横切关注点）；Claude Code 默认扫描 `hooks/hooks.json`，Codex manifest 指向 `hooks/codex-hooks.json`
+- `git-hooks/` — Git hooks；启用 `core.hooksPath` 后在 push 前检查远端版本号冲突，不与 Claude / Codex hooks 混用
 
 ## 兼容原则
 
@@ -70,4 +71,6 @@
 - `skills/*/SKILL.md` 的 `name` 与目录名一致
 - 长规则和长示例优先放到 `skills/<name>/references/`，`SKILL.md` 只保留触发、导航和核心流程
 - 如存在 `commands/*.md`，只保留轻量编排逻辑，未复制大段 skill 正文，且不与同名 skill 重复注册
+- 每个本地 clone 需要手动执行一次 `git config core.hooksPath git-hooks` 才会启用 Git pre-push 检查；启用后 push 前会运行 `scripts/pre_push_version_check.py`，如果远端已有新提交或同版本记录，先 pull/rebase 并重选版本号
+- 提交时只能暂存并提交本次任务中自己产生的改动；如果仓库已有用户或其他任务的暂存/未暂存改动，先用 `git diff` 和 `git diff --cached` 区分范围，再用明确路径或 `git add -p` 只加入自己的 hunk，同一个文件里混有其他修改时也不能整文件带上
 - 每次完成文件改动并做完必要校验后，必须通过 `/ask-user-question` 询问用户是否要把本次改动提交；用户确认前不要主动执行 `git commit`
