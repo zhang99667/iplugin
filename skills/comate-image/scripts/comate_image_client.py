@@ -23,6 +23,15 @@ DEFAULT_MODELS = {
     "responses": "gpt-5.5",
     "banana": "gemini-3.1-flash-image-preview",
 }
+BACKEND_ALIASES = {
+    "gptimg2": "images",
+    "gpt-image-2": "images",
+    "gpt_image_2": "images",
+    "gptimage2": "images",
+    "banana2": "banana",
+    "gemini": "banana",
+    "response": "responses",
+}
 AUTH_STATUS_CODES = {401, 403}
 
 
@@ -180,10 +189,32 @@ def _path_with_extension(path: Path, mime_type: str) -> Path:
     return path.with_suffix(_extension_for_mime(mime_type))
 
 
+def _clean_prompt(prompt: str) -> str:
+    cleaned = unicodedata.normalize("NFKC", prompt).strip()
+    route_words = (
+        r"comate|oneapi-comate|gptimg2|gpt-image-2|gpt_image_2|gptimage2|"
+        r"banana2?|gemini|responses?|image_generation"
+    )
+    leading_patterns = [
+        rf"^(请|帮我|给我)?\s*(用|使用|通过|调用|走)?\s*({route_words})\s*(生成图片|出图|画图|画一张图|画张图)?\s*[,，:：。 ]*",
+        r"^(请|帮我|给我)?\s*(生成图片|出图|画图|画一张图|画张图|图片生成)\s*[,，:：。 ]*",
+        r"^(prompt|提示词)\s*(是|为)?\s*[,，:： ]*",
+    ]
+    trailing_patterns = [
+        rf"[,，。 ]*(请|帮我|给我)?\s*(用|使用|通过|调用|走)\s*({route_words})\s*(生成图片|出图|画图|画一张图|画张图)?\s*$",
+    ]
+    previous = None
+    while previous != cleaned:
+        previous = cleaned
+        for pattern in leading_patterns + trailing_patterns:
+            cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE).strip()
+    return cleaned or prompt.strip()
+
+
 def _safe_stem(text: str, fallback: str = "comate-image") -> str:
-    normalized = unicodedata.normalize("NFKC", text).strip().lower()
+    normalized = _clean_prompt(text).lower()
     normalized = re.sub(
-        r"(不要文字|无文字|不要水印|无水印|no text|no watermark|写实风格|高清|细节丰富)",
+        r"(不要文字|无文字|不要水印|无水印|no text|no watermark|写实风格|高清|细节丰富|comate|gptimg2|gpt-image-2|banana2?)",
         " ",
         normalized,
         flags=re.IGNORECASE,
@@ -244,7 +275,7 @@ def _generate_image(client: ComateImageClient, backend: str, prompt: str, model:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate images through Comate-compatible APIs.")
-    parser.add_argument("backend", nargs="?", choices=sorted(DEFAULT_MODELS), default="images")
+    parser.add_argument("backend", nargs="?", default="images")
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--out", help="Full output path. Extension is inferred from MIME when omitted.")
     parser.add_argument("--out-dir", default=".", help="Directory used when --out is omitted.")
@@ -254,21 +285,27 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--api-key-file", help="Path to a local file that contains COMATE_API_KEY.")
+    parser.add_argument("--raw-prompt", action="store_true", help="Send --prompt exactly as provided.")
     args = parser.parse_args()
 
     try:
+        backend = BACKEND_ALIASES.get(args.backend.lower(), args.backend.lower())
+        if backend not in DEFAULT_MODELS:
+            parser.error(f"unknown backend: {args.backend}")
+
         api_key = _read_api_key(args.api_key_file)
         if not api_key:
             raise ComateAuthError("COMATE_API_KEY or COMATE_API_KEY_FILE is required")
 
-        model = args.model or DEFAULT_MODELS[args.backend]
+        prompt = args.prompt if args.raw_prompt else _clean_prompt(args.prompt)
+        model = args.model or DEFAULT_MODELS[backend]
         client = ComateImageClient(api_key=api_key, base_url=args.base_url, timeout=args.timeout)
-        image = _generate_image(client, args.backend, args.prompt, model, args.size)
+        image = _generate_image(client, backend, prompt, model, args.size)
 
         if args.out:
             out_path = _path_with_extension(Path(args.out).expanduser(), image.mime_type)
         else:
-            stem = _safe_stem(args.stem or args.prompt)
+            stem = _safe_stem(args.stem or prompt)
             out_path = Path(args.out_dir).expanduser() / f"{stem}{_extension_for_mime(image.mime_type)}"
         out_path = _unique_path(out_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)

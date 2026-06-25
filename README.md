@@ -41,7 +41,7 @@ iplugin/
 | `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，可按需展示图片/视频证据，复杂技术图可调用 `svg-tech-diagram` 生成内联 SVG，可按需注入离线批注审核模式并导出 Markdown/JSON 提问包和发布版 HTML | "整理成 HTML 报告"、"给这个 HTML 加批注审核模式"、`/html-report` |
 | `svg-tech-diagram` | 为技术长文、HTML 报告、架构说明和代码链路生成朴素清晰的 SVG 技术图，并通过渲染 PNG 后自审迭代保证箭头、文字和布局可读 | "画 SVG 图"、"配张架构图"、"生成技术示意图"、"公众号配图" |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
-| `comate-image` | 通过 Comate 兼容图片接口生成图片，按 prompt 语义判断输出文件名，并在 API key 缺失或过期时用结构化询问处理密钥刷新 | "用 Comate 生成图片"、"跑 comate_image_client 出图"、"用 gpt-image-2 保存这张图" |
+| `comate-image` | 通过 Comate 兼容图片接口生成图片，按 prompt 语义判断输出文件名；`Comate`、`banana2`、`gptimg2` 等路由词不会进入最终图片 prompt | "生成图片"、"banana2 出图"、"用 gptimg2 保存这张图" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板，覆盖落地页性能/抵达率口径 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |
 | `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，处理 Chrome 登录态、Monaco 编辑器粘贴、任务 ID 回收、排队/执行状态汇报和运行中心跳检查 | "DataPilot 跑一下这个 SQL"、"把这些 .sql 提交到 datapilot 并回收任务 ID" |

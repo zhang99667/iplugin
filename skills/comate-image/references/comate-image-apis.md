@@ -36,6 +36,8 @@ python3 skills/comate-image/scripts/comate_image_client.py banana \
   --stem "..."
 ```
 
+CLI 也接受常用别名：`gptimg2` / `gpt-image-2` 等同于 `images`，`banana2` 等同于 `banana`。默认会从 `--prompt` 开头或结尾剥离 `Comate`、`banana2`、`gptimg2`、`生成图片`、`出图`、`prompt 是` 等路由词；只有确实要把这些词画进图片时，才加 `--raw-prompt`。
+
 ## 输出
 
 脚本会打印：

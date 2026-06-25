@@ -1,3 +1,9 @@
+## [0.21.1] - 2026-06-25
+### Changed
+- comate-image: 将 `Comate`、`banana2`、`gptimg2`、`生成图片` 等触发/选路词明确从最终图片 prompt 中剥离
+- comate-image: CLI 支持 `gptimg2`、`banana2` 等 backend 别名，并提供 `--raw-prompt` 兜底保留原始 prompt
+- manifest: 插件版本升级到 `0.21.1`
+
 ## [0.21.0] - 2026-06-25
 ### Added
 - comate-image: 新增 Comate 图片生成 skill，内置标准库客户端，支持 Images、Responses image_generation 和 Banana/Gemini 三条链路

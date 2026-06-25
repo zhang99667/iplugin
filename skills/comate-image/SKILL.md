@@ -1,7 +1,7 @@
 ---
 name: comate-image
-version: 0.1.0
-description: Comate 图片生成助手。当用户要求使用 Comate、Comate Image API、oneapi-comate、gpt-image-2、gpt-5.5 image_generation、Banana/Gemini 图片接口生成图片，或要求“用 Comate 生成图片”“跑 comate_image_client”“根据 prompt 出图”时触发；内置标准库客户端，自动为输出图片选择语义化文件名，并在 COMATE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥。
+version: 0.1.1
+description: Comate 图片生成助手。当用户要求使用 Comate、Comate Image API、oneapi-comate、gpt-image-2、gptimg2、gpt-5.5 image_generation、banana、banana2、Banana/Gemini 图片接口生成图片，或要求“生成图片”“出图”“跑 comate_image_client”“根据 prompt 出图”时触发；内置标准库客户端，自动为输出图片选择语义化文件名，路由词不会进入最终图片 prompt，并在 COMATE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥。
 tags: [comate, image, image-generation, api, baidu, gpt-image, banana]
 ---
 
@@ -13,8 +13,8 @@ tags: [comate, image, image-generation, api, baidu, gpt-image, banana]
 
 ### 适用
 
-- 用户明确提到 Comate、Comate Image API、oneapi-comate、`comate_image_client.py`、`gpt-image-2`、`gpt-5.5 image_generation`、Banana/Gemini 图片接口。
-- 用户要求“用 Comate 生成图片”“跑图片 API”“根据这个 prompt 出图”“保存生成图片到本地”。
+- 用户明确提到 Comate、Comate Image API、oneapi-comate、`comate_image_client.py`、`gpt-image-2`、`gptimg2`、`gpt-5.5 image_generation`、`banana`、`banana2`、Banana/Gemini 图片接口。
+- 用户要求“生成图片”“出图”“画一张图”“跑图片 API”“根据这个 prompt 出图”“保存生成图片到本地”。
 - 用户提供图片生成 prompt，希望把输出保存为本地文件，并需要自动判断语义化文件名。
 
 ### 不适用
@@ -28,10 +28,14 @@ tags: [comate, image, image-generation, api, baidu, gpt-image, banana]
 1. 提炼 prompt。
    - 保留用户的主体、场景、风格、构图、比例、禁止文字/水印等要求。
    - 不擅自加入品牌、人名、敏感信息或用户未要求的元素。
+   - 把 `Comate`、`gptimg2`、`gpt-image-2`、`banana`、`banana2`、`responses`、`生成图片`、`出图`、`prompt 是` 等只用于触发或选路的词从最终图片 prompt 中剥离。
+   - 例如用户说“用 Comate / banana2 生成图片：一只赛博风招财猫”，最终传给接口的 prompt 应是“一只赛博风招财猫”，不是完整原话。
 2. 选择链路。
    - 默认使用 `images`，模型 `gpt-image-2`，结构最直接。
+   - 用户说 `gptimg2`、`gpt-image-2` 或没有指定模型时用 `images`。
    - 用户明确要 Responses 编排或工具链路时用 `responses`，模型 `gpt-5.5`。
-   - 用户明确要 Banana/Gemini 兼容链路时用 `banana`，模型 `gemini-3.1-flash-image-preview`。
+   - 用户说 `banana`、`banana2` 或 Gemini 兼容链路时用 `banana`，模型 `gemini-3.1-flash-image-preview`。
+   - 用户只是泛泛说“生成图片”时不要先问模型，按默认链路执行；只有用户要求选择、比较多链路，或明确问“用哪个模型”时才询问。
    - 需要接口细节时读取 `references/comate-image-apis.md`。
 3. 判断输出名。
    - 不使用 `out.png`、`image.png`、`test.png` 这类泛名。
