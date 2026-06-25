@@ -1,3 +1,10 @@
+## [0.19.15] - 2026-06-25
+### Changed
+- nad-acx-pivot-table: 有实验名时自动输出文件名改为 `【MMdd-MMdd】实验名.xlsx`，例如 `【0621-0624】健康竞胜率.xlsx`
+- nad-acx-pivot-table: 同步更新 CLI 帮助、skill 文档和配置 schema 中的命名规则说明
+- nad-acx-pivot-table: skill 版本升级到 `0.1.2`
+- manifest: 插件版本升级到 `0.19.15`
+
 ## [0.19.14] - 2026-06-25
 ### Changed
 - commercial-sql-writer: 补充 `fc_nad.nativeads_als_every_log` 落地页性能日志口径，沉淀 `category_id = '1029'` 下 `f*` / `ef*` 字段映射

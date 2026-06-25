@@ -65,8 +65,8 @@ def _auto_output_name(
 ) -> str:
     """从数据和参数自动生成输出文件名。
 
-    优先格式: 【MMdd-MMdd】【实验名】实验数据分析.xlsx
-    日期跳跃时分段: 【MMdd】【MMdd-MMdd】【实验名】实验数据分析.xlsx
+    优先格式: 【MMdd-MMdd】实验名.xlsx
+    日期跳跃时分段: 【MMdd】【MMdd-MMdd】实验名.xlsx
     降级格式: 【MMdd-MMdd】【exp_id值】_pivot.xlsx
     输出目录优先用 output_dir，否则与第一个输入文件相同。
     """
@@ -81,7 +81,7 @@ def _auto_output_name(
 
     # 如果有用户指定的实验名，使用新格式
     if exp_name:
-        base = f"{date_segment}【{exp_name}】实验数据分析.xlsx"
+        base = f"{date_segment}{exp_name}.xlsx"
     else:
         # 降级：从数据中提取 exp_id
         exp_ids: list[str] = []

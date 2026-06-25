@@ -1,6 +1,6 @@
 ---
 name: nad-acx-pivot-table
-version: 0.1.1
+version: 0.1.2
 description: 专用于生成商业 AB 实验数据分析透视表 xlsx 文件（通过手拼 OOXML XML，绕过 openpyxl 不支持创建透视表的限制）。支持单个 CSV/TXT/XLSX 文件自动生成，以及多个 CSV/TXT/XLSX 文件合并生成（如多天数据合并）。TXT 必须是带表头的分隔符文本（支持逗号、Tab、分号、竖线分隔）。输入文件必须包含以下标准字段：exp_id、event_day、eshow、click、charge、tcharge、conv；部分常见别名（如 total_target_charge → tcharge、total_conv → conv、eshows → eshow 等）会被内置别名表自动映射，未登记的别名可通过 --field-map 手动指定，或由 Step 4b 子串建议自动探测，详见 SKILL.md Step 4。TRIGGER when：用户说"透视表"、"pivot table"、"数据透视"、"AB 测试报表"、"生成 xlsx 透视表"、"合并 csv/txt 生成分析"、"商业 AB 实验数据透视表"、"给这个文件生成透视表"、"合并 Downloads 前 N 个 csv/txt 生成透视表"、"合并最近 N 个 csv/txt 生成透视表"、"用 xxx.csv/xxx.txt 生成透视表"、"合并这 N 个 csv/txt 文件生成透视表，实验名是 xxx"（用户在同一句话里同时给出文件范围 + 实验名，应跳过所有 AskUserQuestion 直接生成），或任何提到"生成/合并"+"透视表/数据透视/AB 实验报表"的自然语言描述（无论是否显式说"商业"或文件路径）。DO NOT TRIGGER when：用户只需读取/展示数据内容、或生成普通格式 xlsx（无透视功能）、或字段语义完全不属于商业 AB 实验数据。
 tags: [excel, pivot-table, xlsx, commercial-ads, ab-test, nad, acx]
 autoInstall: true
@@ -74,7 +74,7 @@ exp（实验） |   1,230,000 |      +2.5% |      38,000 |      +5.6% |      124
 ## Quick Start
 
 > **输出路径约定（重要）**：
-> - **默认（推荐）**：不传 `-o`/`-d`，工具按 `【MMdd-MMdd】【实验名】实验数据分析.xlsx` 自动命名，输出到第一个输入文件所在目录。
+> - **默认（推荐）**：不传 `-o`/`-d`，工具按 `【MMdd-MMdd】实验名.xlsx` 自动命名，输出到第一个输入文件所在目录。例如 `-e "健康竞胜率"` 生成 `【0621-0624】健康竞胜率.xlsx`。
 > - **`-d/--output-dir <目录>`**：仅自定义输出**目录**，文件名仍按规则自动生成。**外部 agent / 自动化脚本想指定输出位置时应使用 `-d`，而不是 `-o`。**
 > - **`-o/--output <完整路径>`**：完整跳过自动命名，直接用给定路径。一旦传 `-o`，`-e` 实验名将不会拼入文件名（工具会在 stderr 输出警告）。
 > - `-o` 与 `-d` 互斥。
@@ -83,7 +83,7 @@ exp（实验） |   1,230,000 |      +2.5% |      38,000 |      +5.6% |      124
 # 所有命令均在 skill scripts 目录下运行（与项目目录无关）
 SCRIPTS=<本 skill 目录>/scripts
 
-# 单文件 + 预设 + 实验名（自动命名: 【0419-0422】【流量优化】实验数据分析.xlsx）
+# 单文件 + 预设 + 实验名（自动命名: 【0419-0422】流量优化.xlsx）
 cd "$SCRIPTS" && python3 -m pivot_tool input.txt -p commercial_ab_test -e "流量优化"
 
 # 自定义输出目录 + 自动命名（推荐用于外部 agent 调用）
@@ -516,9 +516,9 @@ suggestions = suggest_field_mapping(headers, required)
 ### Step 6: 生成透视表
 
 运行命令生成，命名规则：
-- 有实验名时: `【MMdd-MMdd】【实验名】实验数据分析.xlsx`
+- 有实验名时: `【MMdd-MMdd】实验名.xlsx`
 - 无实验名时降级: `【MMdd-MMdd】【exp_id值】_pivot.xlsx`
-- **日期跳跃**：当 `event_day` 存在非连续区间时，每个连续段独立包 `【】`，例如 `0430 + 0503~0509` → `【0430】【0503-0509】【实验名】实验数据分析.xlsx`
+- **日期跳跃**：当 `event_day` 存在非连续区间时，每个连续段独立包 `【】`，例如 `0430 + 0503~0509` 且实验名为 `健康竞胜率` → `【0430】【0503-0509】健康竞胜率.xlsx`
 
 ```bash
 cd "$SCRIPTS" && python3 -m pivot_tool <csv_or_txt_files...> -p <preset> -e "实验名"
@@ -549,7 +549,7 @@ with open(config_path, 'w') as f:
 
 ### 外部 agent / 自动化脚本调用约定
 
-非交互式调用方需要固定输出位置时，**优先用 `-d <目录> -e "<实验名>"`**（文件名仍按 `【MMdd-MMdd】【实验名】实验数据分析.xlsx` 自动生成）。仅在确需固定文件名时才用 `-o <完整路径>`——此时 `-e` 不会拼入文件名，工具在 stderr 输出警告但不阻塞。详细约定见上文 Quick Start 的"输出路径约定"。
+非交互式调用方需要固定输出位置时，**优先用 `-d <目录> -e "<实验名>"`**（文件名仍按 `【MMdd-MMdd】实验名.xlsx` 自动生成）。仅在确需固定文件名时才用 `-o <完整路径>`——此时 `-e` 不会拼入文件名，工具在 stderr 输出警告但不阻塞。详细约定见上文 Quick Start 的"输出路径约定"。
 
 ### 追加新数据（已有透视表 + 新 CSV/TXT）
 
@@ -619,7 +619,7 @@ from pivot_tool.packager import create_xlsx_with_pivot
 config = load_preset("commercial_ab_test")
 # 或: config = load_config("my_config.json")
 create_xlsx_with_pivot("input.csv", None, config, exp_name="流量优化")
-# 自动生成: 【0419-0422】【流量优化】实验数据分析.xlsx
+# 自动生成: 【0419-0422】流量优化.xlsx
 ```
 
 ## 注意事项

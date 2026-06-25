@@ -46,7 +46,7 @@ def main():
     )
     out_group.add_argument(
         "--output-dir", "-d", dest="output_dir",
-        help="输出目录（文件名仍按 【MMdd-MMdd】【实验名】实验数据分析.xlsx 自动生成）。与 -o 互斥",
+        help="输出目录（文件名仍按 【MMdd-MMdd】实验名.xlsx 自动生成）。与 -o 互斥",
     )
     parser.add_argument("--exp-name", "-e", dest="exp_name", help="实验名称（用于自动命名，如 '广告优化实验'）")
     parser.add_argument(

@@ -146,9 +146,9 @@ python3 -m pivot_tool /path/to/*.csv -c my_config.json
 
 当不指定 `-o` 输出路径时，工具会从数据中自动生成文件名：
 
-- 有实验名（`-e`）时: `【MMdd-MMdd】【实验名】实验数据分析.xlsx`
+- 有实验名（`-e`）时: `【MMdd-MMdd】实验名.xlsx`
 - 无实验名时降级: `【MMdd-MMdd】【exp_id值】_pivot.xlsx`
-- `event_day` 含日期跳跃时每段独立包 `【】`，如 `【0430】【0503-0509】【实验名】实验数据分析.xlsx`
+- `event_day` 含日期跳跃时每段独立包 `【】`，如 `【0430】【0503-0509】健康竞胜率.xlsx`
 - 输出目录优先用 `-d`，否则与第一个输入文件相同
 
 如果配置中没有 `event_day` 列，则降级为 `pivot_pivot.xlsx`。
