@@ -1,6 +1,6 @@
 ---
 name: android-mock
-version: 0.1.1
+version: 0.1.2
 description: Android mock 自测与验收闭环助手。用于用户提供 Android mock 文档、scheme 文档、测试用例、mockserver 脚本、接口 mock 配置，或要求“帮我自测”“跑完用例”“验收链路”“补截图/录屏证据”“生成验收报告”时；覆盖真机 adb 执行、mockserver 请求核验、多端/多模块/多链路完整验收、逐 case 证据留存、截图/录屏/logcat 采证，并强制使用 html-report 产出 HTML 验收报告。
 tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 ---
@@ -106,7 +106,7 @@ HTML 验收报告必须使用 `html-report` skill 生成，不要手写自定义
 7. 提交前清理
 8. 证据来源
 
-报告表格不要过密。多链路结果应分开写，每条链路单独成表。每个 case 行至少包含：
+报告表格不要过密。多链路结果应分开写，每条链路单独成表或逐 case 卡片。每个 case 行至少包含：
 
 - case id / 名称
 - 结果状态
@@ -114,7 +114,9 @@ HTML 验收报告必须使用 `html-report` skill 生成，不要手写自定义
 - 证据编号或证据路径
 - 备注 / caveat
 
-证据附录可以保留用于汇总原始文件，但不能替代 case 下证据。每个 case 必须在对应小节、卡片或表格行的紧邻位置贴截图/录屏预览，或至少给出可点击的 mock/logcat/dumpsys/媒体文件链接；不要只在末尾附录列证据编号。
+**优先使用逐 case 卡片（而非纯汇总表格 + 超链接）**：每个 case 用独立卡片 `.case-card`，卡片内直接内嵌截图/录屏预览（`<figure class="media-evidence">`），读者不需要跳转就能看到证据。纯表格 + 超链接只作为密集总览的补充，不能替代卡片内嵌图片。
+
+证据附录可以保留用于汇总原始文件，但不能替代 case 下证据。每个 case 必须在对应卡片或小节的紧邻位置内嵌截图/录屏预览（直接显示图片，不是仅放超链接）；toast、loading 等时序证据优先放录屏和关键帧截图。超链接只用于辅助指向完整 mock 日志或 logcat 原始文件，不能作为主证据形式。
 
 HTML 报告中的媒体证据使用 `html-report` 标准结构：
 

@@ -1,3 +1,10 @@
+## [0.21.7] - 2026-06-26
+### Changed
+- android-mock: 验收报告优先使用逐 case 卡片，并在卡片内嵌截图或录屏预览
+- android-mock: 明确纯汇总表格和超链接只能作为补充，mock 日志、logcat 等原始文件链接不替代主证据
+- android-mock: skill 版本升级到 `0.1.2`
+- manifest: 插件版本升级到 `0.21.7`
+
 ## [0.21.6] - 2026-06-26
 ### Changed
 - delegated-search: 将“强阈值”改为“委派信号”，明确数字只作为复杂度参考，不作为子 Agent 委派硬门槛
