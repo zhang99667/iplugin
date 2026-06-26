@@ -1,3 +1,10 @@
+## [0.21.4] - 2026-06-26
+### Changed
+- android-mock: 收紧验收报告规范，要求报告新增或版本化输出，避免覆盖历史报告
+- android-mock: 强制每个 case 下直接放截图、录屏或 mock/logcat/dumpsys 链接，证据附录不能替代 case 级证据块
+- android-mock: skill 版本升级到 `0.1.1`
+- manifest: 插件版本升级到 `0.21.4`
+
 ## [0.21.3] - 2026-06-26
 ### Changed
 - 维护指南: 明确只有新增 skill 才升级 minor 版本；改名、修复、文档和 manifest 等非新增变更统一升级 patch 版本

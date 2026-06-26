@@ -1,6 +1,6 @@
 ---
 name: android-mock
-version: 0.1.0
+version: 0.1.1
 description: Android mock 自测与验收闭环助手。用于用户提供 Android mock 文档、scheme 文档、测试用例、mockserver 脚本、接口 mock 配置，或要求“帮我自测”“跑完用例”“验收链路”“补截图/录屏证据”“生成验收报告”时；覆盖真机 adb 执行、mockserver 请求核验、多端/多模块/多链路完整验收、逐 case 证据留存、截图/录屏/logcat 采证，并强制使用 html-report 产出 HTML 验收报告。
 tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 ---
@@ -17,6 +17,7 @@ tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 - 多端、多模块或多入口复用同一测试用例时，也要按“端 / 模块 / 链路 / 入口 × case”展开逐项执行；不能因为 case 名相同就合并、抽样或跳过。
 - 每个 case 都要有状态：`通过`、`通过*`、`差异`、`失败`、`未测`。`未测` 必须说明原因。
 - 每个结论都要有证据：mockserver 日志、设备截图、录屏、logcat、dumpsys、接口响应，或“没有收到请求”的观察窗口。
+- 验收报告必须新增或明确版本化输出；目标目录已有报告时，不要覆盖旧报告，除非用户明确要求替换。
 - 临时 mockserver、代理、dev server、logcat tail 等进程，结束前要停止，除非用户明确要求保留。
 
 ## 执行流程
@@ -57,6 +58,7 @@ tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 - 预期无请求时，保存观察窗口内 mockserver 无新增请求的日志片段。
 - 证据文件放到日期目录，例如 `evidence_YYYYMMDD/`。
 - 文件名包含链路、case、证据类型，例如 `sdk_tc06_final_YYYYMMDD.png`、`host_tc05_toast_YYYYMMDD.mp4`。
+- 验收报告中每个 case 的结论下方必须直接放可见或可点证据：截图预览、录屏预览、mock/logcat/dumpsys 超链接至少一种；toast、loading、短暂弹层等时序证据优先放录屏和关键帧截图。
 - SDK 或桥接链路必须记录实际入口；如果外部 scheme 需要桥接到内部入口，要写清桥接关系。
 
 ## 常用命令
@@ -88,7 +90,8 @@ adb shell logcat -d -v time | rg -i "uri=tel|Toast|NotificationService|REQUEST_F
 HTML 验收报告必须使用 `html-report` skill 生成，不要手写自定义 HTML 模板。流程要求：
 
 - 先按 `html-report` skill 读取并遵守其内容规则、视觉规则、CSS 模板和校验要求。
-- 输出 HTML 时使用 `html-report` 的正式文档抬头、摘要、链路分表、媒体证据结构、证据来源和清理确认。
+- 输出 HTML 时使用 `html-report` 的正式文档抬头、摘要、链路分表、逐 case 证据块、媒体证据结构、证据来源和清理确认。
+- 写入前检查目标目录已有验收报告；如果同名文件存在，生成带轮次、日期或时间戳的新文件名，并在报告抬头说明“新增报告，未覆盖历史报告”。
 - 完成前运行 `html-report/scripts/check_html_report.py <html-file>`；校验失败必须修复后重跑，直到通过。
 - 只有用户明确要求不要 HTML 或只要 Markdown 时，才输出 Markdown 验收结果。
 
@@ -99,7 +102,7 @@ HTML 验收报告必须使用 `html-report` skill 生成，不要手写自定义
 3. 链路 A 验收结果
 4. 链路 B 验收结果
 5. 差异、失败和未测项
-6. 证据附录
+6. 逐 case 证据块
 7. 提交前清理
 8. 证据来源
 
@@ -111,13 +114,14 @@ HTML 验收报告必须使用 `html-report` skill 生成，不要手写自定义
 - 证据编号或证据路径
 - 备注 / caveat
 
-证据附录单独维护，表格里只引用证据编号，避免把截图、视频、长日志全部塞进 case 表格。
+证据附录可以保留用于汇总原始文件，但不能替代 case 下证据。每个 case 必须在对应小节、卡片或表格行的紧邻位置贴截图/录屏预览，或至少给出可点击的 mock/logcat/dumpsys/媒体文件链接；不要只在末尾附录列证据编号。
 
 HTML 报告中的媒体证据使用 `html-report` 标准结构：
 
 - 图片：`<figure class="media-evidence" data-case="..." data-conclusion="...">` + `<img alt="...">` + `<figcaption class="media-caption">`。
 - 录屏：同一个媒体证据块里放关键帧截图和 `<video controls preload="metadata">`，视频使用相对路径，不要 base64。
 - 证据资源默认放在 HTML 同目录下的 `evidence_YYYYMMDD/`，并在 caption 里写清 case、结论和原始文件链接。
+- 如果截图或录屏不适合内嵌预览，仍要在 case 下放清晰的相对路径超链接，链接文本写明证据类型和结论，不要让读者去附录反查。
 
 ## 完成标准
 
@@ -127,8 +131,10 @@ HTML 报告中的媒体证据使用 `html-report` 标准结构：
 - 执行矩阵中的每一行都有状态；多端、多模块或多入口的相同 case 也要分别有结果和证据，不能用其他链路的结论代替。
 - 每个状态都有证据或明确阻塞原因。
 - 证据路径存在，截图/录屏命名可追溯到 case。
+- 报告每个 case 下都有截图、录屏或日志/原始文件超链接作为直接证据；仅有总表或仅有证据附录不算完成。
 - 报告中多链路结果分开呈现。
 - HTML 验收报告由 `html-report` 生成，并通过 `check_html_report.py`。
+- HTML 验收报告没有覆盖历史报告；如必须覆盖，已有用户明确指令或已先备份。
 - mock 方案、验收结果、临时改动清理项分别呈现，不混在一张密集大表里。
 - 临时日志、mock-only 代码、待回退改动已经列入提交前清理项。
 - 临时服务已停止，或已说明仍在运行。
