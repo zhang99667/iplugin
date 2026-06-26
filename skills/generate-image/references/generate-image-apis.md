@@ -1,11 +1,15 @@
-# Comate 图片生成接口摘要
+# generate-image 图片接口摘要
+
+客户端面向 provider-compatible 图片生成网关。默认 base URL 是当前内置网关，可用 `--base-url` 或 `GENERATE_IMAGE_BASE_URL` 覆盖。
 
 鉴权统一使用：
 
 ```http
-Authorization: Bearer <COMATE_API_KEY>
+Authorization: Bearer <GENERATE_IMAGE_API_KEY>
 Content-Type: application/json
 ```
+
+脚本优先读取 `GENERATE_IMAGE_API_KEY` / `GENERATE_IMAGE_API_KEY_FILE`。为兼容旧环境，也会读取 `COMATE_API_KEY` / `COMATE_API_KEY_FILE`，但新文档和新流程不要再引导用户设置旧变量。
 
 ## 链路对比
 
@@ -18,7 +22,7 @@ Content-Type: application/json
 ## 默认命令
 
 ```bash
-python3 skills/comate-image/scripts/comate_image_client.py images \
+python3 skills/generate-image/scripts/generate_image_client.py images \
   --prompt "写实风格，一位程序员坐在电脑前吃泡面，不要文字和水印" \
   --stem "程序员夜晚泡面" \
   --out-dir ./outputs
@@ -27,16 +31,16 @@ python3 skills/comate-image/scripts/comate_image_client.py images \
 可选链路：
 
 ```bash
-python3 skills/comate-image/scripts/comate_image_client.py responses \
+python3 skills/generate-image/scripts/generate_image_client.py responses \
   --prompt "..." \
   --stem "..."
 
-python3 skills/comate-image/scripts/comate_image_client.py banana \
+python3 skills/generate-image/scripts/generate_image_client.py banana \
   --prompt "..." \
   --stem "..."
 ```
 
-CLI 也接受常用别名：`gptimg2` / `gpt-image-2` 等同于 `images`，`banana2` 等同于 `banana`。默认会从 `--prompt` 开头或结尾剥离 `Comate`、`banana2`、`gptimg2`、`生成图片`、`出图`、`prompt 是` 等路由词；只有确实要把这些词画进图片时，才加 `--raw-prompt`。
+CLI 也接受常用别名：`gptimg2` / `gpt-image-2` 等同于 `images`，`banana2` 等同于 `banana`。默认会从 `--prompt` 开头或结尾剥离 `generate-image`、`banana2`、`gptimg2`、`Comate`、`生成图片`、`出图`、`prompt 是` 等路由词；只有确实要把这些词画进图片时，才加 `--raw-prompt`。
 
 ## 输出
 

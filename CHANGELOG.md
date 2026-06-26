@@ -1,3 +1,10 @@
+## [0.21.2] - 2026-06-26
+### Changed
+- generate-image: 将 `comate-image` 重命名为 `generate-image`，skill 定位改为通用图片生成，不再以 Comate 作为能力名称
+- generate-image: 客户端脚本改名为 `generate_image_client.py`，API key 主变量改为 `GENERATE_IMAGE_API_KEY` / `GENERATE_IMAGE_API_KEY_FILE`，旧 `COMATE_*` 变量仅保留兼容读取
+- README / manifest: 将插件描述、关键词和默认提示中的 Comate 图片生成入口改为通用图片生成入口
+- manifest: 插件版本升级到 `0.21.2`
+
 ## [0.21.1] - 2026-06-25
 ### Changed
 - comate-image: 将 `Comate`、`banana2`、`gptimg2`、`生成图片` 等触发/选路词明确从最终图片 prompt 中剥离

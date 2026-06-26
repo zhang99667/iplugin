@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stdlib-only Comate image generation client used by the comate-image skill."""
+"""Stdlib-only image generation client used by the generate-image skill."""
 
 from __future__ import annotations
 
@@ -43,15 +43,15 @@ class GeneratedImage:
     raw: dict[str, Any]
 
 
-class ComateImageError(RuntimeError):
+class GenerateImageError(RuntimeError):
     pass
 
 
-class ComateAuthError(ComateImageError):
+class GenerateImageAuthError(GenerateImageError):
     pass
 
 
-class ComateImageClient:
+class GenerateImageClient:
     def __init__(self, api_key: str, base_url: str = DEFAULT_BASE_URL, timeout: int = 180):
         if not api_key:
             raise ValueError("api_key is required")
@@ -76,7 +76,7 @@ class ComateImageClient:
         try:
             b64 = data["data"][0]["b64_json"]
         except (KeyError, IndexError, TypeError) as exc:
-            raise ComateImageError("missing data[0].b64_json in images/generations response") from exc
+            raise GenerateImageError("missing data[0].b64_json in images/generations response") from exc
         output_format = data.get("output_format") or "png"
         return self._decode_image(b64, f"image/{output_format}", "data[0].b64_json", data)
 
@@ -102,7 +102,7 @@ class ComateImageClient:
                         f"output[{idx}].result",
                         data,
                     )
-        raise ComateImageError("missing image_generation_call result in responses output")
+        raise GenerateImageError("missing image_generation_call result in responses output")
 
     def banana_generate_content(
         self,
@@ -124,7 +124,7 @@ class ComateImageClient:
         data = self._post_json(path, payload)
         for img_path, mime_type, b64 in _iter_inline_images(data):
             return self._decode_image(b64, mime_type, img_path, data)
-        raise ComateImageError("missing inlineData.data image in generateContent response")
+        raise GenerateImageError("missing inlineData.data image in generateContent response")
 
     def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -138,19 +138,19 @@ class ComateImageClient:
             raw = exc.read()
             message = raw.decode("utf-8", errors="replace")[:2000]
             if exc.code in AUTH_STATUS_CODES:
-                raise ComateAuthError(f"HTTP {exc.code}: API key is missing, invalid, or expired") from exc
-            raise ComateImageError(f"HTTP {exc.code}: {message}") from exc
+                raise GenerateImageAuthError(f"HTTP {exc.code}: API key is missing, invalid, or expired") from exc
+            raise GenerateImageError(f"HTTP {exc.code}: {message}") from exc
         except error.URLError as exc:
-            raise ComateImageError(str(exc)) from exc
+            raise GenerateImageError(str(exc)) from exc
 
         try:
             data = json.loads(raw.decode("utf-8"))
         except json.JSONDecodeError as exc:
-            raise ComateImageError("unexpected non-JSON response") from exc
+            raise GenerateImageError("unexpected non-JSON response") from exc
         if isinstance(data, dict) and data.get("error") is not None:
-            raise ComateImageError(json.dumps(data["error"], ensure_ascii=False))
+            raise GenerateImageError(json.dumps(data["error"], ensure_ascii=False))
         if not isinstance(data, dict):
-            raise ComateImageError("unexpected non-object JSON response")
+            raise GenerateImageError("unexpected non-object JSON response")
         return data
 
     @staticmethod
@@ -192,7 +192,7 @@ def _path_with_extension(path: Path, mime_type: str) -> Path:
 def _clean_prompt(prompt: str) -> str:
     cleaned = unicodedata.normalize("NFKC", prompt).strip()
     route_words = (
-        r"comate|oneapi-comate|gptimg2|gpt-image-2|gpt_image_2|gptimage2|"
+        r"generate-image|generate_image|comate|oneapi-comate|gptimg2|gpt-image-2|gpt_image_2|gptimage2|"
         r"banana2?|gemini|responses?|image_generation"
     )
     leading_patterns = [
@@ -211,10 +211,10 @@ def _clean_prompt(prompt: str) -> str:
     return cleaned or prompt.strip()
 
 
-def _safe_stem(text: str, fallback: str = "comate-image") -> str:
+def _safe_stem(text: str, fallback: str = "generate-image") -> str:
     normalized = _clean_prompt(text).lower()
     normalized = re.sub(
-        r"(不要文字|无文字|不要水印|无水印|no text|no watermark|写实风格|高清|细节丰富|comate|gptimg2|gpt-image-2|banana2?)",
+        r"(不要文字|无文字|不要水印|无水印|no text|no watermark|写实风格|高清|细节丰富|generate-image|generate_image|comate|gptimg2|gpt-image-2|banana2?)",
         " ",
         normalized,
         flags=re.IGNORECASE,
@@ -246,15 +246,20 @@ def _unique_path(path: Path) -> Path:
         candidate = parent / f"{stem}-{index}{suffix}"
         if not candidate.exists():
             return candidate
-    raise ComateImageError(f"could not find unused output path for {path}")
+    raise GenerateImageError(f"could not find unused output path for {path}")
 
 
 def _read_api_key(api_key_file: str | None) -> str:
-    env_key = os.environ.get("COMATE_API_KEY", "").strip()
-    if env_key:
-        return env_key
+    for env_name in ("GENERATE_IMAGE_API_KEY", "COMATE_API_KEY"):
+        env_key = os.environ.get(env_name, "").strip()
+        if env_key:
+            return env_key
 
-    key_file = api_key_file or os.environ.get("COMATE_API_KEY_FILE", "").strip()
+    key_file = (
+        api_key_file
+        or os.environ.get("GENERATE_IMAGE_API_KEY_FILE", "").strip()
+        or os.environ.get("COMATE_API_KEY_FILE", "").strip()
+    )
     if not key_file:
         return ""
 
@@ -262,10 +267,10 @@ def _read_api_key(api_key_file: str | None) -> str:
     try:
         return path.read_text(encoding="utf-8").strip()
     except OSError as exc:
-        raise ComateAuthError(f"could not read API key file: {path}") from exc
+        raise GenerateImageAuthError(f"could not read API key file: {path}") from exc
 
 
-def _generate_image(client: ComateImageClient, backend: str, prompt: str, model: str, size: str) -> GeneratedImage:
+def _generate_image(client: GenerateImageClient, backend: str, prompt: str, model: str, size: str) -> GeneratedImage:
     if backend == "images":
         return client.images_generations(prompt=prompt, model=model, size=size)
     if backend == "responses":
@@ -274,7 +279,7 @@ def _generate_image(client: ComateImageClient, backend: str, prompt: str, model:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate images through Comate-compatible APIs.")
+    parser = argparse.ArgumentParser(description="Generate images through provider-compatible APIs.")
     parser.add_argument("backend", nargs="?", default="images")
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--out", help="Full output path. Extension is inferred from MIME when omitted.")
@@ -283,8 +288,8 @@ def main() -> int:
     parser.add_argument("--model")
     parser.add_argument("--size", default="1024x1024")
     parser.add_argument("--timeout", type=int, default=180)
-    parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
-    parser.add_argument("--api-key-file", help="Path to a local file that contains COMATE_API_KEY.")
+    parser.add_argument("--base-url", default=os.environ.get("GENERATE_IMAGE_BASE_URL", DEFAULT_BASE_URL))
+    parser.add_argument("--api-key-file", help="Path to a local file that contains the image API key.")
     parser.add_argument("--raw-prompt", action="store_true", help="Send --prompt exactly as provided.")
     args = parser.parse_args()
 
@@ -295,11 +300,11 @@ def main() -> int:
 
         api_key = _read_api_key(args.api_key_file)
         if not api_key:
-            raise ComateAuthError("COMATE_API_KEY or COMATE_API_KEY_FILE is required")
+            raise GenerateImageAuthError("GENERATE_IMAGE_API_KEY or GENERATE_IMAGE_API_KEY_FILE is required")
 
         prompt = args.prompt if args.raw_prompt else _clean_prompt(args.prompt)
         model = args.model or DEFAULT_MODELS[backend]
-        client = ComateImageClient(api_key=api_key, base_url=args.base_url, timeout=args.timeout)
+        client = GenerateImageClient(api_key=api_key, base_url=args.base_url, timeout=args.timeout)
         image = _generate_image(client, backend, prompt, model, args.size)
 
         if args.out:
@@ -316,11 +321,11 @@ def main() -> int:
         print(f"bytes: {len(image.image_bytes)}")
         print(f"response_path: {image.response_path}")
         return 0
-    except ComateAuthError as exc:
+    except GenerateImageAuthError as exc:
         print(f"auth_error: {exc}", file=sys.stderr)
         return 2
-    except ComateImageError as exc:
-        print(f"comate_image_error: {exc}", file=sys.stderr)
+    except GenerateImageError as exc:
+        print(f"generate_image_error: {exc}", file=sys.stderr)
         return 1
 
 
