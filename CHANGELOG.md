@@ -1,3 +1,8 @@
+## [0.21.3] - 2026-06-26
+### Changed
+- 维护指南: 明确只有新增 skill 才升级 minor 版本；改名、修复、文档和 manifest 等非新增变更统一升级 patch 版本
+- manifest: 插件版本升级到 `0.21.3`
+
 ## [0.21.2] - 2026-06-26
 ### Changed
 - generate-image: 将 `comate-image` 重命名为 `generate-image`，skill 定位改为通用图片生成，不再以 Comate 作为能力名称

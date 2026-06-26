@@ -50,7 +50,8 @@
 
 - 插件级版本同时维护在 `.claude-plugin/plugin.json` 和 `.codex-plugin/plugin.json` 中
 - 每个 skill 在各自 `SKILL.md` frontmatter 中有独立 `version`
-- 遵循 SemVer：Patch（指令优化）、Minor（新增/改名 skill）、Major（删除/breaking change）
+- 遵循 SemVer：Patch（指令优化、修复、改名 skill、文档/manifest/hooks/scripts 调整等非新增变更）、Minor（新增 skill）、Major（删除 skill 或 breaking change）
+- 第二位版本号只随新增 skill 递增，用于从插件版本粗略判断新增 skill 数；只要不是新增 skill，都升级第三位版本号
 - 每次变更必须在 `versions/` 下记录对应的版本规划文档
 
 ## 版本规划文档
