@@ -1,3 +1,11 @@
+## [0.21.5] - 2026-06-26
+### Changed
+- delegated-search: 从“广域检索委派”调整为“复杂任务委派”，覆盖复杂排查、调用链找全、影响面分析、跨模块实现和并行验证
+- delegated-search: 增加强阈值、explorer/worker/verifier 角色映射、子 Agent 不可用 fallback 和命中阈值但不委派时的可见说明要求
+- delegated-search: skill 版本升级到 `0.1.3`
+- README / manifest: 将能力描述、关键词和默认提示同步为复杂任务委派
+- manifest: 插件版本升级到 `0.21.5`
+
 ## [0.21.4] - 2026-06-26
 ### Changed
 - android-mock: 收紧验收报告规范，要求报告新增或版本化输出，避免覆盖历史报告
