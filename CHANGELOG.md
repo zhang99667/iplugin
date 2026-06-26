@@ -1,3 +1,10 @@
+## [0.21.8] - 2026-06-26
+### Changed
+- android-mock: 固化录屏抽帧流程，要求 toast/loading/无 toast 等时序证据生成关键帧或 contact sheet 并在报告中展示
+- android-mock: 补充 `ffmpeg` contact sheet 推荐命令、缺失工具时的安装确认和工具补充记录要求
+- android-mock: skill 版本升级到 `0.1.3`
+- manifest: 插件版本升级到 `0.21.8`
+
 ## [0.21.7] - 2026-06-26
 ### Changed
 - android-mock: 验收报告优先使用逐 case 卡片，并在卡片内嵌截图或录屏预览

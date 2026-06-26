@@ -1,6 +1,6 @@
 ---
 name: android-mock
-version: 0.1.2
+version: 0.1.3
 description: Android mock 自测与验收闭环助手。用于用户提供 Android mock 文档、scheme 文档、测试用例、mockserver 脚本、接口 mock 配置，或要求“帮我自测”“跑完用例”“验收链路”“补截图/录屏证据”“生成验收报告”时；覆盖真机 adb 执行、mockserver 请求核验、多端/多模块/多链路完整验收、逐 case 证据留存、截图/录屏/logcat 采证，并强制使用 html-report 产出 HTML 验收报告。
 tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 ---
@@ -54,10 +54,15 @@ tags: [android, mock, acceptance, testing, adb, logcat, evidence, html-report]
 
 - 稳定 UI 状态用截图：拨号盘号码、停留页面、未拉起拨号盘、错误页。
 - toast、loading、短暂弹层用短录屏或连续截图；单张终帧截图只能证明最终状态。
+- 涉及 toast、loading、短暂弹层或“无 toast”的录屏，必须抽取关键帧或 contact sheet 作为报告内可见证据；不要只把 `.mp4` 链接塞进附录。
+- 优先用 `ffmpeg` 从录屏生成 1fps contact sheet，例如 `ffmpeg -y -i <case>.mp4 -vf fps=1,scale=320:-1,tile=4x2 -frames:v 1 <case>_contact.png`。如果录屏超过 8 秒但只需要首屏观察窗口，保留 `-frames:v 1`，避免 `tile` 输出多张图导致命令失败。
+- 如果本机没有 `ffmpeg`，先尝试系统已有工具或 Python 视频库；仍不可用且用户同意安装时，可以安装 `ffmpeg` 后继续抽帧。安装行为要在报告“环境与范围”或“工具补充”里记录，不能静默忽略。
+- 用 contact sheet 判定 toast 时，要区分业务 toast、系统 toast 和已有调试 toast。调试 toast（例如非本 case 目标文案）只能作为 caveat，不能替代业务 toast 通过证据。
 - 请求成功要保存 mockserver 命中日志；请求失败要保存 HTTP 状态、错误日志或超时日志。
 - 预期无请求时，保存观察窗口内 mockserver 无新增请求的日志片段。
 - 证据文件放到日期目录，例如 `evidence_YYYYMMDD/`。
 - 文件名包含链路、case、证据类型，例如 `sdk_tc06_final_YYYYMMDD.png`、`host_tc05_toast_YYYYMMDD.mp4`。
+- 抽帧文件名包含链路、case 和证据类型，例如 `sdk_tc05_contact_YYYYMMDD.png`、`host_tc06_contact_YYYYMMDD.png`，并与原始录屏保存在同一证据目录。
 - 验收报告中每个 case 的结论下方必须直接放可见或可点证据：截图预览、录屏预览、mock/logcat/dumpsys 超链接至少一种；toast、loading、短暂弹层等时序证据优先放录屏和关键帧截图。
 - SDK 或桥接链路必须记录实际入口；如果外部 scheme 需要桥接到内部入口，要写清桥接关系。
 
@@ -77,6 +82,7 @@ adb shell screencap -p /sdcard/<case>.png
 adb shell screenrecord --time-limit 8 /sdcard/<case>.mp4
 adb pull /sdcard/<case>.png evidence_YYYYMMDD/<case>.png
 adb pull /sdcard/<case>.mp4 evidence_YYYYMMDD/<case>.mp4
+ffmpeg -y -i evidence_YYYYMMDD/<case>.mp4 -vf fps=1,scale=320:-1,tile=4x2 -frames:v 1 evidence_YYYYMMDD/<case>_contact.png
 ```
 
 logcat 只截取和当前 case 相关的短片段：
@@ -121,7 +127,7 @@ HTML 验收报告必须使用 `html-report` skill 生成，不要手写自定义
 HTML 报告中的媒体证据使用 `html-report` 标准结构：
 
 - 图片：`<figure class="media-evidence" data-case="..." data-conclusion="...">` + `<img alt="...">` + `<figcaption class="media-caption">`。
-- 录屏：同一个媒体证据块里放关键帧截图和 `<video controls preload="metadata">`，视频使用相对路径，不要 base64。
+- 录屏：同一个媒体证据块里放关键帧截图或 contact sheet 和 `<video controls preload="metadata">`，视频使用相对路径，不要 base64。
 - 证据资源默认放在 HTML 同目录下的 `evidence_YYYYMMDD/`，并在 caption 里写清 case、结论和原始文件链接。
 - 如果截图或录屏不适合内嵌预览，仍要在 case 下放清晰的相对路径超链接，链接文本写明证据类型和结论，不要让读者去附录反查。
 
@@ -133,6 +139,7 @@ HTML 报告中的媒体证据使用 `html-report` 标准结构：
 - 执行矩阵中的每一行都有状态；多端、多模块或多入口的相同 case 也要分别有结果和证据，不能用其他链路的结论代替。
 - 每个状态都有证据或明确阻塞原因。
 - 证据路径存在，截图/录屏命名可追溯到 case。
+- 涉及 toast、loading、短暂弹层或无 toast 判定的录屏已经抽取关键帧或 contact sheet，并在报告中与原始录屏一起展示。
 - 报告每个 case 下都有截图、录屏或日志/原始文件超链接作为直接证据；仅有总表或仅有证据附录不算完成。
 - 报告中多链路结果分开呈现。
 - HTML 验收报告由 `html-report` 生成，并通过 `check_html_report.py`。
