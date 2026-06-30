@@ -63,12 +63,14 @@ python3 skills/generate-image/scripts/generate_image_client.py images \
 ## API Key 处理
 
 - 本地 API 客户端优先从 `GENERATE_IMAGE_API_KEY` 或 `GENERATE_IMAGE_API_KEY_FILE` 读取密钥；兼容读取旧的 `COMATE_API_KEY` / `COMATE_API_KEY_FILE`，但新流程不要再引导用户设置旧变量。
-- 不要把 key 写入仓库、prompt、README、版本记录、命令行参数或最终回复。
+- 需要新密钥时，提示用户打开 `https://oneapi-comate.baidu-int.com/token`，复制自己的令牌。
+- 给用户一个方便流程：打开 token 页面 -> 复制令牌 -> 选择下面任一方式提供给 agent -> agent 重试生成。
+- 不要把 key 写入仓库、prompt、README、版本记录、命令行参数或最终回复；如果用户选择直接粘贴到聊天，只用于当前任务，不复述、不保存、不提交。
 - 运行前需要判断 key 是否存在时，不要用会打印密钥的命令；只做存在性检查。
 - 如果 key 缺失，或脚本返回 `auth_error` / HTTP 401 / HTTP 403，必须使用 `ask-user-question` 的结构化询问方式处理：
-  - 推荐选项：`我先设置环境变量 (Recommended)`：用户在自己的 shell 设置 `GENERATE_IMAGE_API_KEY` 后重试，最少暴露密钥。
+  - 推荐选项：`直接粘贴令牌 (Recommended)`：用户从 token 页面复制后直接发到聊天里，agent 仅在当前任务中使用，不复述、不落盘。
   - 备选：`使用 key 文件`：用户提供只含密钥的本地文件路径，通过 `GENERATE_IMAGE_API_KEY_FILE` 或 `--api-key-file` 读取。
-  - 备选：`本轮临时提供`：仅在当前环境有安全传递方式时使用；不要复述、保存或提交密钥。
+  - 备选：`我先设置环境变量`：用户在自己的 shell 设置 `GENERATE_IMAGE_API_KEY` 后重试。
 - 如果当前环境没有结构化询问工具，按 `ask-user-question` skill 的降级格式询问，不要继续猜测或伪造 key。
 
 ## Progressive Disclosure
