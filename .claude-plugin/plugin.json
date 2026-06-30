@@ -1,6 +1,6 @@
 {
   "name": "iplugin",
-  "version": "0.21.9",
+  "version": "0.21.10",
   "description": "toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助",
   "author": { "name": "markz" },
   "license": "MIT",
