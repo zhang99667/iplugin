@@ -11,6 +11,13 @@
 - svg-tech-diagram: skill 版本升级到 `0.1.4`
 - README / manifest: 将批注审核能力描述同步为可编辑，插件版本升级到 `0.21.10`
 
+## [0.21.9] - 2026-06-26
+### Changed
+- delegated-search: 增加主线程上下文预算约束，避免委派后重复宽搜和全链路重跑
+- delegated-search: 明确主线程搜索应优先使用精确标识符、`rg -l` 和少量证据抽查
+- delegated-search: skill 版本升级到 `0.1.5`
+- manifest: 插件版本升级到 `0.21.9`
+
 ## [0.21.8] - 2026-06-26
 ### Changed
 - android-mock: 固化录屏抽帧流程，要求 toast/loading/无 toast 等时序证据生成关键帧或 contact sheet 并在报告中展示
