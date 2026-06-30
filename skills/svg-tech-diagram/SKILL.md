@@ -1,6 +1,6 @@
 ---
 name: svg-tech-diagram
-version: 0.1.3
+version: 0.1.4
 tags: [svg, diagram, visualization, technical-writing, architecture]
 description: SVG 技术绘图助手。当用户要求为技术长文、HTML 报告、架构说明、代码链路、流程/状态/模块关系配图，或明确说“画 SVG 图”“配张架构图”“生成技术示意图”“公众号配图”“矢量图”“统一风格图”时触发；通过朴素清晰的技术图规范、SVG 组件骨架、渲染 PNG 后读取自审和迭代，产出可嵌入 Markdown/HTML 的清晰矢量图。
 user_invocable: true
@@ -20,6 +20,8 @@ user_invocable: true
 - `references/svg-patterns.md`：SVG 骨架、节点、箭头、编号徽章、fork 布局、垂直工作流、分层架构等可复用模式。选择布局或写 SVG 时读取。
 - `references/review-checklist.md`：渲染后自审清单和“用户反馈 -> 漏检项”映射。交付前必须读取并逐项检查。
 - `scripts/render_svg.py`：把 `.svg` 渲染为 `.png` 的辅助脚本。优先使用它渲染；它依赖本机 `rsvg-convert`，缺失时按脚本提示安装或改用可靠的本地渲染方式。
+- `scripts/check_svg_diagram.py`：轻量几何闸门，检查背景与 `viewBox`、多箭头终点聚集和路径穿节点。写完 SVG 后、渲染 PNG 前必须运行；它不能替代看图自审。
+- `scripts/check_svg_raster.py`：渲染 PNG 后的像素闸门，检查空白、裁切、四周留白和上下留白失衡。渲染 PNG 后必须运行；它也不能替代看图自审。
 
 ## 触发边界
 
@@ -46,11 +48,13 @@ user_invocable: true
 2. 选择信息结构：从 `references/svg-patterns.md` 中选择 fork、垂直工作流、分层架构、泳道、对比矩阵、时间线或状态机。
 3. 读取 `references/style-system.md`，先用灰阶线框表达结构，只在主流程、风险、成功等必要语义上添加少量强调色。
 4. 先做垂直分区预算：列出标题区、主体节点/箭头区、说明区的 `top/bottom`，确认每个文字块有独立空间，且主体不会上挤下空。
-5. 写 SVG：使用明确且按内容收缩的 `viewBox`、内联 `<style>`、浅色背景、统一节点/容器、手工换行的 `<tspan>`、独立说明区和边缘对齐的箭头。
-6. 渲染 PNG：优先运行 `python3 skills/svg-tech-diagram/scripts/render_svg.py <input.svg> <output.png>`。
-7. 读取 PNG：使用当前环境的图片查看能力真实检查渲染结果，不要只凭 SVG 源码判断。
-8. 读取 `references/review-checklist.md` 并逐项自审。任何 A 级项失败都必须修改 SVG、重新渲染、再次读取 PNG。
-9. 全部通过后交付 SVG 路径、PNG 预览路径和可嵌入 Markdown/HTML 的片段。生成 HTML 报告时，优先交付可内联的 `<svg>...</svg>`，保持单文件离线可用。
+5. 写 SVG：先放内容，再按内容包围盒反推自适应 `viewBox`；同步背景 `<rect>` 尺寸，使用内联 `<style>`、浅色背景、统一节点/容器、手工换行的 `<tspan>`、独立说明区和边缘对齐的箭头。
+6. 跑几何闸门：运行 `python3 skills/svg-tech-diagram/scripts/check_svg_diagram.py <input.svg>`，先修掉终点聚集、线穿节点和背景覆盖问题。
+7. 渲染 PNG：优先运行 `python3 skills/svg-tech-diagram/scripts/render_svg.py <input.svg> <output.png>`。
+8. 跑像素闸门：运行 `python3 skills/svg-tech-diagram/scripts/check_svg_raster.py <output.png>`，先修掉空白、裁切和明显留白问题。
+9. 读取 PNG：使用当前环境的图片查看能力真实检查渲染结果，不要只凭 SVG 源码判断。
+10. 读取 `references/review-checklist.md` 并逐项自审。任何 A 级项失败都必须修改 SVG、重新跑几何闸门、重新渲染、重新跑像素闸门、再次读取 PNG。
+11. 全部通过后交付 SVG 路径、PNG 预览路径和可嵌入 Markdown/HTML 的片段。生成 HTML 报告时，优先交付可内联的 `<svg>...</svg>`，保持单文件离线可用。
 
 ## 绘图纪律
 
@@ -59,13 +63,18 @@ user_invocable: true
 - 箭头端点必须落在容器边缘或连接点上，不要穿过节点内容、标题或正文。
 - 中文文案先估宽再写入：粗略按 `字数 * 字号` 估算，英文按 `字符数 * 字号 * 0.58` 估算；不确定就手工换行。
 - 写坐标前先估每个文本块的宽高。节点正文、箭头标签、图例、底部说明都必须有自己的预留区域，不要把自由文本塞进节点之间或节点下方的剩余缝隙。
+- 多来源汇聚到同一个结论、失败现象或策略时，必须先抽象一个“变量池 / 汇聚层 / 归因混杂 / 中间判定”节点承接多输入，再用单箭头指向目标；不要让 3 条以上连线直接打到同一个目标点。
+- 箭头路径必须有独立视觉通道。右侧、下方或层间 gutter 不够时，先改成分层/汇聚节点/泳道结构，不要让曲线斜穿节点正文。
 - 写主体坐标前先估整张图的垂直包围盒。主体区上方空白和下方空白应接近；如果下方空白比上方多 `80px` 以上，或超过上方空白的 2 倍，必须下移主体或裁短 `viewBox`。
+- 画布必须按内容自适应：完成坐标后计算标题、节点、箭头、标签、图例和说明区的总包围盒，用包围盒加必要外边距反推 `viewBox`，不要为了复用模板保留大块空白。
+- 默认外边距控制在 `40px` 到 `72px`；任一侧空白超过 `96px` 或画布对应方向的 `12%` 时，必须裁短 `viewBox`、缩小宽高或整体平移内容，除非该区域有明确标题/说明用途。
 - 标题、请求路径、标签、节点和说明必须落在不同垂直 band；如果顶部出现文字和标签贴在一起，先增加标题区高度或下移主体，不要把底部留白留给上方拥挤买单。
 - 底部说明、图例和箭头标签与最近的节点边框或连接线至少保持 `24px` 视觉间距；空间不够时扩大 `viewBox`、移动说明区或删减文字，不要靠微调 `y` 值硬挤。
 - 主标题字号不低于 22px，正文不低于 12px。公众号和分屏阅读场景优先 14px 正文。
 - 画布尺寸按内容选择，不要所有图都套同一个比例；单行流程图、横向生命周期图等内容应收紧高度，避免节点下方出现大面积空白。
 - 图中文字只写关键词、短句和状态名，解释性长句放到图下正文或报告段落里。
 - 不要交付没有渲染检查过的 SVG。若本机缺少渲染工具且无法替代，必须在最终说明“未完成视觉自审”的风险。
+- 不要把 `check_svg_diagram.py` 或 `check_svg_raster.py` 通过误认为视觉合格。脚本只拦明显几何和像素问题，线条视觉重叠、文字压线和阅读顺序仍必须看 PNG。
 
 ## 和 HTML Report 协作
 

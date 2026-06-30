@@ -32,7 +32,7 @@ python3 skills/html-report/scripts/check_html_report.py <html-file>
 - 点击入口后出现贴近选区的小浮层，浮层只有一个 `提交` 按钮；点击浮层外侧自动关闭。
 - 右键菜单作为辅助入口，支持对选中内容、本段或本节提问/批注。
 - 右上角入口在 0 条批注时显示为明确的 `导出发布版`，点击直接导出发布版，且不能残留数字徽标或蓝色计数圆点；有批注时才显示 `批注 N` 并打开右侧栏。
-- 右侧栏列出所有批注，支持定位、复制单条、删除、复制 Markdown、下载 Markdown、下载 JSON、导出发布版、清空批注；`导出发布版` 必须是右侧栏顶部最明显的主按钮。
+- 右侧栏列出所有批注，支持定位、编辑、复制单条、删除、复制 Markdown、下载 Markdown、下载 JSON、导出发布版、清空批注；`导出发布版` 必须是右侧栏顶部最明显的主按钮。
 - 复制剪贴板在 `file://` 下被浏览器限制时，必须显示手动复制 textarea 兜底。
 
 不要加入问题类型下拉、双按钮确认框、大遮罩弹窗或需要后端服务的评论系统。这个模式的目标是轻、离线、单文件、可给 Agent 使用。
@@ -84,12 +84,13 @@ JSON 顶层必须包含：
 }
 ```
 
-每条批注至少包含：`sectionTitle`、`blockId`、`selectedText` 或 `blockText`、`contextBefore`、`contextAfter`、`kind`、`text`、`createdAt`。新增批注时也写入 `reportFileName`、`reportAbsolutePath` 和 `reportFileUrl`，保证单条复制也能回查原 HTML。
+每条批注至少包含：`sectionTitle`、`blockId`、`selectedText` 或 `blockText`、`contextBefore`、`contextAfter`、`kind`、`text`、`createdAt`。新增批注时也写入 `reportFileName`、`reportAbsolutePath` 和 `reportFileUrl`，保证单条复制也能回查原 HTML。编辑批注时保留原定位和 `createdAt`，更新 `text` 并写入 `updatedAt`。
 
 ## 稳定性要求
 
 - 注入脚本必须幂等：重复运行不能生成两套批注 UI。
 - 选区气泡出现时要缓存选区目标，避免点击按钮导致浏览器清空选区后无法打开输入浮层。
+- 编辑已有批注必须复用轻量输入浮层，提交后更新本条数据、刷新右侧栏和导出包，不能要求用户删除后重加。
 - 删除或清空批注后，必须同步清理正文里的 `.qa-highlight`、`.qa-annotated-block` 和浏览器选区；不能只删除右侧栏数据。
 - 批注数据可以临时存 `localStorage`，但不能只依赖它；Markdown/JSON 导出是可靠交接方式。
 - `check_html_report.py` 必须在最终报告上通过。它会检查批注标记、发布版剥离入口、路径字段、选区缓存和单按钮浮层。

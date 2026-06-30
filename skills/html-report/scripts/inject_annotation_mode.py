@@ -4,7 +4,7 @@
 这个脚本用于把已经生成好的普通 HTML 报告升级成“审核版”：
 - 选中文本后显示轻量气泡，可选择“提问”或“批注”。
 - 输入浮层只有一个“提交”按钮，点击外侧自动关闭。
-- 右侧栏可以复制/下载 Markdown、JSON，并导出物理剥离批注能力的发布版 HTML。
+- 右侧栏可以编辑、复制/下载 Markdown、JSON，并导出物理剥离批注能力的发布版 HTML。
 
 脚本只依赖 Python 标准库，输出仍是单文件 HTML。
 """
@@ -584,6 +584,7 @@ ANNOTATION_JS = r'''
       let annotations = loadAnnotations();
       let draftTarget = null;
       let draftKind = '提问';
+      let editingAnnotationId = null;
       let lastContextTarget = null;
       let cachedSelectionTarget = null;
       let blockSeq = 0;
@@ -686,13 +687,15 @@ ANNOTATION_JS = r'''
         }
       }
 
-      function openComposer(target, kind) {
+      function openComposer(target, kind, options = {}) {
         if (!target) return;
         draftTarget = target;
         draftKind = kind || '提问';
-        composerTitle.innerHTML = (draftKind === '批注' ? iconNote : iconQuestion) + '<span>' + draftKind + '</span>';
+        editingAnnotationId = options.editingId || null;
+        const titlePrefix = editingAnnotationId ? '编辑' : '';
+        composerTitle.innerHTML = (draftKind === '批注' ? iconNote : iconQuestion) + '<span>' + titlePrefix + draftKind + '</span>';
         composerExcerpt.textContent = truncate(target.selectedText || target.blockText || '', 84);
-        composerText.value = '';
+        composerText.value = options.initialText || '';
         composerText.placeholder = draftKind === '批注' ? '写下这段内容需要注意或修改的地方' : '写下你想让 Agent 回答的问题';
         positionComposer(target);
         composer.classList.add('show');
@@ -702,6 +705,7 @@ ANNOTATION_JS = r'''
       function closeComposer() {
         composer.classList.remove('show');
         draftTarget = null;
+        editingAnnotationId = null;
       }
 
       function positionComposer(target) {
@@ -719,6 +723,26 @@ ANNOTATION_JS = r'''
         const text = composerText.value.trim();
         if (!text) {
           composerText.focus();
+          return;
+        }
+        if (editingAnnotationId) {
+          const index = annotations.findIndex(item => item.id === editingAnnotationId);
+          if (index < 0) {
+            closeComposer();
+            return;
+          }
+          annotations[index] = {
+            ...annotations[index],
+            kind: draftKind,
+            text,
+            updatedAt: new Date().toISOString()
+          };
+          saveAnnotations();
+          syncAnnotatedState();
+          renderAnnotations();
+          closeComposer();
+          setSidebarOpen(true);
+          showToast('已更新' + draftKind);
           return;
         }
         const item = {
@@ -944,6 +968,7 @@ ANNOTATION_JS = r'''
             <div class="qa-question">${escapeHtml(item.text || item.question || '')}</div>
             <div class="qa-card-actions">
               <button class="qa-mini-btn" type="button" data-qa-card-action="locate">定位</button>
+              <button class="qa-mini-btn" type="button" data-qa-card-action="edit">编辑</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="copy">复制此条</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="delete">删除</button>
             </div>
@@ -951,11 +976,14 @@ ANNOTATION_JS = r'''
         `).join('');
         list.querySelectorAll('[data-qa-card-action]').forEach(btn => {
           btn.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
             const card = event.target.closest('.qa-card');
             const item = annotations.find(x => x.id === card.dataset.qaId);
             if (!item) return;
             const action = event.target.dataset.qaCardAction;
             if (action === 'locate') locateAnnotation(item);
+            if (action === 'edit') openEditAnnotation(item, card);
             if (action === 'copy') copyText(buildSinglePrompt(item));
             if (action === 'delete') {
               annotations = annotations.filter(x => x.id !== item.id);
@@ -964,6 +992,24 @@ ANNOTATION_JS = r'''
               renderAnnotations();
             }
           });
+        });
+      }
+
+      function openEditAnnotation(item, anchor) {
+        const el = main.querySelector('[data-block-id="' + cssEscape(item.blockId) + '"]') || anchor;
+        openComposer({
+          mode: 'edit',
+          element: el,
+          blockId: item.blockId,
+          sectionId: item.sectionId,
+          sectionTitle: item.sectionTitle,
+          selectedText: item.selectedText,
+          blockText: item.blockText,
+          contextBefore: item.contextBefore,
+          contextAfter: item.contextAfter
+        }, item.kind || '提问', {
+          editingId: item.id,
+          initialText: item.text || item.question || ''
         });
       }
 

@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
 
 ## 仓库顶层目录结构
 
@@ -38,8 +38,8 @@ iplugin/
 | `android-mock` | 按 Android mock 文档和测试用例逐 case 执行真机验收，区分多条链路，沉淀截图/录屏/logcat/mockserver 证据并生成验收报告 | "帮我自测这个 Android mock 方案"、"跑完这些用例并补截图证据"、"生成链路分离的验收报告" |
 | `best-of-web` | 仅通过 `/best-of-web` 命令触发；联网搜索并按来源质量分层核验公开资料，再综合成可引用、可执行的回答 | `/best-of-web 结合互联网上最优秀的内容梳理这个主题` |
 | `delegated-search` | 在复杂排查、找全调用链、影响面分析、跨模块实现或高输出验证前先做委派判断，将可独立调查、实现或验证的子任务拆给 explorer/worker/verifier，主线程负责整合与交付 | "帮我找全相关实现"、"这个链路可能在哪里断"、"先拆子 Agent 并行查一下"、"这个复杂任务看看能不能拆给 worker 做" |
-| `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，可按需展示图片/视频证据，复杂技术图可调用 `svg-tech-diagram` 生成内联 SVG，可按需注入离线批注审核模式并导出 Markdown/JSON 提问包和发布版 HTML | "整理成 HTML 报告"、"给这个 HTML 加批注审核模式"、`/html-report` |
-| `svg-tech-diagram` | 为技术长文、HTML 报告、架构说明和代码链路生成朴素清晰的 SVG 技术图，并通过渲染 PNG 后自审迭代保证箭头、文字和布局可读 | "画 SVG 图"、"配张架构图"、"生成技术示意图"、"公众号配图" |
+| `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，代码块离线高亮，可按需展示图片/视频证据，复杂技术图可调用 `svg-tech-diagram` 生成内联 SVG，可按需注入可编辑的离线批注审核模式并导出 Markdown/JSON 提问包和发布版 HTML | "整理成 HTML 报告"、"给这个 HTML 加批注审核模式"、`/html-report` |
+| `svg-tech-diagram` | 为技术长文、HTML 报告、架构说明和代码链路生成朴素清晰的 SVG 技术图，按内容包围盒自适应画布，并通过几何/像素闸门和渲染 PNG 自审保证箭头、文字和布局可读 | "画 SVG 图"、"配张架构图"、"生成技术示意图"、"公众号配图" |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `generate-image` | 生成图片并按需求保存到本地；普通出图优先使用平台内置能力，需要指定接口时走通用 API 客户端，`banana2`、`gptimg2` 等路由词不会进入最终图片 prompt | "生成图片"、"banana2 出图"、"用 gptimg2 保存这张图" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |

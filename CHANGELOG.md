@@ -1,3 +1,16 @@
+## [0.21.9] - 2026-06-29
+### Changed
+- html-report: 离线批注审核模式的右侧栏新增编辑已有批注能力，复用单按钮输入浮层，避免只能删除重加
+- html-report: 校验脚本新增批注编辑能力检查，防止后续生成的审核版 HTML 回退到不可编辑
+- html-report: skill 版本升级到 `0.3.8`
+- svg-tech-diagram: 收紧自适应画布规则，要求按内容包围盒反推 `viewBox` 和背景尺寸，限制无意义留白
+- svg-tech-diagram: 新增几何闸门脚本，检查多箭头终点聚集、连线穿节点和背景 `rect` 覆盖范围
+- svg-tech-diagram: 新增 PNG 像素闸门脚本，检查渲染空白、裁切、四周留白过大和上下留白失衡
+- svg-tech-diagram: 补充多来源汇聚图规则，要求先抽象变量池/汇聚层，再用单箭头指向失败现象或目标
+- svg-tech-diagram: 自审清单新增外边距阈值和非零 `viewBox` 背景覆盖检查，避免继续交付大留白 SVG
+- svg-tech-diagram: skill 版本升级到 `0.1.4`
+- README / manifest: 将批注审核能力描述同步为可编辑，插件版本升级到 `0.21.9`
+
 ## [0.21.8] - 2026-06-26
 ### Changed
 - android-mock: 固化录屏抽帧流程，要求 toast/loading/无 toast 等时序证据生成关键帧或 contact sheet 并在报告中展示

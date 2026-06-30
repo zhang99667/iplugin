@@ -690,7 +690,7 @@ python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>
 python3 skills/html-report/scripts/check_html_report.py <html-file>
 ```
 
-注入后的审核版 HTML 会提供选区 `提问` / `批注` 气泡、单按钮 `提交` 输入浮层、右侧批注栏、Markdown/JSON 提问包导出和 `导出发布版`。Markdown/JSON 会写入原 HTML 的文件名、绝对路径和 `file://` URL。发布版导出会物理剥离批注 UI、批注 JS、批注样式和批注高亮。
+注入后的审核版 HTML 会提供选区 `提问` / `批注` 气泡、单按钮 `提交` 输入浮层、可编辑的右侧批注栏、Markdown/JSON 提问包导出和 `导出发布版`。Markdown/JSON 会写入原 HTML 的文件名、绝对路径和 `file://` URL。发布版导出会物理剥离批注 UI、批注 JS、批注样式和批注高亮。
 
 详细契约见 `references/annotation-mode.md`。
 
