@@ -1,13 +1,13 @@
 ---
 name: generate-image
-version: 0.1.2
-description: 生成图片助手。当用户要求“生成图片”“出图”“画一张图”“根据 prompt 出图”“保存生成图片到本地”，或指定 gpt-image-2、gptimg2、Responses image_generation、banana、banana2、Gemini、Comate 兼容图片接口时触发；按需求选择平台内置出图或本地 API 客户端，自动为输出图片选择语义化文件名，路由词不会进入最终图片 prompt，并在 GENERATE_IMAGE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥。
+version: 0.1.3
+description: 生成图片助手。当用户要求“生成图片”“出图”“画一张图”“根据 prompt 出图”“保存生成图片到本地”，或指定 gptimage、gpt-image-2、gptimg2、Responses image_generation、banana、banana2、Gemini、Comate 兼容图片接口时触发；泛泛出图可用平台内置能力，明确指定接口链路时必须走本地 API 客户端，自动为输出图片选择语义化文件名，路由词不会进入最终图片 prompt，并在 GENERATE_IMAGE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥。
 tags: [generate-image, image, image-generation, api, gpt-image, banana, provider]
 ---
 
 # 生成图片
 
-目标：把图片生成做成通用流程。普通出图优先使用当前平台内置图像能力；需要本地文件、指定接口链路、可复现 CLI 或私有网关时，使用内置 `generate_image_client.py` 客户端完成鉴权、接口选择、输出命名和保存。
+目标：把图片生成做成通用流程。普通出图优先使用当前平台内置图像能力；用户明确指定 `gptimage`、`gpt-image-2`、`gptimg2`、`banana`、`banana2`、`responses`、Comate 等接口链路，或需要本地文件、可复现 CLI、私有网关时，必须使用内置 `generate_image_client.py` 客户端完成鉴权、接口选择、输出命名和保存。
 
 ## 触发边界
 
@@ -15,7 +15,7 @@ tags: [generate-image, image, image-generation, api, gpt-image, banana, provider
 
 - 用户要求“生成图片”“出图”“画一张图”“跑图片 API”“根据这个 prompt 出图”“保存生成图片到本地”。
 - 用户提供图片生成 prompt，希望把输出保存为本地文件，并需要自动判断语义化文件名。
-- 用户明确指定 `gpt-image-2`、`gptimg2`、`Responses image_generation`、`banana`、`banana2`、Gemini 或 Comate 兼容图片接口。
+- 用户明确指定 `gptimage`、`gpt-image-2`、`gptimg2`、`Responses image_generation`、`banana`、`banana2`、Gemini 或 Comate 兼容图片接口。
 
 ### 不适用
 
@@ -30,12 +30,12 @@ tags: [generate-image, image, image-generation, api, gpt-image, banana, provider
    - 把 `generate-image`、`gptimg2`、`gpt-image-2`、`banana`、`banana2`、`responses`、`Comate`、`生成图片`、`出图`、`prompt 是` 等只用于触发或选路的词从最终图片 prompt 中剥离。
    - 例如用户说“用 banana2 生成图片：一只赛博风招财猫”，最终图片 prompt 应是“一只赛博风招财猫”，不是完整原话。
 2. 选择执行方式。
-   - 用户只是泛泛要求出图，且没有要求保存本地文件、指定私有接口或比较链路时，优先使用当前平台内置图像生成能力。
-   - 用户要求保存本地文件、指定 API / backend / base URL，或需要可复现 CLI 命令时，使用内置脚本。
+   - 用户只是泛泛要求出图，且没有要求保存本地文件、指定接口链路、私有接口或比较链路时，优先使用当前平台内置图像生成能力。
+   - 用户明确说 `gptimage`、`gptimg2`、`gpt-image-2`、`banana`、`banana2`、`responses`、Comate、Gemini，或要求保存本地文件、指定 API / backend / base URL、需要可复现 CLI 命令时，使用内置脚本；此时不要改走平台内置图像工具。
    - 需要接口细节时读取 `references/generate-image-apis.md`。
 3. 选择脚本链路。
    - 默认使用 `images`，模型 `gpt-image-2`，结构最直接。
-   - 用户说 `gptimg2`、`gpt-image-2` 或没有指定模型时用 `images`。
+   - 用户说 `gptimage`、`gptimg2`、`gpt-image-2` 或没有指定模型时用 `images`。
    - 用户明确要 Responses 编排或工具链路时用 `responses`，模型 `gpt-5.5`。
    - 用户说 `banana`、`banana2` 或 Gemini 兼容链路时用 `banana`，模型 `gemini-3.1-flash-image-preview`。
    - 用户只是泛泛说“生成图片”时不要先问模型；只有用户要求选择、比较多链路，或明确问“用哪个模型”时才询问。

@@ -1,3 +1,9 @@
+## [0.21.11] - 2026-06-30
+### Fixed
+- generate-image: 明确用户指定 `gptimage` / `gptimg2` / `gpt-image-2` / `banana2` 等接口链路时必须走本地 API 客户端，避免被平台内置出图路径误接走
+- generate-image: skill 版本升级到 `0.1.3`
+- README / manifest: 同步图片生成路由说明，插件版本升级到 `0.21.11`
+
 ## [0.21.10] - 2026-06-30
 ### Changed
 - html-report: 离线批注审核模式的右侧栏新增编辑已有批注能力，复用单按钮输入浮层，避免只能删除重加
