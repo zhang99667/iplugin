@@ -1,3 +1,10 @@
+## [0.21.12] - 2026-07-01
+### Changed
+- generate-image: 客户端新增默认本地私有缓存 `~/.config/iplugin/generate-image-api-key`，首次提供令牌后后续生成可自动复用
+- generate-image: CLI 新增 `--save-api-key-stdin` / `--save-api-key-only`，避免令牌出现在命令行或日志里
+- generate-image: skill 版本升级到 `0.1.4`
+- README / manifest: 同步 API key 缓存说明，插件版本升级到 `0.21.12`
+
 ## [0.21.11] - 2026-06-30
 ### Fixed
 - generate-image: 明确用户指定 `gptimage` / `gptimg2` / `gpt-image-2` / `banana2` 等接口链路时必须走本地 API 客户端，避免被平台内置出图路径误接走

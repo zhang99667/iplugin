@@ -51,6 +51,12 @@ class GenerateImageAuthError(GenerateImageError):
     pass
 
 
+def _default_api_key_file() -> Path:
+    config_home = os.environ.get("XDG_CONFIG_HOME", "").strip()
+    base_dir = Path(config_home).expanduser() if config_home else Path.home() / ".config"
+    return base_dir / "iplugin" / "generate-image-api-key"
+
+
 class GenerateImageClient:
     def __init__(self, api_key: str, base_url: str = DEFAULT_BASE_URL, timeout: int = 180):
         if not api_key:
@@ -249,6 +255,37 @@ def _unique_path(path: Path) -> Path:
     raise GenerateImageError(f"could not find unused output path for {path}")
 
 
+def _read_key_file(path: Path, required: bool) -> str:
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        if required:
+            raise GenerateImageAuthError(f"could not read API key file: {path}") from None
+        return ""
+    except OSError as exc:
+        raise GenerateImageAuthError(f"could not read API key file: {path}") from exc
+
+
+def _write_api_key_file(path: Path, api_key: str) -> None:
+    key = api_key.strip()
+    if not key:
+        raise GenerateImageAuthError("empty API key from stdin")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(key + "\n")
+        os.chmod(path, 0o600)
+    except OSError as exc:
+        raise GenerateImageAuthError(f"could not save API key file: {path}") from exc
+
+
+def _api_key_file_path(api_key_file: str | None) -> Path:
+    if api_key_file:
+        return Path(api_key_file).expanduser()
+    return _default_api_key_file()
+
+
 def _read_api_key(api_key_file: str | None) -> str:
     for env_name in ("GENERATE_IMAGE_API_KEY", "COMATE_API_KEY"):
         env_key = os.environ.get(env_name, "").strip()
@@ -260,14 +297,10 @@ def _read_api_key(api_key_file: str | None) -> str:
         or os.environ.get("GENERATE_IMAGE_API_KEY_FILE", "").strip()
         or os.environ.get("COMATE_API_KEY_FILE", "").strip()
     )
-    if not key_file:
-        return ""
+    if key_file:
+        return _read_key_file(Path(key_file).expanduser(), required=True)
 
-    path = Path(key_file).expanduser()
-    try:
-        return path.read_text(encoding="utf-8").strip()
-    except OSError as exc:
-        raise GenerateImageAuthError(f"could not read API key file: {path}") from exc
+    return _read_key_file(_default_api_key_file(), required=False)
 
 
 def _generate_image(client: GenerateImageClient, backend: str, prompt: str, model: str, size: str) -> GeneratedImage:
@@ -281,7 +314,7 @@ def _generate_image(client: GenerateImageClient, backend: str, prompt: str, mode
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate images through provider-compatible APIs.")
     parser.add_argument("backend", nargs="?", default="images")
-    parser.add_argument("--prompt", required=True)
+    parser.add_argument("--prompt")
     parser.add_argument("--out", help="Full output path. Extension is inferred from MIME when omitted.")
     parser.add_argument("--out-dir", default=".", help="Directory used when --out is omitted.")
     parser.add_argument("--stem", help="Semantic output basename without extension.")
@@ -290,6 +323,8 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--base-url", default=os.environ.get("GENERATE_IMAGE_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--api-key-file", help="Path to a local file that contains the image API key.")
+    parser.add_argument("--save-api-key-stdin", action="store_true", help="Read an API key from stdin and save it to the local key file.")
+    parser.add_argument("--save-api-key-only", action="store_true", help="Save the stdin API key and exit without generating an image.")
     parser.add_argument("--raw-prompt", action="store_true", help="Send --prompt exactly as provided.")
     args = parser.parse_args()
 
@@ -297,10 +332,23 @@ def main() -> int:
         backend = BACKEND_ALIASES.get(args.backend.lower(), args.backend.lower())
         if backend not in DEFAULT_MODELS:
             parser.error(f"unknown backend: {args.backend}")
+        if args.save_api_key_only and not args.save_api_key_stdin:
+            parser.error("--save-api-key-only requires --save-api-key-stdin")
+        if not args.prompt and not args.save_api_key_only:
+            parser.error("--prompt is required unless --save-api-key-only is set")
+
+        if args.save_api_key_stdin:
+            saved_path = _api_key_file_path(args.api_key_file)
+            _write_api_key_file(saved_path, sys.stdin.read())
+            if args.save_api_key_only:
+                print(f"api_key_saved: {saved_path}")
+                return 0
 
         api_key = _read_api_key(args.api_key_file)
         if not api_key:
-            raise GenerateImageAuthError("GENERATE_IMAGE_API_KEY or GENERATE_IMAGE_API_KEY_FILE is required")
+            raise GenerateImageAuthError(
+                "GENERATE_IMAGE_API_KEY, GENERATE_IMAGE_API_KEY_FILE, or cached API key file is required"
+            )
 
         prompt = args.prompt if args.raw_prompt else _clean_prompt(args.prompt)
         model = args.model or DEFAULT_MODELS[backend]

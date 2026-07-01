@@ -1,7 +1,7 @@
 ---
 name: generate-image
-version: 0.1.3
-description: 生成图片助手。当用户要求“生成图片”“出图”“画一张图”“根据 prompt 出图”“保存生成图片到本地”，或指定 gptimage、gpt-image-2、gptimg2、Responses image_generation、banana、banana2、Gemini、Comate 兼容图片接口时触发；泛泛出图可用平台内置能力，明确指定接口链路时必须走本地 API 客户端，自动为输出图片选择语义化文件名，路由词不会进入最终图片 prompt，并在 GENERATE_IMAGE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥。
+version: 0.1.4
+description: 生成图片助手。当用户要求“生成图片”“出图”“画一张图”“根据 prompt 出图”“保存生成图片到本地”，或指定 gptimage、gpt-image-2、gptimg2、Responses image_generation、banana、banana2、Gemini、Comate 兼容图片接口时触发；泛泛出图可用平台内置能力，明确指定接口链路时必须走本地 API 客户端，自动为输出图片选择语义化文件名，路由词不会进入最终图片 prompt，并在 GENERATE_IMAGE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥，首次提供后保存到本地私有缓存供后续复用。
 tags: [generate-image, image, image-generation, api, gpt-image, banana, provider]
 ---
 
@@ -62,18 +62,20 @@ python3 skills/generate-image/scripts/generate_image_client.py images \
 
 ## API Key 处理
 
-- 本地 API 客户端优先从 `GENERATE_IMAGE_API_KEY` 或 `GENERATE_IMAGE_API_KEY_FILE` 读取密钥；兼容读取旧的 `COMATE_API_KEY` / `COMATE_API_KEY_FILE`，但新流程不要再引导用户设置旧变量。
+- 本地 API 客户端优先从 `GENERATE_IMAGE_API_KEY`、`GENERATE_IMAGE_API_KEY_FILE` 或默认缓存 `~/.config/iplugin/generate-image-api-key` 读取密钥；兼容读取旧的 `COMATE_API_KEY` / `COMATE_API_KEY_FILE`，但新流程不要再引导用户设置旧变量。
 - 需要新密钥时，提示用户打开 `https://oneapi-comate.baidu-int.com/token`，复制自己的令牌。
-- 给用户一个方便流程：打开 token 页面 -> 复制令牌 -> 选择下面任一方式提供给 agent -> agent 重试生成。
-- 不要把 key 写入仓库、prompt、README、版本记录、命令行参数或最终回复；如果用户选择直接粘贴到聊天，只用于当前任务，不复述、不保存、不提交。
+- 给用户一个方便流程：打开 token 页面 -> 复制令牌 -> 选择下面任一方式提供给 agent -> agent 保存或读取密钥 -> agent 重试生成。
+- 不要把 key 写入仓库、prompt、README、版本记录、命令行参数或最终回复。
+- 如果用户选择直接粘贴令牌，优先通过脚本的 `--save-api-key-stdin` 从 stdin 保存到默认缓存或用户指定的 `--api-key-file`，文件权限由脚本设置为 `0600`；后续生成直接复用缓存，不再询问。
 - 运行前需要判断 key 是否存在时，不要用会打印密钥的命令；只做存在性检查。
 - 如果 key 缺失，或脚本返回 `auth_error` / HTTP 401 / HTTP 403，必须使用 `ask-user-question` 的结构化询问方式处理：
-  - 推荐选项：`直接粘贴令牌 (Recommended)`：用户从 token 页面复制后直接发到聊天里，agent 仅在当前任务中使用，不复述、不落盘。
+  - 推荐选项：`直接粘贴并保存 (Recommended)`：用户从 token 页面复制后直接发到聊天里，agent 通过 stdin 保存到本地私有缓存，不复述、不写命令行。
   - 备选：`使用 key 文件`：用户提供只含密钥的本地文件路径，通过 `GENERATE_IMAGE_API_KEY_FILE` 或 `--api-key-file` 读取。
   - 备选：`我先设置环境变量`：用户在自己的 shell 设置 `GENERATE_IMAGE_API_KEY` 后重试。
+- 如果缓存 key 过期或返回 401 / 403，重新询问并用新的粘贴令牌覆盖缓存。
 - 如果当前环境没有结构化询问工具，按 `ask-user-question` skill 的降级格式询问，不要继续猜测或伪造 key。
 
 ## Progressive Disclosure
 
 - `references/generate-image-apis.md`：三条接口链路、默认模型、请求结构、返回 base64 路径和使用建议。
-- `scripts/generate_image_client.py`：标准库图片生成客户端和 CLI，支持自动扩展名、语义化输出名、key 文件读取和认证错误识别。
+- `scripts/generate_image_client.py`：标准库图片生成客户端和 CLI，支持自动扩展名、语义化输出名、默认 key 缓存、stdin 保存和认证错误识别。

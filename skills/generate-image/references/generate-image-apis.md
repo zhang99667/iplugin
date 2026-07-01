@@ -9,7 +9,15 @@ Authorization: Bearer <GENERATE_IMAGE_API_KEY>
 Content-Type: application/json
 ```
 
-脚本优先读取 `GENERATE_IMAGE_API_KEY` / `GENERATE_IMAGE_API_KEY_FILE`。为兼容旧环境，也会读取 `COMATE_API_KEY` / `COMATE_API_KEY_FILE`，但新文档和新流程不要再引导用户设置旧变量。
+脚本优先读取 `GENERATE_IMAGE_API_KEY` / `GENERATE_IMAGE_API_KEY_FILE`，其次读取默认缓存 `~/.config/iplugin/generate-image-api-key`。为兼容旧环境，也会读取 `COMATE_API_KEY` / `COMATE_API_KEY_FILE`，但新文档和新流程不要再引导用户设置旧变量。
+
+首次拿到用户粘贴的令牌时，使用 `--save-api-key-stdin` 从 stdin 保存，避免令牌出现在命令行或日志里；脚本会创建本地私有缓存并把文件权限设置为 `0600`。只保存不生成时可加 `--save-api-key-only`：
+
+```bash
+python3 skills/generate-image/scripts/generate_image_client.py images \
+  --save-api-key-stdin \
+  --save-api-key-only
+```
 
 ## 链路对比
 
@@ -58,6 +66,7 @@ response_path: <base64 field path>
 ## 错误处理
 
 - 缺少 key、HTTP 401、HTTP 403：视为认证错误，使用 `ask-user-question` 询问用户设置或刷新 key。
+- 缓存 key 过期时，重新询问用户复制令牌，并用 `--save-api-key-stdin` 覆盖默认缓存。
 - HTTP 502 / upstream overload：原 prompt 不变重试一次。
 - 响应里找不到图片 base64：报告 backend、模型和错误摘要，必要时切换到 `images` 链路复测。
 - 不要把 token 打印到日志里；错误摘要只保留 HTTP 状态和服务端错误信息。
