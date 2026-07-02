@@ -1,13 +1,13 @@
 ---
 name: generate-image
-version: 0.1.4
-description: 生成图片助手。当用户要求“生成图片”“出图”“画一张图”“根据 prompt 出图”“保存生成图片到本地”，或指定 gptimage、gpt-image-2、gptimg2、Responses image_generation、banana、banana2、Gemini、Comate 兼容图片接口时触发；泛泛出图可用平台内置能力，明确指定接口链路时必须走本地 API 客户端，自动为输出图片选择语义化文件名，路由词不会进入最终图片 prompt，并在 GENERATE_IMAGE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥，首次提供后保存到本地私有缓存供后续复用。
+version: 0.1.5
+description: 生成图片助手。当用户要求“生成图片”“出图”“画一张图”“根据 prompt 出图”“保存生成图片到本地”，或指定 gptimage、gpt-image-2、gptimg2、Responses image_generation、banana、banana2、Gemini、Comate 兼容图片接口时触发；泛泛出图可用平台内置能力，明确指定接口链路时必须走本地 API 客户端，默认并发生成 3 张候选图并视觉筛选只保留最佳图，自动为输出图片选择语义化文件名，路由词不会进入最终图片 prompt，并在 GENERATE_IMAGE_API_KEY 缺失或过期时使用 ask-user-question 询问用户提供或刷新密钥，首次提供后保存到本地私有缓存供后续复用。
 tags: [generate-image, image, image-generation, api, gpt-image, banana, provider]
 ---
 
 # 生成图片
 
-目标：把图片生成做成通用流程。普通出图优先使用当前平台内置图像能力；用户明确指定 `gptimage`、`gpt-image-2`、`gptimg2`、`banana`、`banana2`、`responses`、Comate 等接口链路，或需要本地文件、可复现 CLI、私有网关时，必须使用内置 `generate_image_client.py` 客户端完成鉴权、接口选择、输出命名和保存。
+目标：把图片生成做成通用流程。普通出图优先使用当前平台内置图像能力；用户明确指定 `gptimage`、`gpt-image-2`、`gptimg2`、`banana`、`banana2`、`responses`、Comate 等接口链路，或需要本地文件、可复现 CLI、私有网关时，必须使用内置 `generate_image_client.py` 客户端完成鉴权、接口选择、三候选并发生成、输出命名和最佳图留存。
 
 ## 触发边界
 
@@ -46,18 +46,22 @@ tags: [generate-image, image, image-generation, api, gpt-image, banana, provider
    - 优先把语义名传给脚本的 `--stem`，让脚本自动补扩展名和避让重名文件。
 5. 执行本地 API 生成。
    - 使用内置脚本：`skills/generate-image/scripts/generate_image_client.py`。
+   - 默认并发生成 3 张候选图；只有用户明确要求“只出一张”或调试接口时才改为 `--candidates 1`。
    - 默认命令形态：
 
 ```bash
 python3 skills/generate-image/scripts/generate_image_client.py images \
   --prompt "写实风格，一位程序员坐在电脑前吃泡面，不要文字和水印" \
   --stem "程序员夜晚泡面" \
+  --candidates 3 \
   --out-dir ./outputs
 ```
 
 6. 校验结果。
-   - 命令输出必须包含 `saved:`、`mime:`、`bytes:` 和 `response_path:`。
-   - 如果生成图片用于交付，打开或读取图片确认文件存在、大小非 0、格式正确。
+   - 命令输出必须包含每张候选图的 `candidate:`、`saved:`、`mime:`、`bytes:` 和 `response_path:`；单图模式没有 `candidate:`。
+   - 打开或读取 3 张候选图，确认文件存在、大小非 0、格式正确。
+   - 视觉比较候选图的主体完整度、构图、细节、文字/水印问题和 prompt 符合度；不要用字节大小、返回顺序等伪指标替代视觉判断。
+   - 只保留最佳候选图：把最佳候选按语义化最终文件名留在 `outputs/`，删除另外两张候选图；如果需要向用户说明选择，简短说明保留哪一张以及原因。
    - 如果接口返回 502 或上游过载，原 prompt 不变重试一次；仍失败时报告错误摘要。
 
 ## API Key 处理

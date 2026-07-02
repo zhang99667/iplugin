@@ -11,6 +11,7 @@ import os
 import re
 import sys
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -45,12 +46,28 @@ class GeneratedImage:
     raw: dict[str, Any]
 
 
+@dataclass
+class GeneratedCandidate:
+    """保存一次并发候选请求的序号和生成结果，便于后续人工视觉筛选。"""
+
+    index: int
+    image: GeneratedImage
+
+
 class GenerateImageError(RuntimeError):
     """表示非鉴权类图片生成失败，便于 CLI 统一输出错误。"""
 
 
 class GenerateImageAuthError(GenerateImageError):
     """表示 API key 缺失、无效或过期，调用方可据此触发刷新流程。"""
+
+
+@dataclass
+class CandidateFailure:
+    """保存单个候选请求的失败信息，避免一个请求失败时丢失其他成功候选。"""
+
+    index: int
+    error: GenerateImageError
 
 
 def _default_api_key_file() -> Path:
@@ -334,6 +351,89 @@ def _generate_image(client: GenerateImageClient, backend: str, prompt: str, mode
     return client.banana_generate_content(prompt=prompt, model=model)
 
 
+def _generate_candidate(
+    index: int,
+    api_key: str,
+    base_url: str,
+    timeout: int,
+    backend: str,
+    prompt: str,
+    model: str,
+    size: str,
+) -> GeneratedCandidate:
+    """为每个候选创建独立客户端实例，隔离并发请求的超时和异常。"""
+    client = GenerateImageClient(api_key=api_key, base_url=base_url, timeout=timeout)
+    return GeneratedCandidate(index=index, image=_generate_image(client, backend, prompt, model, size))
+
+
+def _generate_candidates(
+    api_key: str,
+    base_url: str,
+    timeout: int,
+    backend: str,
+    prompt: str,
+    model: str,
+    size: str,
+    count: int,
+) -> tuple[list[GeneratedCandidate], list[CandidateFailure]]:
+    """并发生成候选图；只要有成功候选就继续交给视觉筛选。"""
+    if count < 1:
+        raise GenerateImageError("--candidates must be at least 1")
+    if count == 1:
+        try:
+            return [_generate_candidate(1, api_key, base_url, timeout, backend, prompt, model, size)], []
+        except GenerateImageError as exc:
+            return [], [CandidateFailure(index=1, error=exc)]
+
+    candidates: list[GeneratedCandidate] = []
+    failures: list[CandidateFailure] = []
+    with ThreadPoolExecutor(max_workers=count) as executor:
+        futures = {
+            executor.submit(_generate_candidate, index, api_key, base_url, timeout, backend, prompt, model, size): index
+            for index in range(1, count + 1)
+        }
+        for future in as_completed(futures):
+            index = futures[future]
+            try:
+                candidates.append(future.result())
+            except GenerateImageError as exc:
+                failures.append(CandidateFailure(index=index, error=exc))
+    return sorted(candidates, key=lambda item: item.index), sorted(failures, key=lambda item: item.index)
+
+
+def _output_path_for_candidate(args: argparse.Namespace, prompt: str, image: GeneratedImage, index: int, count: int) -> Path:
+    """根据候选序号生成输出路径，多候选时加后缀防止互相覆盖。"""
+    if args.out:
+        out_path = _path_with_extension(Path(args.out).expanduser(), image.mime_type)
+        if count == 1:
+            return out_path
+        return out_path.with_name(f"{out_path.stem}-candidate-{index}{out_path.suffix}")
+
+    stem = _safe_stem(args.stem or prompt)
+    suffix = _extension_for_mime(image.mime_type)
+    filename = f"{stem}{suffix}" if count == 1 else f"{stem}-candidate-{index}{suffix}"
+    return Path(args.out_dir).expanduser() / filename
+
+
+def _write_candidate(args: argparse.Namespace, prompt: str, candidate: GeneratedCandidate, count: int) -> Path:
+    """把候选图写入磁盘并避让重名文件，保证每个并发结果都有可检查路径。"""
+    out_path = _unique_path(_output_path_for_candidate(args, prompt, candidate.image, candidate.index, count))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_bytes(candidate.image.image_bytes)
+    return out_path
+
+
+def _raise_if_no_candidates(failures: list[CandidateFailure]) -> None:
+    """所有候选失败时保留鉴权错误语义，否则汇总普通生成错误。"""
+    if not failures:
+        raise GenerateImageError("no image candidates were generated")
+    auth_failure = next((item for item in failures if isinstance(item.error, GenerateImageAuthError)), None)
+    if auth_failure is not None:
+        raise GenerateImageAuthError(str(auth_failure.error))
+    details = "; ".join(f"candidate {item.index}: {item.error}" for item in failures)
+    raise GenerateImageError(details)
+
+
 def main() -> int:
     """CLI 入口：解析参数、处理密钥、生成图片并写入磁盘。"""
     parser = argparse.ArgumentParser(description="Generate images through provider-compatible APIs.")
@@ -344,6 +444,10 @@ def main() -> int:
     parser.add_argument("--stem", help="Semantic output basename without extension.")
     parser.add_argument("--model")
     parser.add_argument("--size", default="1024x1024")
+    parser.add_argument(
+        "--candidates", type=int, default=1,
+        help="Number of parallel image candidates to generate. Use 3 for visual selection.",
+    )
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--base-url", default=os.environ.get("GENERATE_IMAGE_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--api-key-file", help="Path to a local file that contains the image API key.")
@@ -362,6 +466,8 @@ def main() -> int:
         backend = BACKEND_ALIASES.get(args.backend.lower(), args.backend.lower())
         if backend not in DEFAULT_MODELS:
             parser.error(f"unknown backend: {args.backend}")
+        if args.candidates < 1:
+            parser.error("--candidates must be at least 1")
         if args.save_api_key_only and not args.save_api_key_stdin:
             parser.error("--save-api-key-only requires --save-api-key-stdin")
         if not args.prompt and not args.save_api_key_only:
@@ -382,22 +488,31 @@ def main() -> int:
 
         prompt = args.prompt if args.raw_prompt else _clean_prompt(args.prompt)
         model = args.model or DEFAULT_MODELS[backend]
-        client = GenerateImageClient(api_key=api_key, base_url=args.base_url, timeout=args.timeout)
-        image = _generate_image(client, backend, prompt, model, args.size)
+        candidates, failures = _generate_candidates(
+            api_key=api_key,
+            base_url=args.base_url,
+            timeout=args.timeout,
+            backend=backend,
+            prompt=prompt,
+            model=model,
+            size=args.size,
+            count=args.candidates,
+        )
+        if not candidates:
+            _raise_if_no_candidates(failures)
 
-        if args.out:
-            out_path = _path_with_extension(Path(args.out).expanduser(), image.mime_type)
-        else:
-            stem = _safe_stem(args.stem or prompt)
-            out_path = Path(args.out_dir).expanduser() / f"{stem}{_extension_for_mime(image.mime_type)}"
-        out_path = _unique_path(out_path)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_bytes(image.image_bytes)
-
-        print(f"saved: {out_path}")
-        print(f"mime: {image.mime_type}")
-        print(f"bytes: {len(image.image_bytes)}")
-        print(f"response_path: {image.response_path}")
+        for candidate in candidates:
+            out_path = _write_candidate(args, prompt, candidate, args.candidates)
+            if args.candidates > 1:
+                print(f"candidate: {candidate.index}")
+            print(f"saved: {out_path}")
+            print(f"mime: {candidate.image.mime_type}")
+            print(f"bytes: {len(candidate.image.image_bytes)}")
+            print(f"response_path: {candidate.image.response_path}")
+        for failure in failures:
+            print(f"candidate_failed: {failure.index}: {failure.error}", file=sys.stderr)
+        if args.candidates > 1:
+            print("selection_required: inspect candidates visually and keep the best image")
         return 0
     except GenerateImageAuthError as exc:
         print(f"auth_error: {exc}", file=sys.stderr)

@@ -33,6 +33,7 @@ python3 skills/generate-image/scripts/generate_image_client.py images \
 python3 skills/generate-image/scripts/generate_image_client.py images \
   --prompt "写实风格，一位程序员坐在电脑前吃泡面，不要文字和水印" \
   --stem "程序员夜晚泡面" \
+  --candidates 3 \
   --out-dir ./outputs
 ```
 
@@ -50,6 +51,8 @@ python3 skills/generate-image/scripts/generate_image_client.py banana \
 
 CLI 也接受常用别名：`gptimg2` / `gpt-image-2` 等同于 `images`，`banana2` 等同于 `banana`。默认会从 `--prompt` 开头或结尾剥离 `generate-image`、`banana2`、`gptimg2`、`Comate`、`生成图片`、`出图`、`prompt 是` 等路由词；只有确实要把这些词画进图片时，才加 `--raw-prompt`。
 
+默认 skill 流程应传 `--candidates 3`，脚本会并行发起 3 个独立请求并输出 `candidate: 1/2/3` 对应的文件路径。执行者需要视觉检查三张候选图，只保留主体完整、构图和细节最好、且最符合 prompt 的一张；不要用文件大小或返回顺序当作质量判断。用户明确要求只出一张或调试接口时，才传 `--candidates 1`。
+
 ## 输出
 
 脚本会打印：
@@ -62,6 +65,8 @@ response_path: <base64 field path>
 ```
 
 如果 `--out` 没有扩展名，脚本按 MIME 自动补 `.png` / `.jpg` 等扩展名；如果未提供 `--out`，脚本使用 `--stem` 或 prompt 生成语义化文件名，并在重名时追加数字后缀。
+
+多候选模式会自动追加 `-candidate-<序号>` 后缀，避免并发结果互相覆盖；选出最佳图后，应将最佳候选改为最终语义文件名并删除未选候选。
 
 ## 错误处理
 
