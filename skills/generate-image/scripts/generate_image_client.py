@@ -37,6 +37,8 @@ AUTH_STATUS_CODES = {401, 403}
 
 @dataclass
 class GeneratedImage:
+    """保存后端返回的已解码图片及其响应定位信息。"""
+
     image_bytes: bytes
     mime_type: str
     response_path: str
@@ -44,21 +46,25 @@ class GeneratedImage:
 
 
 class GenerateImageError(RuntimeError):
-    pass
+    """表示非鉴权类图片生成失败，便于 CLI 统一输出错误。"""
 
 
 class GenerateImageAuthError(GenerateImageError):
-    pass
+    """表示 API key 缺失、无效或过期，调用方可据此触发刷新流程。"""
 
 
 def _default_api_key_file() -> Path:
+    """返回默认 API key 缓存路径，避免密钥落入仓库工作区。"""
     config_home = os.environ.get("XDG_CONFIG_HOME", "").strip()
     base_dir = Path(config_home).expanduser() if config_home else Path.home() / ".config"
     return base_dir / "iplugin" / "generate-image-api-key"
 
 
 class GenerateImageClient:
+    """封装兼容 OpenAI / Gemini 风格的图片生成接口。"""
+
     def __init__(self, api_key: str, base_url: str = DEFAULT_BASE_URL, timeout: int = 180):
+        """初始化客户端，并统一规范 base URL，避免后续拼接路径出错。"""
         if not api_key:
             raise ValueError("api_key is required")
         self.api_key = api_key
@@ -72,6 +78,7 @@ class GenerateImageClient:
         size: str = "1024x1024",
         n: int = 1,
     ) -> GeneratedImage:
+        """通过 /v1/images/generations 链路生成图片。"""
         payload = {
             "model": model,
             "prompt": prompt,
@@ -91,6 +98,7 @@ class GenerateImageClient:
         prompt: str,
         model: str = DEFAULT_MODELS["responses"],
     ) -> GeneratedImage:
+        """通过 Responses 的 image_generation tool 链路生成图片。"""
         payload = {
             "model": model,
             "input": prompt,
@@ -115,6 +123,7 @@ class GenerateImageClient:
         prompt: str,
         model: str = DEFAULT_MODELS["banana"],
     ) -> GeneratedImage:
+        """通过 Gemini 兼容的 generateContent 链路生成图片。"""
         payload = {
             "contents": [
                 {
@@ -133,6 +142,7 @@ class GenerateImageClient:
         raise GenerateImageError("missing inlineData.data image in generateContent response")
 
     def _post_json(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """发送 JSON 请求并返回对象响应，同时把鉴权错误分流出来。"""
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         req = request.Request(self.base_url + path, data=body, method="POST")
         req.add_header("Authorization", "Bearer " + self.api_key)
@@ -161,6 +171,7 @@ class GenerateImageClient:
 
     @staticmethod
     def _decode_image(b64: str, mime_type: str, response_path: str, raw: dict[str, Any]) -> GeneratedImage:
+        """把 base64 图片解码为 GeneratedImage，保留原始响应用于排查。"""
         return GeneratedImage(
             image_bytes=base64.b64decode(b64),
             mime_type=mime_type,
@@ -170,6 +181,7 @@ class GenerateImageClient:
 
 
 def _iter_inline_images(value: Any, path: str = "$"):
+    """递归扫描 Gemini 风格响应，产出内联图片的位置、类型和数据。"""
     if isinstance(value, dict):
         inline = value.get("inlineData") or value.get("inline_data")
         if isinstance(inline, dict):
@@ -185,17 +197,20 @@ def _iter_inline_images(value: Any, path: str = "$"):
 
 
 def _extension_for_mime(mime_type: str) -> str:
+    """根据 MIME 类型推导文件后缀，保护没有显式扩展名的输出路径。"""
     guessed = mimetypes.guess_extension(mime_type) or ".bin"
     return ".jpg" if guessed == ".jpe" else guessed
 
 
 def _path_with_extension(path: Path, mime_type: str) -> Path:
+    """保留用户显式后缀；未提供时按 MIME 类型自动补齐。"""
     if path.suffix:
         return path
     return path.with_suffix(_extension_for_mime(mime_type))
 
 
 def _clean_prompt(prompt: str) -> str:
+    """剥离路由词和口语化前后缀，避免把工具选择词送进图片 prompt。"""
     cleaned = unicodedata.normalize("NFKC", prompt).strip()
     route_words = (
         r"generate-image|generate_image|comate|oneapi-comate|gptimg2|gpt-image-2|gpt_image_2|gptimage2|"
@@ -218,9 +233,11 @@ def _clean_prompt(prompt: str) -> str:
 
 
 def _safe_stem(text: str, fallback: str = "generate-image") -> str:
+    """从 prompt 中生成安全文件名主干，兼顾中文语义和路径长度。"""
     normalized = _clean_prompt(text).lower()
     normalized = re.sub(
-        r"(不要文字|无文字|不要水印|无水印|no text|no watermark|写实风格|高清|细节丰富|generate-image|generate_image|comate|gptimg2|gpt-image-2|banana2?)",
+        r"(不要文字|无文字|不要水印|无水印|no text|no watermark|写实风格|高清|细节丰富"
+        r"|generate-image|generate_image|comate|gptimg2|gpt-image-2|banana2?)",
         " ",
         normalized,
         flags=re.IGNORECASE,
@@ -243,6 +260,7 @@ def _safe_stem(text: str, fallback: str = "generate-image") -> str:
 
 
 def _unique_path(path: Path) -> Path:
+    """输出路径已存在时追加序号，避免覆盖用户已有图片。"""
     if not path.exists():
         return path
     stem = path.stem
@@ -256,6 +274,7 @@ def _unique_path(path: Path) -> Path:
 
 
 def _read_key_file(path: Path, required: bool) -> str:
+    """读取本地 API key 文件；必需文件缺失时转为鉴权错误。"""
     try:
         return path.read_text(encoding="utf-8").strip()
     except FileNotFoundError:
@@ -267,6 +286,7 @@ def _read_key_file(path: Path, required: bool) -> str:
 
 
 def _write_api_key_file(path: Path, api_key: str) -> None:
+    """以 0600 权限保存 API key，降低令牌被其他本地用户读取的风险。"""
     key = api_key.strip()
     if not key:
         raise GenerateImageAuthError("empty API key from stdin")
@@ -281,12 +301,14 @@ def _write_api_key_file(path: Path, api_key: str) -> None:
 
 
 def _api_key_file_path(api_key_file: str | None) -> Path:
+    """解析 API key 文件路径，显式参数优先于默认缓存位置。"""
     if api_key_file:
         return Path(api_key_file).expanduser()
     return _default_api_key_file()
 
 
 def _read_api_key(api_key_file: str | None) -> str:
+    """按环境变量、显式文件、默认缓存的优先级读取 API key。"""
     for env_name in ("GENERATE_IMAGE_API_KEY", "COMATE_API_KEY"):
         env_key = os.environ.get(env_name, "").strip()
         if env_key:
@@ -304,6 +326,7 @@ def _read_api_key(api_key_file: str | None) -> str:
 
 
 def _generate_image(client: GenerateImageClient, backend: str, prompt: str, model: str, size: str) -> GeneratedImage:
+    """根据规范化后的 backend 分发到对应生成链路。"""
     if backend == "images":
         return client.images_generations(prompt=prompt, model=model, size=size)
     if backend == "responses":
@@ -312,6 +335,7 @@ def _generate_image(client: GenerateImageClient, backend: str, prompt: str, mode
 
 
 def main() -> int:
+    """CLI 入口：解析参数、处理密钥、生成图片并写入磁盘。"""
     parser = argparse.ArgumentParser(description="Generate images through provider-compatible APIs.")
     parser.add_argument("backend", nargs="?", default="images")
     parser.add_argument("--prompt")
@@ -323,8 +347,14 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--base-url", default=os.environ.get("GENERATE_IMAGE_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--api-key-file", help="Path to a local file that contains the image API key.")
-    parser.add_argument("--save-api-key-stdin", action="store_true", help="Read an API key from stdin and save it to the local key file.")
-    parser.add_argument("--save-api-key-only", action="store_true", help="Save the stdin API key and exit without generating an image.")
+    parser.add_argument(
+        "--save-api-key-stdin", action="store_true",
+        help="Read an API key from stdin and save it to the local key file.",
+    )
+    parser.add_argument(
+        "--save-api-key-only", action="store_true",
+        help="Save the stdin API key and exit without generating an image.",
+    )
     parser.add_argument("--raw-prompt", action="store_true", help="Send --prompt exactly as provided.")
     args = parser.parse_args()
 
