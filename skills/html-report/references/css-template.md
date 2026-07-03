@@ -542,13 +542,15 @@
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
+python3 skills/html-report/scripts/highlight_code.py --lang objc view_controller.m
+python3 skills/html-report/scripts/highlight_code.py --lang swift view_model.swift
 python3 skills/html-report/scripts/highlight_code.py --lang sql query.sql
 python3 skills/html-report/scripts/highlight_code.py --lang json payload.json
 python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin snippet.kt
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
-脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。支持 `kotlin`、`java`、`js`、`python`、`xml`、`sql`、`json`、`yaml`、`bash`、`diff`、`text`，常见后缀/别名会映射到这些语言。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`。真实 unified diff 不使用普通 `.code-wrap language-diff`，必须走 `--diff-view`。
+脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用上面的 `tok-*` class 做基础语法高亮。支持 `kotlin`、`java`、`objc`、`swift`、`c`、`cpp`、`go`、`rust`、`js`、`ts`、`python`、`ruby`、`php`、`xml`、`sql`、`json`、`yaml`、`toml`、`ini`、`markdown`、`bash`、`diff`、`text`，常见后缀/别名会映射到这些语言。Objective-C 可用 `objc`、`objective-c`、`.m`、`.mm`、`.h`，TypeScript 可用 `ts` / `typescript` / `.tsx`。常用映射：关键字 `tok-key`，字符串 `tok-str`，数字 `tok-num`，注释 `tok-cmt`，函数名 `tok-fn`，变量名 `tok-var`，类型名 `tok-type`。真实 unified diff 不使用普通 `.code-wrap language-diff`，必须走 `--diff-view`。
 
 需要更准确语法覆盖时，使用 `--engine auto` 尝试本机 Pygments 静态预渲染；如果 Pygments 不可用，脚本会回退到 `builtin`。最终报告仍然只包含静态 HTML/CSS/JS，不引入 highlight.js、Prism、Shiki CDN 或外部文件。
 

@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.3.8
+version: 0.3.9
 tags:
   - report
   - html
@@ -22,7 +22,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `references/css-template.md`：CSS 模板、交互组件样式、可整体收起的浮动目录侧栏、复制按钮 JS 和 HTML 骨架。只有开始写 HTML 文件时再读取。
 - `references/annotation-mode.md`：当用户要求离线批注、审核模式、Agent 提问包、HTML 内选中文本提问/批注或发布版导出时读取。
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
-- `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
+- `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、Objective-C / Swift / C-family 等语言片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
 - `scripts/inject_annotation_mode.py`：当需要审核批注模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线批注 UI、Markdown/JSON 提问包导出和“导出发布版”能力；不要手写批注 JS。
 - `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
 

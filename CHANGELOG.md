@@ -1,3 +1,10 @@
+## [0.21.16] - 2026-07-03
+### Changed
+- html-report: `highlight_code.py` 新增 Objective-C、Swift、C/C++、Go、Rust、TypeScript、Ruby、PHP、Markdown、TOML、INI 等语言和常见后缀/别名支持
+- html-report: `check_html_report.py` 同步扩展代码块语言白名单，避免新增语言生成后在报告校验阶段被误报
+- html-report: skill 版本升级到 `0.3.9`
+- README / manifest: 同步多语言离线高亮说明，插件版本升级到 `0.21.16`
+
 ## [0.21.15] - 2026-07-02
 ### Changed
 - generate-image: 客户端新增 `--candidates` 并发候选生成能力，支持默认三路并发请求后视觉筛选最佳图

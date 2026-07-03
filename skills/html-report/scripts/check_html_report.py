@@ -29,8 +29,32 @@ RAW_UNIFIED_DIFF_RE = re.compile(
 )
 HUNK_MARKER_RE = re.compile(r"@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
 
-TEXT_LIKE_LANGS = {"text", "txt", "log", "logs", "plain", "plaintext"}
-SUPPORTED_LANGS = {"kotlin", "java", "js", "python", "xml", "sql", "json", "yaml", "bash", "diff", "text"}
+TEXT_LIKE_LANGS = {"markdown", "text", "txt", "log", "logs", "plain", "plaintext"}
+SUPPORTED_LANGS = {
+    "bash",
+    "c",
+    "cpp",
+    "diff",
+    "go",
+    "ini",
+    "java",
+    "js",
+    "json",
+    "kotlin",
+    "markdown",
+    "objc",
+    "php",
+    "python",
+    "ruby",
+    "rust",
+    "sql",
+    "swift",
+    "toml",
+    "ts",
+    "text",
+    "xml",
+    "yaml",
+}
 MEDIA_EXTENSIONS = {".apng", ".avif", ".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".ogg", ".ogv", ".png", ".svg", ".webm", ".webp"}
 
 

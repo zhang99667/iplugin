@@ -17,7 +17,31 @@ import sys
 from pathlib import Path
 
 
-SUPPORTED_LANGS = {"kotlin", "java", "js", "python", "xml", "sql", "json", "yaml", "bash", "diff", "text"}
+SUPPORTED_LANGS = {
+    "bash",
+    "c",
+    "cpp",
+    "diff",
+    "go",
+    "ini",
+    "java",
+    "js",
+    "json",
+    "kotlin",
+    "markdown",
+    "objc",
+    "php",
+    "python",
+    "ruby",
+    "rust",
+    "sql",
+    "swift",
+    "toml",
+    "ts",
+    "text",
+    "xml",
+    "yaml",
+}
 
 # 让常见文件后缀或语言别名映射到模板支持的语言名。
 LANG_ALIASES = {
@@ -25,8 +49,27 @@ LANG_ALIASES = {
     "kts": "kotlin",
     "javascript": "js",
     "jsx": "js",
-    "ts": "js",
-    "tsx": "js",
+    "typescript": "ts",
+    "tsx": "ts",
+    "c++": "cpp",
+    "cc": "cpp",
+    "cxx": "cpp",
+    "hpp": "cpp",
+    "hh": "cpp",
+    "hxx": "cpp",
+    "objective-c": "objc",
+    "objectivec": "objc",
+    "obj-c": "objc",
+    "objective-c++": "objc",
+    "obj-c++": "objc",
+    "m": "objc",
+    "mm": "objc",
+    "h": "objc",
+    "rs": "rust",
+    "rb": "ruby",
+    "md": "markdown",
+    "mkd": "markdown",
+    "mdown": "markdown",
     "py": "python",
     "html": "xml",
     "xhtml": "xml",
@@ -36,9 +79,12 @@ LANG_ALIASES = {
     "spark": "sql",
     "jsonc": "json",
     "yml": "yaml",
+    "tml": "toml",
+    "cfg": "ini",
     "conf": "yaml",
     "config": "yaml",
     "properties": "yaml",
+    "plist": "xml",
     "shell": "bash",
     "sh": "bash",
     "zsh": "bash",
@@ -143,6 +189,194 @@ KEYWORDS = {
         "volatile",
         "while",
     },
+    "c": {
+        "auto",
+        "break",
+        "case",
+        "char",
+        "const",
+        "continue",
+        "default",
+        "do",
+        "double",
+        "else",
+        "enum",
+        "extern",
+        "false",
+        "float",
+        "for",
+        "goto",
+        "if",
+        "inline",
+        "int",
+        "long",
+        "NULL",
+        "register",
+        "restrict",
+        "return",
+        "short",
+        "signed",
+        "sizeof",
+        "static",
+        "struct",
+        "switch",
+        "true",
+        "typedef",
+        "union",
+        "unsigned",
+        "void",
+        "volatile",
+        "while",
+    },
+    "cpp": {
+        "alignas",
+        "alignof",
+        "and",
+        "asm",
+        "auto",
+        "bool",
+        "break",
+        "case",
+        "catch",
+        "char",
+        "char16_t",
+        "char32_t",
+        "class",
+        "const",
+        "constexpr",
+        "const_cast",
+        "continue",
+        "decltype",
+        "default",
+        "delete",
+        "do",
+        "double",
+        "dynamic_cast",
+        "else",
+        "enum",
+        "explicit",
+        "export",
+        "extern",
+        "false",
+        "float",
+        "for",
+        "friend",
+        "goto",
+        "if",
+        "inline",
+        "int",
+        "long",
+        "mutable",
+        "namespace",
+        "new",
+        "noexcept",
+        "nullptr",
+        "operator",
+        "private",
+        "protected",
+        "public",
+        "register",
+        "reinterpret_cast",
+        "return",
+        "short",
+        "signed",
+        "sizeof",
+        "static",
+        "static_assert",
+        "static_cast",
+        "struct",
+        "switch",
+        "template",
+        "this",
+        "thread_local",
+        "throw",
+        "true",
+        "try",
+        "typedef",
+        "typeid",
+        "typename",
+        "union",
+        "unsigned",
+        "using",
+        "virtual",
+        "void",
+        "volatile",
+        "while",
+    },
+    "objc": {
+        "assign",
+        "atomic",
+        "autoreleasepool",
+        "BOOL",
+        "break",
+        "case",
+        "catch",
+        "char",
+        "class",
+        "const",
+        "continue",
+        "copy",
+        "default",
+        "do",
+        "double",
+        "dynamic",
+        "else",
+        "end",
+        "enum",
+        "false",
+        "finally",
+        "float",
+        "for",
+        "FOUNDATION_EXPORT",
+        "if",
+        "implementation",
+        "import",
+        "instancetype",
+        "int",
+        "interface",
+        "long",
+        "nil",
+        "Nil",
+        "NO",
+        "nonatomic",
+        "nonnull",
+        "nullable",
+        "NULL",
+        "optional",
+        "package",
+        "private",
+        "property",
+        "protected",
+        "protocol",
+        "public",
+        "readonly",
+        "readwrite",
+        "required",
+        "retain",
+        "return",
+        "selector",
+        "self",
+        "short",
+        "signed",
+        "sizeof",
+        "static",
+        "strong",
+        "struct",
+        "super",
+        "switch",
+        "synthesize",
+        "throw",
+        "true",
+        "try",
+        "typedef",
+        "union",
+        "unsigned",
+        "void",
+        "volatile",
+        "weak",
+        "while",
+        "YES",
+    },
     "js": {
         "await",
         "break",
@@ -180,6 +414,74 @@ KEYWORDS = {
         "try",
         "typeof",
         "undefined",
+        "var",
+        "void",
+        "while",
+        "yield",
+    },
+    "ts": {
+        "abstract",
+        "any",
+        "as",
+        "async",
+        "await",
+        "boolean",
+        "break",
+        "case",
+        "catch",
+        "class",
+        "const",
+        "constructor",
+        "continue",
+        "debugger",
+        "declare",
+        "default",
+        "delete",
+        "do",
+        "else",
+        "enum",
+        "export",
+        "extends",
+        "false",
+        "finally",
+        "for",
+        "from",
+        "function",
+        "get",
+        "if",
+        "implements",
+        "import",
+        "in",
+        "infer",
+        "instanceof",
+        "interface",
+        "keyof",
+        "let",
+        "module",
+        "namespace",
+        "never",
+        "new",
+        "null",
+        "number",
+        "of",
+        "private",
+        "protected",
+        "public",
+        "readonly",
+        "return",
+        "set",
+        "string",
+        "super",
+        "switch",
+        "symbol",
+        "this",
+        "throw",
+        "true",
+        "try",
+        "type",
+        "typeof",
+        "undefined",
+        "unknown",
         "var",
         "void",
         "while",
@@ -275,6 +577,223 @@ KEYWORDS = {
         "WHERE",
         "WITH",
     },
+    "swift": {
+        "Any",
+        "as",
+        "associatedtype",
+        "break",
+        "case",
+        "catch",
+        "class",
+        "continue",
+        "defer",
+        "deinit",
+        "do",
+        "else",
+        "enum",
+        "extension",
+        "false",
+        "fileprivate",
+        "for",
+        "func",
+        "guard",
+        "if",
+        "import",
+        "in",
+        "init",
+        "inout",
+        "internal",
+        "is",
+        "let",
+        "nil",
+        "open",
+        "operator",
+        "private",
+        "protocol",
+        "public",
+        "repeat",
+        "return",
+        "self",
+        "Self",
+        "static",
+        "struct",
+        "subscript",
+        "super",
+        "switch",
+        "throw",
+        "throws",
+        "true",
+        "try",
+        "typealias",
+        "var",
+        "where",
+        "while",
+    },
+    "go": {
+        "break",
+        "case",
+        "chan",
+        "const",
+        "continue",
+        "default",
+        "defer",
+        "else",
+        "fallthrough",
+        "false",
+        "for",
+        "func",
+        "go",
+        "goto",
+        "if",
+        "import",
+        "interface",
+        "map",
+        "nil",
+        "package",
+        "range",
+        "return",
+        "select",
+        "struct",
+        "switch",
+        "true",
+        "type",
+        "var",
+    },
+    "rust": {
+        "as",
+        "async",
+        "await",
+        "break",
+        "const",
+        "continue",
+        "crate",
+        "dyn",
+        "else",
+        "enum",
+        "extern",
+        "false",
+        "fn",
+        "for",
+        "if",
+        "impl",
+        "in",
+        "let",
+        "loop",
+        "match",
+        "mod",
+        "move",
+        "mut",
+        "pub",
+        "ref",
+        "return",
+        "self",
+        "Self",
+        "static",
+        "struct",
+        "super",
+        "trait",
+        "true",
+        "type",
+        "unsafe",
+        "use",
+        "where",
+        "while",
+    },
+    "ruby": {
+        "alias",
+        "and",
+        "begin",
+        "break",
+        "case",
+        "class",
+        "def",
+        "defined?",
+        "do",
+        "else",
+        "elsif",
+        "end",
+        "ensure",
+        "false",
+        "for",
+        "if",
+        "in",
+        "module",
+        "next",
+        "nil",
+        "not",
+        "or",
+        "redo",
+        "rescue",
+        "retry",
+        "return",
+        "self",
+        "super",
+        "then",
+        "true",
+        "undef",
+        "unless",
+        "until",
+        "when",
+        "while",
+        "yield",
+    },
+    "php": {
+        "abstract",
+        "and",
+        "array",
+        "as",
+        "break",
+        "callable",
+        "case",
+        "catch",
+        "class",
+        "clone",
+        "const",
+        "continue",
+        "declare",
+        "default",
+        "do",
+        "echo",
+        "else",
+        "elseif",
+        "empty",
+        "endfor",
+        "endif",
+        "endswitch",
+        "endwhile",
+        "extends",
+        "false",
+        "final",
+        "finally",
+        "foreach",
+        "function",
+        "global",
+        "if",
+        "implements",
+        "include",
+        "instanceof",
+        "interface",
+        "isset",
+        "namespace",
+        "new",
+        "null",
+        "or",
+        "private",
+        "protected",
+        "public",
+        "require",
+        "return",
+        "static",
+        "switch",
+        "throw",
+        "trait",
+        "true",
+        "try",
+        "use",
+        "var",
+        "while",
+        "xor",
+    },
     "json": {"true", "false", "null"},
     "bash": {
         "case",
@@ -297,8 +816,65 @@ KEYWORDS = {
 TYPES = {
     "kotlin": {"Any", "Boolean", "Byte", "Char", "Double", "Float", "Int", "Long", "Short", "String", "Unit"},
     "java": {"Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Object", "Short", "String", "Void"},
+    "c": {"bool", "char", "double", "float", "int", "int32_t", "int64_t", "size_t", "uint32_t", "uint64_t", "void"},
+    "cpp": {
+        "bool",
+        "char",
+        "double",
+        "float",
+        "int",
+        "int32_t",
+        "int64_t",
+        "size_t",
+        "std",
+        "string",
+        "uint32_t",
+        "uint64_t",
+        "void",
+    },
+    "objc": {
+        "NSArray",
+        "BOOL",
+        "CGFloat",
+        "Class",
+        "NSDictionary",
+        "NSError",
+        "NSInteger",
+        "NSNumber",
+        "NSObject",
+        "NSString",
+        "NSUInteger",
+        "NSURL",
+        "SEL",
+        "UIView",
+        "char",
+        "double",
+        "float",
+        "id",
+        "int",
+        "void",
+    },
     "js": {"Array", "BigInt", "Boolean", "Date", "Map", "Number", "Object", "Promise", "Set", "String", "Symbol"},
+    "ts": {
+        "Array",
+        "BigInt",
+        "Boolean",
+        "Date",
+        "Map",
+        "Number",
+        "Object",
+        "Promise",
+        "Record",
+        "Set",
+        "String",
+        "Symbol",
+    },
     "python": {"bool", "bytes", "dict", "float", "int", "list", "object", "set", "str", "tuple"},
+    "swift": {"Any", "Array", "Bool", "Dictionary", "Double", "Float", "Int", "Optional", "Result", "Set", "String", "Void"},
+    "go": {"bool", "byte", "error", "float32", "float64", "int", "int32", "int64", "rune", "string", "uint", "uint32", "uint64"},
+    "rust": {"Box", "Option", "Result", "String", "Vec", "bool", "f32", "f64", "i32", "i64", "str", "u32", "u64", "usize"},
+    "ruby": {"Array", "Class", "FalseClass", "Hash", "Integer", "Module", "NilClass", "Object", "String", "Symbol", "TrueClass"},
+    "php": {"array", "bool", "callable", "float", "int", "iterable", "mixed", "object", "string", "void"},
 }
 
 
@@ -349,8 +925,12 @@ def token_pattern(lang: str) -> re.Pattern[str]:
     if lang == "python":
         comment = r"#[^\n]*"
         string = r"'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"|(?:r|R|f|F|fr|FR|rf|RF)?'(?:\\.|[^'\\])*'|(?:r|R|f|F|fr|FR|rf|RF)?\"(?:\\.|[^\"\\])*\""
-    elif lang == "bash":
+    elif lang in {"bash", "ruby"}:
         comment = r"#[^\n]*"
+        string = r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`'
+    elif lang == "php":
+        # PHP 同时支持 //、# 和 /* */ 注释；单独分支能避免把 shell 风格注释误扩散到其他 C-like 语言。
+        comment = r"//[^\n]*|#[^\n]*|/\*[\s\S]*?\*/"
         string = r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`'
     elif lang == "sql":
         comment = r"--[^\n]*|/\*[\s\S]*?\*/"
@@ -361,7 +941,7 @@ def token_pattern(lang: str) -> re.Pattern[str]:
     else:
         comment = r"//[^\n]*|/\*[\s\S]*?\*/"
         string = r'"""[\s\S]*?"""|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`'
-    number = r"\b(?:0[xX][0-9A-Fa-f_]+|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][+-]?\d[\d_]*)?[fFdDlL]?)\b"
+    number = r"\b(?:0[xX][0-9A-Fa-f_]+|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][+-]?\d[\d_]*)?[uUlLfFdD]*)\b"
     word = r"\b[A-Za-z_][A-Za-z0-9_]*\b"
     return re.compile(
         rf"(?P<comment>{comment})|(?P<string>{string})|(?P<number>{number})|(?P<word>{word})",
@@ -376,7 +956,7 @@ def next_nonspace(source: str, index: int) -> str:
 
 
 def highlight_general(source: str, lang: str) -> str:
-    """高亮 Kotlin/Java/JS/Python 这类 C-like 或常规语言片段。"""
+    """高亮 C-like、脚本语言和常规语言片段。"""
 
     pattern = token_pattern(lang)
     pieces: list[str] = []
@@ -409,7 +989,10 @@ def highlight_general(source: str, lang: str) -> str:
     return "".join(pieces)
 
 
-YAML_KEY_RE = re.compile(r"^(\s*)([A-Za-z0-9_.-]+)(\s*:)", re.MULTILINE)
+# YAML/TOML/INI 都是报告里常见的配置片段；同时识别 : 和 = 可以覆盖三者的键名，
+# 让校验脚本看到稳定的 tok-var，而不用为每种轻量配置格式维护一套解析器。
+CONFIG_KEY_RE = re.compile(r"^(\s*)([A-Za-z0-9_.-]+)(\s*[:=])", re.MULTILINE)
+MARKDOWN_INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
 
 
 def highlight_yaml(source: str) -> str:
@@ -417,7 +1000,7 @@ def highlight_yaml(source: str) -> str:
 
     pieces: list[str] = []
     last = 0
-    for match in YAML_KEY_RE.finditer(source):
+    for match in CONFIG_KEY_RE.finditer(source):
         pieces.append(html.escape(source[last : match.start()]))
         pieces.append(html.escape(match.group(1)))
         pieces.append(css_span("tok-var", match.group(2)))
@@ -425,8 +1008,54 @@ def highlight_yaml(source: str) -> str:
         last = match.end()
 
     tail = html.escape(source[last:])
-    tail = re.sub(r"(#.*)$", lambda m: css_span("tok-cmt", html.unescape(m.group(1))), tail, flags=re.MULTILINE)
+    tail = re.sub(r"([#;].*)$", lambda m: css_span("tok-cmt", html.unescape(m.group(1))), tail, flags=re.MULTILINE)
     pieces.append(tail)
+    return "".join(pieces)
+
+
+def highlight_markdown(source: str) -> str:
+    """高亮 Markdown 标题、引用、列表标记和行内代码。
+
+    Markdown 常被放进报告说明或 README 片段里。这里刻意只标记结构性 token，
+    避免为了完整 Markdown 解析引入依赖或误改正文转义边界。
+    """
+
+    pieces: list[str] = []
+    for line in source.splitlines(keepends=True):
+        newline = "\n" if line.endswith("\n") else ""
+        body = line[:-1] if newline else line
+        heading = re.match(r"^(\s{0,3})(#{1,6})(\s+.*)?$", body)
+        quote = re.match(r"^(\s{0,3})(>+)(\s+.*)?$", body)
+        bullet = re.match(r"^(\s*)([-+*]|\d+\.)(\s+.*)$", body)
+
+        if heading:
+            pieces.append(html.escape(heading.group(1)))
+            pieces.append(css_span("tok-key", heading.group(2)))
+            pieces.append(highlight_markdown_inline(heading.group(3) or ""))
+        elif quote:
+            pieces.append(html.escape(quote.group(1)))
+            pieces.append(css_span("tok-cmt", quote.group(2)))
+            pieces.append(highlight_markdown_inline(quote.group(3) or ""))
+        elif bullet:
+            pieces.append(html.escape(bullet.group(1)))
+            pieces.append(css_span("tok-key", bullet.group(2)))
+            pieces.append(highlight_markdown_inline(bullet.group(3)))
+        else:
+            pieces.append(highlight_markdown_inline(body))
+        pieces.append(newline)
+    return "".join(pieces)
+
+
+def highlight_markdown_inline(text: str) -> str:
+    """只处理 Markdown 行内代码，其余内容保持普通 HTML 转义。"""
+
+    pieces: list[str] = []
+    last = 0
+    for match in MARKDOWN_INLINE_CODE_RE.finditer(text):
+        pieces.append(html.escape(text[last : match.start()]))
+        pieces.append(css_span("tok-str", match.group(0)))
+        last = match.end()
+    pieces.append(html.escape(text[last:]))
     return "".join(pieces)
 
 
@@ -644,8 +1273,10 @@ def highlight(source: str, lang: str) -> str:
         return highlight_diff(source)
     if lang == "xml":
         return highlight_xml(source)
-    if lang == "yaml":
+    if lang in {"yaml", "toml", "ini"}:
         return highlight_yaml(source)
+    if lang == "markdown":
+        return highlight_markdown(source)
     if lang == "bash":
         return highlight_bash(source)
     return highlight_general(source, lang)
@@ -659,7 +1290,11 @@ def can_use_pygments() -> bool:
 
 def pygments_lexer_name(lang: str) -> str:
     return {
+        "cpp": "cpp",
         "js": "javascript",
+        "markdown": "markdown",
+        "objc": "objective-c",
+        "ts": "typescript",
         "xml": "html",
         "yaml": "yaml",
         "bash": "bash",
@@ -746,7 +1381,7 @@ def render_code_wrap(source: str, lang: str, copy_button: bool = True, engine: s
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="生成已转义、轻量高亮的 HTML 代码块。")
     parser.add_argument("input", nargs="?", help="输入文件路径；省略或传 '-' 时从 stdin 读取。")
-    parser.add_argument("--lang", required=True, help="语言：kotlin、java、js、python、xml、sql、json、yaml、bash、diff 或 text。")
+    parser.add_argument("--lang", required=True, help=f"语言：{', '.join(sorted(SUPPORTED_LANGS))}；常见文件后缀和别名会自动映射。")
     parser.add_argument("--mode", choices=["code", "diff-viewer"], default="code", help="输出模式；diff-viewer 用于带 old/new 行号的差异视图。")
     parser.add_argument("--diff-view", action="store_true", help="等同于 --mode diff-viewer，仅支持 --lang diff。")
     parser.add_argument("--engine", choices=["builtin", "auto", "pygments"], default="builtin", help="高亮引擎：builtin 为零依赖默认值；auto/pygments 可使用本机 Pygments 预渲染。")
