@@ -29,6 +29,21 @@ COMMANDS_DIR = ROOT / "commands"
 VERSIONS_DIR = ROOT / "versions"
 HOOKS_DIR = ROOT / "hooks"
 EVALS_RELATIVE_PATH = Path("evals/evals.json")
+HTML_REPORT_ANNOTATION_ASSETS = {
+    SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.css": (
+        "QA_ANNOTATION_CSS_START",
+        "QA_ANNOTATION_CSS_END",
+    ),
+    SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.html": (
+        "QA_ANNOTATION_HTML_START",
+        "QA_ANNOTATION_HTML_END",
+    ),
+    SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.js": (
+        "QA_ANNOTATION_SCRIPT_START",
+        "QA_ANNOTATION_SCRIPT_END",
+        "__QA_REPORT_META__",
+    ),
+}
 
 # 两个平台 manifest 中必须保持一致的公共字段。
 PRIMARY_COMMON_FIELDS = ("name", "version", "description", "keywords")
@@ -747,6 +762,27 @@ def check_skill_evals(skills: list[Path]) -> CheckResult:
     return result
 
 
+def check_html_report_annotation_assets() -> CheckResult:
+    """检查 html-report 批注模式资产是否保留剥离 marker 和路径元数据占位符。
+
+    批注资产最终会被注入到单文件 HTML 中，marker 是重复注入清理和导出发布版
+    物理剥离的边界；`__QA_REPORT_META__` 则保护导出的 Markdown/JSON 能回查原文件。
+    """
+
+    result = CheckResult("HTML report annotation assets are valid")
+    for path, required_fragments in HTML_REPORT_ANNOTATION_ASSETS.items():
+        if not path.is_file():
+            result.details.append(f"{rel(path)} does not exist")
+            continue
+
+        text = read_text(path)
+        for fragment in required_fragments:
+            if fragment not in text:
+                result.details.append(f"{rel(path)} is missing {fragment}")
+
+    return result
+
+
 def print_results(results: list[CheckResult]) -> None:
     """按固定格式输出所有检查项，便于提交前快速扫一眼。"""
 
@@ -788,6 +824,7 @@ def main() -> int:
         check_claude_agents_sync(),
         check_no_hardcoded_homedir(skills),
         check_skill_evals(skills),
+        check_html_report_annotation_assets(),
     ]
 
     print_results(results)

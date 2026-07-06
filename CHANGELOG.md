@@ -1,3 +1,11 @@
+## [0.21.21] - 2026-07-06
+### Changed
+- html-report: 将批注审核模式的 CSS、HTML 容器和 JS 从 `inject_annotation_mode.py` 抽到 `assets/annotation-mode/`
+- html-report: `inject_annotation_mode.py` 改为读取批注资产、校验剥离 marker 和 `__QA_REPORT_META__` 占位符后再内联注入，脚本从 1341 行降到约 120 行
+- validation: `scripts/validate-plugin.py` 新增批注资产完整性检查，避免发布版剥离标记或路径元数据占位符丢失
+- html-report: skill 版本升级到 `0.3.14`
+- manifest: 插件版本升级到 `0.21.21`
+
 ## [0.21.20] - 2026-07-06
 ### Added
 - html-report: 新增 `evals/evals.json` 和 fixtures，覆盖代码评审、问题排查、技术方案、聚焦 diff、Android mock 验收和批注审核模式六类回归 prompt

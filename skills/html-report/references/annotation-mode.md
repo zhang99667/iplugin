@@ -22,7 +22,7 @@ python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>
 python3 skills/html-report/scripts/check_html_report.py <html-file>
 ```
 
-不要手写批注 CSS/JS。批注交互代码较长，必须由 `inject_annotation_mode.py` 统一注入，避免每次生成时按钮、路径字段、发布版剥离逻辑漂移。
+不要手写批注 CSS/JS。批注交互代码较长，维护源码时放在 `assets/annotation-mode/annotation.css`、`annotation.html`、`annotation.js`，生成审核版时必须由 `inject_annotation_mode.py` 统一读取并内联注入，避免每次生成时按钮、路径字段、发布版剥离逻辑漂移。
 
 ## 交互契约
 
@@ -89,6 +89,8 @@ JSON 顶层必须包含：
 ## 稳定性要求
 
 - 注入脚本必须幂等：重复运行不能生成两套批注 UI。
+- 批注资产必须保留 `QA_ANNOTATION_CSS_START/END`、`QA_ANNOTATION_HTML_START/END`、`QA_ANNOTATION_SCRIPT_START/END` 标记；这些标记用于重复注入前清理旧 UI，也用于浏览器端导出发布版时物理剥离批注能力。
+- `annotation.js` 必须保留 `__QA_REPORT_META__` 占位符，由注入脚本在生成阶段写入文件名、绝对路径和 `file://` URL。
 - 选区气泡出现时要缓存选区目标，避免点击按钮导致浏览器清空选区后无法打开输入浮层。
 - 编辑已有批注必须复用轻量输入浮层，提交后更新本条数据、刷新右侧栏和导出包，不能要求用户删除后重加。
 - 删除或清空批注后，必须同步清理正文里的 `.qa-highlight`、`.qa-annotated-block` 和浏览器选区；不能只删除右侧栏数据。

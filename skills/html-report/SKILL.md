@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.3.13
+version: 0.3.14
 tags:
   - report
   - html
@@ -22,6 +22,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `references/css-template.md`：CSS 组件装配规则、HTML 骨架和少量 JS 片段。只有开始写 HTML 文件时再读取；它会按内容路由到 `references/css/*.css`。
 - `references/css/*.css`：组件化 CSS 源文件。`base.css` 与 `interactions.css` 是默认组合；`code-diff.css`、`media.css`、`diagram.css`、`toc.css`、`tabs.css`、`sortable-table.css` 按内容需要读取并内联进最终 HTML。
 - `references/annotation-mode.md`：当用户要求离线批注、审核模式、Agent 提问包、HTML 内选中文本提问/批注或发布版导出时读取。
+- `assets/annotation-mode/`：批注审核模式的 CSS、HTML 容器和 JS 资产。普通生成报告时不要读取；维护批注 UI 或发布版剥离逻辑时再修改这些文件，最终仍由 `inject_annotation_mode.py` 内联成单文件 HTML。
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
 - `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、Objective-C / Swift / C-family 等语言片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
 - `scripts/inject_annotation_mode.py`：当需要审核批注模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线批注 UI、Markdown/JSON 提问包导出和“导出发布版”能力；不要手写批注 JS。

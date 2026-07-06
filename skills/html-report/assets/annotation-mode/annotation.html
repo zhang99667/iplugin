@@ -1,0 +1,71 @@
+  <!-- QA_ANNOTATION_HTML_START: 离线批注审核模式，导出发布版时会被移除。 -->
+  <button class="qa-launcher" type="button" id="qaLauncher" aria-controls="qaSidebar" aria-expanded="false" data-qa-ui>
+    <svg class="qa-launcher-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 8 5-5 5 5"></path><path d="M5 15v4h14v-4"></path></svg>
+    <span class="qa-launcher-label" id="qaLauncherLabel">导出发布版</span>
+    <span class="qa-launcher-count" id="qaLauncherCount" hidden>0</span>
+  </button>
+
+  <div class="qa-selection-popover" id="qaSelectionPopover" role="menu" aria-label="选中文本操作" data-qa-ui>
+    <button class="qa-bubble-btn primary" type="button" data-qa-action="ask-selection" title="向 Agent 提问">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 0 1 4.4 1.35c0 1.65-2.2 1.85-2.2 3.35"></path><path d="M12 17h.01"></path></svg>
+      提问
+    </button>
+    <button class="qa-bubble-btn" type="button" data-qa-action="note-selection" title="添加批注">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+      批注
+    </button>
+  </div>
+
+  <div class="qa-composer" id="qaComposer" role="dialog" aria-label="添加批注" data-qa-ui>
+    <p class="qa-composer-title" id="qaComposerTitle"></p>
+    <p class="qa-composer-excerpt" id="qaComposerExcerpt"></p>
+    <textarea id="qaComposerText" placeholder="写下你想让 Agent 回答或修改的点"></textarea>
+    <div class="qa-composer-actions">
+      <button class="qa-small-btn primary" type="button" id="qaComposerSave">提交</button>
+    </div>
+  </div>
+
+  <div class="qa-context-menu" id="qaContextMenu" role="menu" aria-label="批注右键菜单" data-qa-ui>
+    <button class="qa-menu-item" type="button" data-qa-action="ask-selection">对选中内容提问</button>
+    <button class="qa-menu-item" type="button" data-qa-action="note-selection">对选中内容批注</button>
+    <div class="qa-menu-sep"></div>
+    <button class="qa-menu-item" type="button" data-qa-action="ask-block">对本段提问</button>
+    <button class="qa-menu-item" type="button" data-qa-action="note-block">对本段批注</button>
+    <button class="qa-menu-item" type="button" data-qa-action="ask-section">对本节提问</button>
+  </div>
+
+  <aside class="qa-sidebar" id="qaSidebar" aria-label="报告批注" data-qa-ui>
+    <div class="qa-sidebar-header">
+      <div class="qa-title-row">
+        <h2>报告批注</h2>
+        <span class="qa-mode-chip">审核模式</span>
+        <button class="qa-close" type="button" id="qaClose" aria-label="关闭批注栏">×</button>
+      </div>
+      <p class="qa-help">选中文本后点小气泡提问/批注。发布给外部前，可导出物理剥离批注能力的发布版 HTML。</p>
+      <div class="qa-actions">
+        <button class="qa-primary-btn qa-publish-btn qa-wide" type="button" id="qaExportPublic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 8 5-5 5 5"></path><path d="M5 15v4h14v-4"></path></svg>
+          导出发布版
+        </button>
+        <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
+        <button class="qa-secondary-btn" type="button" id="qaDownloadMarkdown">下载 Markdown</button>
+        <button class="qa-secondary-btn" type="button" id="qaDownloadJson">下载 JSON</button>
+        <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空批注</button>
+      </div>
+    </div>
+    <div class="qa-list" id="qaList"></div>
+  </aside>
+
+  <div class="qa-copy-backdrop" id="qaCopyBackdrop" role="dialog" aria-modal="true" aria-labelledby="qaCopyTitle" data-qa-ui>
+    <div class="qa-copy-dialog">
+      <div class="qa-dialog-head"><h2 id="qaCopyTitle">手动复制</h2></div>
+      <div class="qa-dialog-body">
+        <p class="qa-help">当前浏览器没有开放剪贴板权限。下面内容已选中，可以直接按 Cmd+C 复制。</p>
+        <textarea class="qa-copy-textarea" id="qaCopyTextarea" readonly></textarea>
+      </div>
+      <div class="qa-dialog-actions">
+        <button class="qa-primary-btn" type="button" id="qaCopyClose">完成</button>
+      </div>
+    </div>
+  </div>
+  <!-- QA_ANNOTATION_HTML_END -->
