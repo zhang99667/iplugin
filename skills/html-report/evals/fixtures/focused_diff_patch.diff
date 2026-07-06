@@ -1,0 +1,23 @@
+diff --git a/skills/html-report/scripts/check_html_report.py b/skills/html-report/scripts/check_html_report.py
+index c7b0f3d..d9a83be 100755
+--- a/skills/html-report/scripts/check_html_report.py
++++ b/skills/html-report/scripts/check_html_report.py
+@@ -18,6 +18,7 @@ TOKEN_SPAN_RE = re.compile(r'<span\b[^>]*\bclass=["\'][^"\']*\b(tok-[a-zA-Z0-9_-
+ INLINE_STYLE_RE = re.compile(r'<span\b[^>]*\bstyle=["\'][^"\']+["\']', re.DOTALL)
+ COPY_BTN_RE = re.compile(r'<button\b[^>]*class=["\'][^"\']*\bcopy-btn\b[^"\']*["\']', re.DOTALL)
+ RAW_INLINE_CODE_RE = re.compile(r'`[^`\n]+`')
++RAW_UNIFIED_DIFF_RE = re.compile(r"(?m)^--- [^\n]+\n\+\+\+ [^\n]+\n@@ -\d+")
+ TAG_RE = re.compile(r"<[^>]+>")
+ 
+ TEXT_LIKE_LANGS = {"markdown", "text", "txt", "log", "logs", "plain", "plaintext"}
+@@ -138,6 +139,10 @@ def check_code_wrap_blocks(html: str, css: str) -> list[str]:
+         if lang not in SUPPORTED_LANGS and lang not in TEXT_LIKE_LANGS:
+             errors.append(f"第 {index} 个 .code-wrap 使用未支持的 language-{lang}")
+ 
++        if RAW_UNIFIED_DIFF_RE.search(fragment_text(block)):
++            errors.append("真实 diff 必须使用 diff viewer，不能放在普通 code-wrap 中")
++            continue
++
+         token_classes = set(TOKEN_SPAN_RE.findall(block))
+         has_inline_style = bool(INLINE_STYLE_RE.search(block))
+         has_static_highlight = bool(token_classes) or has_inline_style

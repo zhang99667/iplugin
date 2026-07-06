@@ -28,6 +28,7 @@ SKILLS_DIR = ROOT / "skills"
 COMMANDS_DIR = ROOT / "commands"
 VERSIONS_DIR = ROOT / "versions"
 HOOKS_DIR = ROOT / "hooks"
+EVALS_RELATIVE_PATH = Path("evals/evals.json")
 
 # 两个平台 manifest 中必须保持一致的公共字段。
 PRIMARY_COMMON_FIELDS = ("name", "version", "description", "keywords")
@@ -671,6 +672,81 @@ def check_no_hardcoded_homedir(skills: list[Path]) -> CheckResult:
     return result
 
 
+def check_skill_evals(skills: list[Path]) -> CheckResult:
+    """校验 skill 自带 evals.json 的基础结构和 fixture 路径。
+
+    eval 回归集是面向质量退化的人工/半自动护栏；这里不尝试运行模型，只确保
+    用例定义可读、关键字段齐全、引用的 fixture 没有断链，避免后续维护时悄悄失效。
+    """
+
+    result = CheckResult("Skill eval fixtures are valid")
+    for skill_dir in skills:
+        evals_path = skill_dir / EVALS_RELATIVE_PATH
+        if not evals_path.is_file():
+            continue
+
+        data, error = load_json(evals_path)
+        if error:
+            result.details.append(error)
+            continue
+        if not isinstance(data, dict):
+            result.details.append(f"{rel(evals_path)} must contain a JSON object")
+            continue
+
+        skill_name = data.get("skill_name")
+        if skill_name != skill_dir.name:
+            result.details.append(
+                f"{rel(evals_path)} skill_name must match directory name {skill_dir.name!r}"
+            )
+
+        evals = data.get("evals")
+        if not isinstance(evals, list) or not evals:
+            result.details.append(f"{rel(evals_path)} must contain a non-empty evals array")
+            continue
+
+        seen_ids: set[int] = set()
+        for index, item in enumerate(evals, start=1):
+            label = f"{rel(evals_path)} eval #{index}"
+            if not isinstance(item, dict):
+                result.details.append(f"{label} must be an object")
+                continue
+
+            eval_id = item.get("id")
+            if not isinstance(eval_id, int):
+                result.details.append(f"{label} id must be an integer")
+            elif eval_id in seen_ids:
+                result.details.append(f"{label} id {eval_id} is duplicated")
+            else:
+                seen_ids.add(eval_id)
+
+            for field_name in ("prompt", "expected_output"):
+                if not isinstance(item.get(field_name), str) or not item[field_name].strip():
+                    result.details.append(f"{label} {field_name} must be a non-empty string")
+
+            expectations = item.get("expectations")
+            if not isinstance(expectations, list) or not expectations:
+                result.details.append(f"{label} expectations must be a non-empty string array")
+            elif not all(isinstance(expectation, str) and expectation.strip() for expectation in expectations):
+                result.details.append(f"{label} expectations must only contain non-empty strings")
+
+            files = item.get("files", [])
+            if not isinstance(files, list):
+                result.details.append(f"{label} files must be an array when present")
+                continue
+            for file_ref in files:
+                if not isinstance(file_ref, str) or not file_ref.strip():
+                    result.details.append(f"{label} files must only contain non-empty strings")
+                    continue
+                # 文件引用统一相对 skill 根目录，保证 eval 目录移动或被复制时语义稳定。
+                if Path(file_ref).is_absolute() or ".." in Path(file_ref).parts:
+                    result.details.append(f"{label} file path must be relative inside the skill: {file_ref}")
+                    continue
+                if not (skill_dir / file_ref).is_file():
+                    result.details.append(f"{label} referenced fixture does not exist: {file_ref}")
+
+    return result
+
+
 def print_results(results: list[CheckResult]) -> None:
     """按固定格式输出所有检查项，便于提交前快速扫一眼。"""
 
@@ -711,6 +787,7 @@ def main() -> int:
         check_current_trigger_text(codex_manifest),
         check_claude_agents_sync(),
         check_no_hardcoded_homedir(skills),
+        check_skill_evals(skills),
     ]
 
     print_results(results)

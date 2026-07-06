@@ -1,0 +1,6 @@
+07-06 10:42:31.118 I/PushRouter: open schema baiduboxapp://detail?detailId=98765&source=push
+07-06 10:42:31.146 D/DetailActivity: onCreate intent=baiduboxapp://detail?detailId=98765&source=push
+07-06 10:42:31.153 W/DetailArgsParser: missing required param detail_id
+07-06 10:42:31.154 I/DetailViewModel: loadDetail start detail_id=
+07-06 10:42:36.284 E/DetailViewModel: timeout waiting detail response, request was not sent
+07-06 10:42:36.285 D/DetailPage: render state=Loading elapsed=5131ms

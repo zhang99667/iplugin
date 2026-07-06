@@ -1,3 +1,12 @@
+## [0.21.20] - 2026-07-06
+### Added
+- html-report: 新增 `evals/evals.json` 和 fixtures，覆盖代码评审、问题排查、技术方案、聚焦 diff、Android mock 验收和批注审核模式六类回归 prompt
+- validation: `scripts/validate-plugin.py` 新增 skill eval schema 与 fixture 路径检查，避免回归用例断链
+
+### Changed
+- html-report: skill 版本升级到 `0.3.13`
+- manifest: 插件版本升级到 `0.21.20`
+
 ## [0.21.19] - 2026-07-06
 ### Changed
 - html-report: `artifact-patterns.md` 新增代码评审、验收报告、选型对比、项目总结四类专门模板

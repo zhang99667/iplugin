@@ -1,0 +1,105 @@
+{
+  "skill_name": "html-report",
+  "description": "html-report 的高频输出回归集，覆盖报告结构、证据链、diff viewer、媒体证据占位和批注审核模式。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "code-review-report-findings-first",
+      "prompt": "基于输入的 review context 和 unified diff，生成一份独立 HTML 代码评审报告放到桌面。报告要优先列出 P0/P1/P2 Findings，包含文件定位、影响、证据、建议修复、聚焦 diff 和测试缺口，不要只做改动摘要。",
+      "expected_output": "生成单文件 HTML 报告并通过 check_html_report.py。报告首屏有评审结论，Findings 排在改动概览之前，真实 diff 使用 diff viewer，且每个问题能追溯到 fixture 中的文件或 diff 证据。",
+      "files": [
+        "evals/fixtures/code_review_context.md",
+        "evals/fixtures/code_review_patch.diff"
+      ],
+      "expectations": [
+        "输出是可直接打开的 .html 文件，且通过 python3 skills/html-report/scripts/check_html_report.py <html-file>。",
+        "Findings 按 P0/P1/P2 或等价严重级别排序，并且排在改动概览之前。",
+        "每条主要发现包含文件定位、问题、影响、证据和建议修复。",
+        "unified diff 使用 highlight_code.py --lang diff --diff-view 生成的 .diff-card.diff-viewer，不出现 raw diff 或 language-diff 代码块。",
+        "报告包含测试缺口或回归建议，不把缺失测试描述成已验证。"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "problem-diagnosis-evidence-chain",
+      "prompt": "根据输入的排查记录和日志片段，写成 HTML 问题排查/修复方案报告。需要说明现象、影响范围、根因分析、证据链、修复方案、验证结果和未确认项，不能伪造没有提供的上线时间或收益数据。",
+      "expected_output": "生成单文件 HTML 排查报告并通过校验。报告把已确认事实、推断和待验证项分开，根因结论有日志和源码/配置线索支撑，验证结果明确标注已验证和未验证内容。",
+      "files": [
+        "evals/fixtures/diagnosis_notes.md",
+        "evals/fixtures/diagnosis_log.log"
+      ],
+      "expectations": [
+        "报告包含问题现象、影响范围、根因分析、证据链、修复方案、风险回归和验证结果章节或等价结构。",
+        "证据链明确引用日志错误、配置线索或用户提供的排查记录。",
+        "已确认事实、推断和待验证项分开呈现，不把假设写成最终事实。",
+        "长日志或命令输出被折叠或聚焦展示，避免挤占首屏。",
+        "未提供的数据、负责人、排期或收益不被编造。"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "technical-solution-impact-risk",
+      "prompt": "基于输入 brief 生成一份 HTML 技术方案报告。报告需要覆盖方案概述、接口与数据结构、改动总览、关键流程、影响面、风险、验证和回滚策略。",
+      "expected_output": "生成单文件 HTML 技术方案并通过校验。报告先给整体方案和契约，再展开模块改动，风险与验证能对应到实际改动范围。",
+      "files": [
+        "evals/fixtures/technical_solution_brief.md"
+      ],
+      "expectations": [
+        "报告包含文档抬头、TL;DR、背景、方案概述、接口与数据结构、改动总览、影响面、风险与验证。",
+        "接口字段、状态或配置契约使用表格或代码块呈现，且不混入未提供字段。",
+        "模块改动和影响面有清晰对应关系。",
+        "验证与回滚策略覆盖正常路径、异常路径和兼容场景。",
+        "报告不把目标/非目标或备选方案硬编成不存在的信息。"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "focused-diff-rendering",
+      "prompt": "把输入的 unified diff 整理成 HTML 修复说明报告，重点展示修改点、行为变化和回归点。报告必须使用标准 diff viewer 展示真实 diff，并说明每个 hunk 的目的。",
+      "expected_output": "生成单文件 HTML 报告并通过校验。所有真实 unified diff 都以 .diff-card.diff-viewer 呈现，old/new 行号、变更轨道和 hunk header 保持稳定。",
+      "files": [
+        "evals/fixtures/focused_diff_patch.diff"
+      ],
+      "expectations": [
+        "报告通过 check_html_report.py，不包含 raw unified diff。",
+        "真实 diff 使用 highlight_code.py --lang diff --diff-view 生成的结构。",
+        "每个 hunk 附近有行为变化说明，而不是只贴代码。",
+        "报告包含回归点或验证建议。",
+        "宽 diff 在窄屏下有横向滚动保护。"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "android-mock-acceptance-evidence-matrix",
+      "prompt": "根据输入的 Android mock 验收材料生成 HTML 验收报告。截图和录屏文件尚未提供，请使用明确的证据占位，不要引用不存在的媒体路径。报告需要包含 case 矩阵、mock 命中证据、截图/录屏占位、失败或未测项和发布建议。",
+      "expected_output": "生成单文件 HTML 验收报告并通过校验。报告能清楚区分通过、失败、阻塞、未测和待补证据，不出现断链媒体资源。",
+      "files": [
+        "evals/fixtures/android_mock_acceptance_cases.md"
+      ],
+      "expectations": [
+        "报告包含总体结论、验收范围、环境前置条件、case 矩阵、逐 case 证据和待补充项。",
+        "截图/录屏缺失时使用文字占位或待补证据卡，不引用不存在的图片或视频文件。",
+        "case 结果不只靠颜色表达，必须有明确文本状态。",
+        "mockserver 命中、adb 验证或接口证据在矩阵或证据区中可追溯。",
+        "失败、阻塞或未测项不能被汇总成通过。"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "annotation-mode-publish-validation",
+      "prompt": "请把输入的普通 HTML 报告升级为离线批注审核版：先运行 check_html_report.py 校验原始 HTML，通过后使用 inject_annotation_mode.py 注入审核模式，再重新运行 check_html_report.py。输出审核版 HTML 路径，并说明导出发布版入口是否存在。不要手写批注 JS。",
+      "expected_output": "生成或更新审核版 HTML，并通过注入前和注入后的校验。审核版包含批注侧栏、选中文本提问、Markdown/JSON 提问包导出和导出发布版入口。",
+      "files": [
+        "evals/fixtures/annotation_source_report.html",
+        "evals/fixtures/annotation_review_notes.md"
+      ],
+      "expectations": [
+        "执行记录或报告说明中体现原始 HTML 先通过 check_html_report.py。",
+        "批注模式由 skills/html-report/scripts/inject_annotation_mode.py 注入，而不是手写批注脚本。",
+        "注入后再次通过 check_html_report.py。",
+        "审核版包含导出发布版入口、Markdown/JSON 提问包导出和编辑已有批注能力。",
+        "发布版入口语义清楚，不把审核 UI 留给最终发布版。"
+      ]
+    }
+  ]
+}

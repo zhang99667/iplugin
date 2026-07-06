@@ -1,0 +1,32 @@
+diff --git a/app/feed/FeedDetailViewModel.kt b/app/feed/FeedDetailViewModel.kt
+index 2a8d312..41fd033 100644
+--- a/app/feed/FeedDetailViewModel.kt
++++ b/app/feed/FeedDetailViewModel.kt
+@@ -34,11 +34,15 @@ class FeedDetailViewModel(
+     fun load(feedId: String) {
+         state.value = FeedState.Loading
+         repository.fetch(feedId) { result ->
+-            state.value = FeedState.Success(result.item)
++            if (result.item == null) {
++                state.value = FeedState.Error("empty item")
++            }
++            state.value = FeedState.Success(result.item)
+         }
+     }
+ }
+diff --git a/app/bridge/FeedBridge.m b/app/bridge/FeedBridge.m
+index 9ad9221..32af854 100644
+--- a/app/bridge/FeedBridge.m
++++ b/app/bridge/FeedBridge.m
+@@ -58,8 +58,10 @@ - (void)loadFeed:(NSString *)feedId completion:(void (^)(NSDictionary *payload))
+     [self.client requestFeed:feedId completion:^(NSDictionary *response, NSError *error) {
+         NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+         if (error) {
+-            payload[@"code"] = @"network_error";
++            payload[@"code"] = error.localizedDescription;
++            completion(payload);
+         }
++        payload[@"data"] = response ?: @{};
+         completion(payload);
+     }];
+ }
