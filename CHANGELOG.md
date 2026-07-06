@@ -1,3 +1,10 @@
+## [0.21.19] - 2026-07-06
+### Changed
+- html-report: `artifact-patterns.md` 新增代码评审、验收报告、选型对比、项目总结四类专门模板
+- html-report: 报告类型选择规则补齐 review、验收、选型、总结的触发边界，减少高频报告落回通用规则
+- html-report: README 同步报告类型模板能力说明，skill 版本升级到 `0.3.12`
+- manifest: 插件版本升级到 `0.21.19`
+
 ## [0.21.18] - 2026-07-06
 ### Changed
 - html-report: `highlight_code.py` 新增 `--list-langs`，以 JSON 输出支持语言和常见别名，作为代码语言清单单一真源

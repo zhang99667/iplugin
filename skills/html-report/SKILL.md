@@ -1,11 +1,11 @@
 ---
 name: html-report
-version: 0.3.11
+version: 0.3.12
 tags:
   - report
   - html
   - output
-description: 生成独立 HTML 报告文件，支持图片/视频证据预览、离线批注审核模式和可导出给 Agent 的 Markdown/JSON 提问包。用户明确要求 HTML 输出（如“生成 HTML”“HTML 报告”“写成 HTML”“放到桌面”）、HTML 内批注/审核/提问，或调用 `/html-report` 时必须触发；用户未明说 HTML，但任务明显更适合独立可视化交付物时，也应自动触发或由其他 skill 调用，例如多章节长报告、代码评审报告、问题排查/修复方案、技术方案、方案对比、包含 diff/表格/时间线/图片/视频证据链的归档材料。普通简短的“总结一下”“整理一下”“直接给结论”默认用 Markdown，不触发。
+description: 生成独立 HTML 报告文件，支持图片/视频证据预览、离线批注审核模式和可导出给 Agent 的 Markdown/JSON 提问包。用户明确要求 HTML 输出（如“生成 HTML”“HTML 报告”“写成 HTML”“放到桌面”）、HTML 内批注/审核/提问，或调用 `/html-report` 时必须触发；用户未明说 HTML，但任务明显更适合独立可视化交付物时，也应自动触发或由其他 skill 调用，例如多章节长报告、代码评审报告、验收报告、问题排查/修复方案、技术方案、方案对比、项目总结、包含 diff/表格/时间线/图片/视频证据链的归档材料。普通简短的“总结一下”“整理一下”“直接给结论”默认用 Markdown，不触发。
 ---
 
 # HTML 报告
@@ -17,7 +17,7 @@ description: 生成独立 HTML 报告文件，支持图片/视频证据预览、
 SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读取：
 
 - `references/content-rules.md`：HTML vs Markdown 决策、文档类型、正式抬头、输出要求、写作规范、完成前检查。
-- `references/artifact-patterns.md`：按报告类型选择结构模板。当前覆盖技术方案、技术调研、问题排查/修复方案三个高频场景，其他场景先按通用报告规则处理。
+- `references/artifact-patterns.md`：按报告类型选择结构模板。当前覆盖技术方案、技术调研、问题排查/修复方案、代码评审、验收报告、选型对比、项目总结七个高频场景，其他场景先按通用报告规则处理。
 - `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、超长路径省略展示、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 组件装配规则、HTML 骨架和少量 JS 片段。只有开始写 HTML 文件时再读取；它会按内容路由到 `references/css/*.css`。
 - `references/css/*.css`：组件化 CSS 源文件。`base.css` 与 `interactions.css` 是默认组合；`code-diff.css`、`media.css`、`diagram.css`、`toc.css`、`tabs.css`、`sortable-table.css` 按内容需要读取并内联进最终 HTML。
@@ -51,7 +51,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
    - 明确要求终端输出或不用 HTML：直接输出 Markdown。
    - 模糊请求：内容简单用 Markdown；内容明显是复杂交付物时自动生成 HTML；无法判断时先确认。
 2. 决定要生成 HTML 后，读取 `references/content-rules.md`，判断正式技术/业务文档、分析报告或普通对话转 HTML。
-3. 如果报告属于技术方案、技术调研、问题排查或修复方案，读取 `references/artifact-patterns.md`，选择对应结构。
+3. 如果报告属于技术方案、技术调研、问题排查/修复方案、代码评审、验收报告、选型对比或项目总结，读取 `references/artifact-patterns.md`，选择对应结构。
 4. 读取 `references/visual-rules.md`，选择必要的视觉结构和交互。保持克制，不为装饰添加复杂交互。
 5. 报告需要复杂技术架构图、流程图、状态图或模块关系图时，读取 `../svg-tech-diagram/SKILL.md` 及其相关 references，生成可内联 SVG；该图必须先渲染 PNG 并完成自审，再嵌入 HTML。
 6. 报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时，先用 `scripts/highlight_code.py` 生成高亮 HTML 片段，再嵌入报告；不要手写裸 `<pre><code>`。最终 `<style>` 必须内联 `references/css/code-diff.css`。
