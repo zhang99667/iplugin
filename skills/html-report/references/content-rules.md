@@ -4,7 +4,7 @@
 
 在开始生成之前，按以下逻辑判断输出格式，不需要每次都问用户：
 
-1. 用户明确要求 HTML（说了“生成HTML”“写成HTML报告”“/html-report”）时，直接生成 HTML，不询问。默认加入折叠和复制按钮。
+1. 用户明确要求 HTML（说了“生成HTML”“写成HTML报告”“/html-report”）时，直接生成 HTML，不询问。默认加入折叠；出现代码块、日志或 diff 时再加入复制按钮。
 2. 用户明确要求终端输出（说了“直接给我”“输出结论”“不用HTML”）时，直接输出 Markdown，不询问。
 3. 用户意图模糊（说了“整理一下”“总结一下”等）时：
    - 内容简单（不超过 3 个要点、无代码块、无表格）直接输出 Markdown。
@@ -50,7 +50,7 @@
 1. 单文件 `.html`，CSS 和 JS 内嵌在 `<style>` / `<script>` 中，不依赖外部 CSS、JS、CDN 或运行时高亮库；图表优先使用表格、内联 SVG 或生成期静态内容。
 2. 用户没有指定路径时，默认输出到桌面。
 3. 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
-4. `/html-report` 时直接生成，不再反问，默认带折叠和复制按钮。
+4. `/html-report` 时直接生成，不再反问，默认带折叠；出现代码块、日志或 diff 时再带复制按钮。
 5. 判断为正式技术/业务文档或分析报告时，必须加文档抬头；判断为普通对话转 HTML 时不强制加。
 6. 如需图片或视频证据，HTML 可用相对路径引用同目录证据资源，例如 `evidence_20260625/xxx.png`、`evidence_20260625/xxx.mp4`；媒体资源不算外部 CSS/JS 依赖。小图可选 base64 内嵌，大图和视频默认不要 base64。
 7. 完成后只回复文件路径和一句话概要，不复述报告全文。
@@ -70,7 +70,7 @@
 - 多行代码如果使用 `tok-*` class 做 builtin 高亮，页面 `<style>` 必须包含对应 `.tok-*` CSS；如果使用 Pygments inline style，则不需要额外 token CSS。
 - 只要报告涉及代码新增、删除或修改，不能只贴“当前代码”和“修复后代码”。必须明确标出每处变更类型：新增、删除、修改、上下文。
 - 修复方案包含代码时，优先展示聚焦 diff；如果用 before/after，也必须在标题或行内标出“修改前/修改后”，并用颜色或标记突出实际变化。
-- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，常见语言映射到 `kotlin`、`java`、`objc`、`swift`、`c`、`cpp`、`go`、`rust`、`js`、`ts`、`python`、`ruby`、`php`、`xml`、`sql`、`json`、`yaml`、`toml`、`ini`、`markdown`、`bash`、`text`。默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；Pygments 缺失时不要自动安装，除非用户明确要求；真实 unified diff 必须使用 `--lang diff --diff-view`，不要用普通 `language-diff` 或 `language-text` 代码块，也不要把脚本输出的 diff viewer 结构拆散。
+- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，并在最终 `<style>` 内联 `references/css/code-diff.css`。常见语言映射到 `kotlin`、`java`、`objc`、`swift`、`c`、`cpp`、`go`、`rust`、`js`、`ts`、`python`、`ruby`、`php`、`xml`、`sql`、`json`、`yaml`、`toml`、`ini`、`markdown`、`bash`、`text`。默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；Pygments 缺失时不要自动安装，除非用户明确要求；真实 unified diff 必须使用 `--lang diff --diff-view`，不要用普通 `language-diff` 或 `language-text` 代码块，也不要把脚本输出的 diff viewer 结构拆散。
 - 如果代码片段是建议方案而不是已经存在的 git diff，标题写成“建议变更”或“拟修改”，不要伪装成已经发生的提交 diff。
 - 行号可能不准确时，说明基于当前本地源码。
 - 有绝对路径优先绝对路径，没有则用仓库相对路径。

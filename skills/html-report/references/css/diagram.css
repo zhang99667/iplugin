@@ -1,0 +1,35 @@
+/* 技术图 CSS：只有内联 SVG 技术图或宽架构图容器需要这一段。 */
+.diagram-block {
+  margin: 16px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow-x: auto;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+.diagram-block .tech-diagram {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: auto;
+}
+.diagram-block figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .diagram-block { padding: 10px; border-radius: 12px; }
+  .diagram-block .tech-diagram { min-width: 640px; }
+}
+
+@media print {
+  .diagram-block {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .diagram-block .tech-diagram { min-width: 0; }
+}

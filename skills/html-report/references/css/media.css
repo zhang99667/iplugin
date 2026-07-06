@@ -1,0 +1,80 @@
+/* 媒体证据 CSS：只有报告展示截图、录屏或关键帧时才内联。 */
+.media-evidence {
+  margin: 16px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
+}
+.media-frame {
+  overflow-x: auto;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #0f172a;
+}
+.media-frame + .media-frame { margin-top: 10px; }
+.media-frame img,
+.media-frame video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 72vh;
+  object-fit: contain;
+  background: #0f172a;
+}
+.media-caption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.media-caption-title {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-weight: 800;
+}
+.media-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.media-meta span,
+.media-link {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.media-link {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+.media-link:hover {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+@media (max-width: 720px) {
+  .media-evidence { padding: 10px; border-radius: 12px; }
+  .media-frame img,
+  .media-frame video { max-height: 62vh; }
+}
+
+@media print {
+  .media-evidence {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}

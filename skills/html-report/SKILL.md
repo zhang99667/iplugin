@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.3.9
+version: 0.3.10
 tags:
   - report
   - html
@@ -19,7 +19,8 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `references/content-rules.md`：HTML vs Markdown 决策、文档类型、正式抬头、输出要求、写作规范、完成前检查。
 - `references/artifact-patterns.md`：按报告类型选择结构模板。当前覆盖技术方案、技术调研、问题排查/修复方案三个高频场景，其他场景先按通用报告规则处理。
 - `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、超长路径省略展示、目录导航、ASCII/代码块、交互组件、场景速查。
-- `references/css-template.md`：CSS 模板、交互组件样式、可整体收起的浮动目录侧栏、复制按钮 JS 和 HTML 骨架。只有开始写 HTML 文件时再读取。
+- `references/css-template.md`：CSS 组件装配规则、HTML 骨架和少量 JS 片段。只有开始写 HTML 文件时再读取；它会按内容路由到 `references/css/*.css`。
+- `references/css/*.css`：组件化 CSS 源文件。`base.css` 与 `interactions.css` 是默认组合；`code-diff.css`、`media.css`、`diagram.css`、`toc.css`、`tabs.css`、`sortable-table.css` 按内容需要读取并内联进最终 HTML。
 - `references/annotation-mode.md`：当用户要求离线批注、审核模式、Agent 提问包、HTML 内选中文本提问/批注或发布版导出时读取。
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
 - `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、Objective-C / Swift / C-family 等语言片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
@@ -53,8 +54,8 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 3. 如果报告属于技术方案、技术调研、问题排查或修复方案，读取 `references/artifact-patterns.md`，选择对应结构。
 4. 读取 `references/visual-rules.md`，选择必要的视觉结构和交互。保持克制，不为装饰添加复杂交互。
 5. 报告需要复杂技术架构图、流程图、状态图或模块关系图时，读取 `../svg-tech-diagram/SKILL.md` 及其相关 references，生成可内联 SVG；该图必须先渲染 PNG 并完成自审，再嵌入 HTML。
-6. 报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时，先用 `scripts/highlight_code.py` 生成高亮 HTML 片段，再嵌入报告；不要手写裸 `<pre><code>`。
-7. 写 HTML 文件前读取 `references/css-template.md`，使用内嵌 CSS/JS 生成单文件 HTML；长文档目录必须默认展开，并能点击按钮收起/展开整个目录侧栏。
+6. 报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时，先用 `scripts/highlight_code.py` 生成高亮 HTML 片段，再嵌入报告；不要手写裸 `<pre><code>`。最终 `<style>` 必须内联 `references/css/code-diff.css`。
+7. 写 HTML 文件前读取 `references/css-template.md`，按组件清单读取需要的 `references/css/*.css` 并内联到单文件 HTML；长文档目录必须默认展开，并能点击按钮收起/展开整个目录侧栏。
 8. 如果用户要求离线批注、审核模式或希望把 HTML 中的疑问导出给 Agent，先运行基础校验，再读取 `references/annotation-mode.md`，执行 `python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>` 注入审核模式。
 9. 完成前运行 `python3 skills/html-report/scripts/check_html_report.py <html-file>`；若失败，修正 HTML 后重跑直到通过。
 10. 完成后只回复文件路径和一句话概要，不复述报告全文。
@@ -69,7 +70,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 批注导出的 Markdown/JSON 必须包含原 HTML 的文件名、绝对路径和 `file://` URL，避免交给 Agent 或子 Agent 后丢失上下文。
 - 判断为正式技术/业务文档或分析报告时，必须加文档抬头；普通对话转 HTML 不强制加。
 - 报告内容必须来自用户内容或可靠上下文，不编造仓库、负责人、日期、卡片号、上线计划或收益数据。
-- 代码高亮、长文档目录、响应式和打印样式的细节按 `references/visual-rules.md` 与 `references/css-template.md` 执行；最终必须通过 `scripts/check_html_report.py`。
+- 代码高亮、长文档目录、响应式和打印样式的细节按 `references/visual-rules.md`、`references/css-template.md` 和对应 `references/css/*.css` 执行；最终必须通过 `scripts/check_html_report.py`。
 
 ## 核心原则
 
@@ -77,7 +78,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 首屏给结论，详情和证据往下排。
 - 颜色、卡片、表格、目录、折叠都服务于阅读和定位。
 - 代码块必须先转义再高亮，使用 `scripts/highlight_code.py` 生成静态 HTML；如果脚本语言参数不匹配，先换用受支持语言或修正脚本，不要降级成交付未高亮代码块。
-- 使用 `tok-*` class 的 builtin 高亮时，最终 HTML 的 `<style>` 必须包含对应 `.tok-*` 样式；缺少 token CSS 会导致代码实际无高亮。
+- 使用 `tok-*` class 的 builtin 高亮时，最终 HTML 的 `<style>` 必须包含 `references/css/code-diff.css` 里的 `.tok-*` 样式；缺少 token CSS 会导致代码实际无高亮。
 - Markdown 来源中的反引号行内代码必须渲染成 `<code>...</code>`，例如 `` `d` `` 或 `` `support_full_screen` `` 不能作为原始反引号文本留在 HTML 正文里。
 - 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，并原样嵌入输出片段，不要手写 diff 表格、不要拆成普通 `<pre>`、不要把 diff 降级成 `language-diff` 或 `language-text` 代码块。
 - 宽表格、代码块、ASCII 图和长路径必须在窄屏/分屏下可横向滚动或换行，不允许把正文撑出视口。

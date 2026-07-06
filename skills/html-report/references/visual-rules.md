@@ -105,7 +105,7 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 - 媒体卡片建议使用 `.media-evidence`，并通过标题、说明、对应 case、证据结论帮助读者快速扫读。它们是推荐结构，不是所有媒体块的硬性失败条件。
 - 媒体仍要遵守响应式底线：图片和视频 `max-width: 100%; height: auto;`，外层可横向滚动，移动端不能把正文撑出视口。
 
-推荐结构见 `references/css-template.md` 的“可选媒体证据块”。完成前运行 `check_html_report.py`；脚本会在媒体实际出现时检查本地相对路径、图片 `alt`、视频 `controls` 和响应式保护，并对缺少标题/说明/case/结论的媒体证据卡给出 warning。
+推荐结构见 `references/css-template.md` 的“媒体证据结构”，样式来自 `references/css/media.css`。完成前运行 `check_html_report.py`；脚本会在媒体实际出现时检查本地相对路径、图片 `alt`、视频 `controls` 和响应式保护，并对缺少标题/说明/case/结论的媒体证据卡给出 warning。
 
 ## 响应式、打印与可访问性
 
@@ -246,13 +246,13 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 - 优先用 `<span class="tok-key">`、`tok-str`、`tok-num`、`tok-cmt`、`tok-fn`、`tok-var` 等 class 标出关键字、字符串、数字、注释、函数名和变量名。
 - 不需要完整编译级语法分析，但至少要让读者一眼区分注释、字符串、关键逻辑和普通标识符。
-- 差异代码不要手工改成普通代码块；只有在脚本路径、临时文件和语言参数都修复后仍无法运行时，才按 `.diff-card.diff-viewer` 的结构手工补齐固定样式。手工补齐时必须包含 `.diff-header`、`.diff-scroll`、`.diff-table`、`.diff-gutter`、`.diff-old-num`、`.diff-new-num`、`.diff-code`、`.diff-hunk` 和 `.diff-add` / `.diff-del`，并使用 `references/css-template.md` 中完整 diff viewer CSS。
+- 差异代码不要手工改成普通代码块；只有在脚本路径、临时文件和语言参数都修复后仍无法运行时，才按 `.diff-card.diff-viewer` 的结构手工补齐固定样式。手工补齐时必须包含 `.diff-header`、`.diff-scroll`、`.diff-table`、`.diff-gutter`、`.diff-old-num`、`.diff-new-num`、`.diff-code`、`.diff-hunk` 和 `.diff-add` / `.diff-del`，并内联 `references/css/code-diff.css` 中完整 diff viewer CSS。
 - 短代码块只高亮确定的核心 token；如果不确定，保持转义后的纯文本更好。
 - 代码内容必须先转义 HTML，再包高亮 span，避免 `<`、`>`、`&` 破坏页面。
 - 多行代码块必须放在 `.code-wrap` 容器中，使用 `<pre><code class="language-xxx">...</code></pre>`，右上角提供复制按钮。
 - 完成前运行 `scripts/check_html_report.py`。支持高亮的语言应包含至少一种 `tok-*` token 或 Pygments inline style；使用 `tok-*` 时还必须有对应 CSS 定义；`text`、日志和纯文本只要求已转义并包在 `.code-wrap` 中。
 
-ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让浏览器自动换行破坏结构。ASCII 图使用专用浅色容器，例如 `<pre class="ascii-diagram">...</pre>`，样式必须包含等宽字体、`white-space: pre`、`overflow-x: auto`、合适行高和横向滚动。
+ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让浏览器自动换行破坏结构。ASCII 图使用专用浅色容器，例如 `<pre class="ascii-diagram">...</pre>`，并内联 `references/css/code-diff.css`，确保包含等宽字体、`white-space: pre`、`overflow-x: auto`、合适行高和横向滚动。
 
 ## 可用交互
 

@@ -1,0 +1,115 @@
+/* 左侧目录 CSS：长文档才内联，默认展开并支持整体收起。 */
+.layout-with-toc {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 24px 56px;
+  transition: grid-template-columns .2s ease;
+}
+.layout-with-toc.toc-collapsed {
+  grid-template-columns: 52px minmax(0, 1fr);
+}
+.layout-with-toc main {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.toc {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+  padding: 16px;
+}
+.toc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.toc-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.toc-toggle {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+  line-height: 1;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.toc-toggle:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: var(--accent);
+}
+.toc-toggle-icon { font-size: 18px; line-height: 1; }
+.toc a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #334155;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.toc a:hover { background: #f1f5f9; color: var(--accent); }
+.layout-with-toc.toc-collapsed .toc {
+  padding: 10px;
+  overflow: visible;
+}
+.layout-with-toc.toc-collapsed .toc-header {
+  justify-content: center;
+  margin-bottom: 0;
+}
+.layout-with-toc.toc-collapsed .toc-title,
+.layout-with-toc.toc-collapsed .toc a {
+  display: none;
+}
+.layout-with-toc.toc-collapsed .toc-toggle {
+  width: 32px;
+  height: 32px;
+}
+section[id], h2[id] { scroll-margin-top: 24px; }
+
+@media (max-width: 900px) {
+  .layout-with-toc {
+    display: block;
+    padding: 20px 16px 44px;
+  }
+  .toc {
+    position: static;
+    max-height: none;
+    margin-bottom: 16px;
+    overflow: visible;
+  }
+  .layout-with-toc.toc-collapsed .toc { padding: 16px; }
+  .layout-with-toc.toc-collapsed .toc-header {
+    justify-content: space-between;
+    margin-bottom: 0;
+  }
+  .layout-with-toc.toc-collapsed .toc-title { display: block; }
+  .doc-header {
+    padding: 22px 20px;
+    border-radius: 14px;
+  }
+  .doc-header h1 { font-size: 24px; }
+}

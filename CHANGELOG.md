@@ -1,3 +1,11 @@
+## [0.21.17] - 2026-07-04
+### Changed
+- html-report: 将 `css-template.md` 从整块 CSS 模板改为 CSS 组件装配说明，行数从 1120 行降到 291 行
+- html-report: 新增 `references/css/` 组件 CSS 源文件，按 base、code-diff、interactions、media、diagram、toc、tabs、sortable-table 拆分维护
+- html-report: 明确生成报告时按需读取组件 CSS，并把需要的 CSS 内联进最终单文件 HTML，避免交付物依赖外部 CSS
+- html-report: skill 版本升级到 `0.3.10`
+- manifest: 插件版本升级到 `0.21.17`
+
 ## [0.21.16] - 2026-07-03
 ### Changed
 - html-report: `highlight_code.py` 新增 Objective-C、Swift、C/C++、Go、Rust、TypeScript、Ruby、PHP、Markdown、TOML、INI 等语言和常见后缀/别名支持

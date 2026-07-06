@@ -1,0 +1,44 @@
+/* 通用交互 CSS：折叠区和 toast 反馈，不包含代码复制按钮。 */
+details {
+  margin: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+summary {
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  background: #f8fafc;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before {
+  content: "▸";
+  display: inline-block;
+  font-size: 10px;
+  transition: transform .2s;
+  color: var(--muted);
+}
+details[open] summary::before { transform: rotate(90deg); }
+.details-body { padding: 12px 16px; }
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: #ffffff;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; }

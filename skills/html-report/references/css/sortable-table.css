@@ -1,0 +1,29 @@
+/* 可排序表格 CSS：5 行以上的数据表才内联，短表格保持普通静态表格。 */
+.tbl-wrap {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th {
+  cursor: pointer;
+  user-select: none;
+  padding: 10px 14px;
+  text-align: left;
+  background: #f1f5f9;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+th:hover { background: #e2e8f0; }
+th .sort-arrow {
+  font-size: 10px;
+  margin-left: 4px;
+}
+td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+tr:hover td { background: #f8fafc; }
