@@ -1,3 +1,11 @@
+## [0.21.18] - 2026-07-06
+### Changed
+- html-report: `highlight_code.py` 新增 `--list-langs`，以 JSON 输出支持语言和常见别名，作为代码语言清单单一真源
+- html-report: `check_html_report.py` 改为从 `highlight_code.py` 读取支持语言，移除校验脚本内重复白名单
+- html-report: references 改为引用 `--list-langs`，避免文档里维护第二份完整语言清单
+- html-report: skill 版本升级到 `0.3.11`
+- manifest: 插件版本升级到 `0.21.18`
+
 ## [0.21.17] - 2026-07-04
 ### Changed
 - html-report: 将 `css-template.md` 从整块 CSS 模板改为 CSS 组件装配说明，行数从 1120 行降到 291 行

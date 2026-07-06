@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import html
 import importlib.util
+import json
 import re
 import shutil
 import subprocess
@@ -890,6 +891,15 @@ def normalize_lang(lang: str) -> str:
     return normalized
 
 
+def language_registry() -> dict[str, object]:
+    """输出语言注册表，让文档、校验脚本和测试只依赖这一份清单。"""
+
+    return {
+        "languages": sorted(SUPPORTED_LANGS),
+        "aliases": {key: LANG_ALIASES[key] for key in sorted(LANG_ALIASES)},
+    }
+
+
 def infer_lang_from_diff_path(diff_path: str) -> str:
     """从 unified diff 的 ---/+++ 文件路径推断代码语言。"""
 
@@ -1381,16 +1391,25 @@ def render_code_wrap(source: str, lang: str, copy_button: bool = True, engine: s
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="生成已转义、轻量高亮的 HTML 代码块。")
     parser.add_argument("input", nargs="?", help="输入文件路径；省略或传 '-' 时从 stdin 读取。")
-    parser.add_argument("--lang", required=True, help=f"语言：{', '.join(sorted(SUPPORTED_LANGS))}；常见文件后缀和别名会自动映射。")
+    parser.add_argument("--lang", help=f"语言：{', '.join(sorted(SUPPORTED_LANGS))}；常见文件后缀和别名会自动映射。")
+    parser.add_argument("--list-langs", action="store_true", help="输出当前支持语言和别名的 JSON 注册表。")
     parser.add_argument("--mode", choices=["code", "diff-viewer"], default="code", help="输出模式；diff-viewer 用于带 old/new 行号的差异视图。")
     parser.add_argument("--diff-view", action="store_true", help="等同于 --mode diff-viewer，仅支持 --lang diff。")
     parser.add_argument("--engine", choices=["builtin", "auto", "pygments"], default="builtin", help="高亮引擎：builtin 为零依赖默认值；auto/pygments 可使用本机 Pygments 预渲染。")
     parser.add_argument("--no-copy", action="store_true", help="不生成复制按钮。")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not args.list_langs and not args.lang:
+        parser.error("--lang is required unless --list-langs is used")
+    return args
 
 
 def main() -> None:
     args = parse_args()
+    if args.list_langs:
+        json.dump(language_registry(), sys.stdout, ensure_ascii=False, indent=2)
+        sys.stdout.write("\n")
+        return
+
     lang = normalize_lang(args.lang)
     source = read_source(args.input)
     mode = "diff-viewer" if args.diff_view else args.mode

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import html as html_lib
+import importlib.util
 import re
 import sys
 from dataclasses import dataclass, field
@@ -30,32 +31,22 @@ RAW_UNIFIED_DIFF_RE = re.compile(
 HUNK_MARKER_RE = re.compile(r"@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
 
 TEXT_LIKE_LANGS = {"markdown", "text", "txt", "log", "logs", "plain", "plaintext"}
-SUPPORTED_LANGS = {
-    "bash",
-    "c",
-    "cpp",
-    "diff",
-    "go",
-    "ini",
-    "java",
-    "js",
-    "json",
-    "kotlin",
-    "markdown",
-    "objc",
-    "php",
-    "python",
-    "ruby",
-    "rust",
-    "sql",
-    "swift",
-    "toml",
-    "ts",
-    "text",
-    "xml",
-    "yaml",
-}
 MEDIA_EXTENSIONS = {".apng", ".avif", ".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".ogg", ".ogv", ".png", ".svg", ".webm", ".webp"}
+
+
+def load_supported_langs() -> set[str]:
+    """从高亮脚本读取语言白名单，避免校验脚本维护第二份旧清单。"""
+
+    highlighter_path = Path(__file__).with_name("highlight_code.py")
+    spec = importlib.util.spec_from_file_location("html_report_highlight_code", highlighter_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载高亮脚本语言清单: {highlighter_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return set(module.SUPPORTED_LANGS)
+
+
+SUPPORTED_LANGS = load_supported_langs()
 
 
 @dataclass

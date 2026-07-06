@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.3.10
+version: 0.3.11
 tags:
   - report
   - html
@@ -78,6 +78,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 首屏给结论，详情和证据往下排。
 - 颜色、卡片、表格、目录、折叠都服务于阅读和定位。
 - 代码块必须先转义再高亮，使用 `scripts/highlight_code.py` 生成静态 HTML；如果脚本语言参数不匹配，先换用受支持语言或修正脚本，不要降级成交付未高亮代码块。
+- 支持语言和常见别名以 `python3 skills/html-report/scripts/highlight_code.py --list-langs` 输出为准；不要在 references 或校验脚本里维护第二份完整语言清单。
 - 使用 `tok-*` class 的 builtin 高亮时，最终 HTML 的 `<style>` 必须包含 `references/css/code-diff.css` 里的 `.tok-*` 样式；缺少 token CSS 会导致代码实际无高亮。
 - Markdown 来源中的反引号行内代码必须渲染成 `<code>...</code>`，例如 `` `d` `` 或 `` `support_full_screen` `` 不能作为原始反引号文本留在 HTML 正文里。
 - 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，并原样嵌入输出片段，不要手写 diff 表格、不要拆成普通 `<pre>`、不要把 diff 降级成 `language-diff` 或 `language-text` 代码块。

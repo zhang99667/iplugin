@@ -31,9 +31,12 @@ python3 skills/html-report/scripts/highlight_code.py --lang sql query.sql
 python3 skills/html-report/scripts/highlight_code.py --lang json payload.json
 python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin snippet.kt
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
+python3 skills/html-report/scripts/highlight_code.py --list-langs
 ```
 
 脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用 `tok-*` class 做基础语法高亮。真实 unified diff 必须使用 `--diff-view` 输出 `.diff-card.diff-viewer`，把脚本输出的 `<section class="diff-card diff-viewer">...</section>` 原样嵌入正文，不要再包成 `.code-wrap`。
+
+支持语言和常见别名以 `--list-langs` 的 JSON 输出为准。新增语言时先更新 `highlight_code.py` 的语言注册表，再由校验脚本和文档读取同一份结果，避免多处旧清单残留。
 
 如果使用 `tok-*` class，最终 `<style>` 必须包含 `references/css/code-diff.css`；缺失时 `check_html_report.py` 会报 token CSS 或 diff viewer CSS 错误。
 
