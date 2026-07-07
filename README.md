@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码模式打开的个人研发工作流通用插件。
 
 ## 仓库顶层目录结构
 
@@ -52,6 +52,7 @@ iplugin/
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |
 | `mgit` | 百度 MGIT 多仓状态、分支、仓库范围和中间态诊断；执行前预检 Ruby/gem/colored2 等启动依赖；支持结合 EasyBox/xbuild `overlay` / `local` 配置判断开发分支上车和 master 合入时的源码模式范围；多仓写操作需确认 | "整体看一下这套工程状态"、"根据这些改动更新 EasyBox overlay/local" |
+| `xbuild-open-source` | 反查 EasyBox/xbuild 模块映射，并在 local 或 overlay 覆盖文件中最小开启 `syncSource true`；适合“开源码”“打开仓库”“从崩溃栈/类名反查要开哪个源码仓”等场景 | "帮我打开这个 xbuild 仓库源码模式"、"根据这个崩溃栈开一下 TalosPro 源码" |
 | `session-rename` | 为 Claude Code 会话生成可检索标题 | "重命名当前会话" |
 
 ## Commands

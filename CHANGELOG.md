@@ -1,3 +1,11 @@
+## [0.22.0] - 2026-07-07
+### Added
+- xbuild-open-source: 新增 EasyBox/xbuild 源码模式打开 skill，支持从崩溃栈、类名、包名、模块名或远端仓库反查 `xbuild/modules/default` 映射，并在 local/overlay 覆盖文件中最小开启 `syncSource true`
+- xbuild-open-source: 新增 `references/xbuild-source-mode.md`，沉淀 local/overlay 选择、default 映射查找、TalosPro/bba_talospro/广告仓判断和 MGIT 同步确认边界
+
+### Changed
+- README / manifest: 同步新增 xbuild 源码模式打开能力，插件版本升级到 `0.22.0`
+
 ## [0.21.21] - 2026-07-06
 ### Changed
 - html-report: 将批注审核模式的 CSS、HTML 容器和 JS 从 `inject_annotation_mode.py` 抽到 `assets/annotation-mode/`
