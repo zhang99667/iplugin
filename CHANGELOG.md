@@ -1,3 +1,10 @@
+## [0.22.1] - 2026-07-07
+### Changed
+- obsidian: 引入任务定义、范围计划、证据包、内容规格、大纲、初稿、改写、配图计划、质检和写入交付的 10 步写作闭环，减少空泛模板化笔记
+- obsidian: 新增概念解释、技术链路、问题复盘和资料整理四类常用笔记结构，并补充“烂笔记模式”反向检查
+- obsidian: skill 版本升级到 `0.2.0`
+- README / manifest: 同步 Obsidian 写作流程说明，插件版本升级到 `0.22.1`
+
 ## [0.22.0] - 2026-07-07
 ### Added
 - xbuild-open-source: 新增 EasyBox/xbuild 源码模式打开 skill，支持从崩溃栈、类名、包名、模块名或远端仓库反查 `xbuild/modules/default` 映射，并在 local/overlay 覆盖文件中最小开启 `syncSource true`

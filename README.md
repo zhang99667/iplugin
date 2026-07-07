@@ -47,7 +47,7 @@ iplugin/
 | `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，处理 Chrome 登录态、Monaco 编辑器粘贴、任务 ID 回收、排队/执行状态汇报和运行中心跳检查 | "DataPilot 跑一下这个 SQL"、"把这些 .sql 提交到 datapilot 并回收任务 ID" |
 | `nad-acx-pivot-table` | 生成商业 AB 实验数据分析透视表 xlsx，支持 CSV/TXT/XLSX 合并、字段别名映射、原生 Excel 透视表和相对差指标 | "生成商业 AB 实验透视表"、"合并最近 3 个 csv/txt 生成透视表" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
-| `obsidian` | 写入 Obsidian Vault 时应用统一 Markdown 排版、标题层级、引用块、双链规范，并按清晰度选择 Mermaid / ASCII / SVG / 图像生成等示意图表达 | "写到 Obsidian"、"记到笔记里"、"加到 vault 里" |
+| `obsidian` | 写入 Obsidian Vault 时先执行任务定义、证据收集、内容规格、大纲、初稿、改写、配图计划和质检交付流程，再应用统一 Markdown 排版、双链和示意图规范，避免空泛模板化笔记 | "写到 Obsidian"、"记到笔记里"、"加到 vault 里" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |
