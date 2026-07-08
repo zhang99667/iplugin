@@ -1,3 +1,10 @@
+## [0.22.2] - 2026-07-08
+### Changed
+- datapilot-sql-runner: 默认优先使用 DataPilot MCP 提交 SQL、查询任务状态、下载或转储结果，MCP 不可用或能力不覆盖时再回退 Chrome/Monaco 页面流程
+- datapilot-sql-runner: 补充 MCP 已返回 `task_id` 后的重复提交保护，后续查询失败时优先按任务 ID 跟进或打开 Chrome 运行中心定位
+- datapilot-sql-runner: skill 版本升级到 `0.1.2`
+- README / manifest: 同步 DataPilot MCP 优先说明，插件版本升级到 `0.22.2`
+
 ## [0.22.1] - 2026-07-07
 ### Changed
 - obsidian: 引入任务定义、范围计划、证据包、内容规格、大纲、初稿、改写、配图计划、质检和写入交付的 10 步写作闭环，减少空泛模板化笔记
