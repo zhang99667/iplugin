@@ -1,3 +1,11 @@
+## [0.22.3] - 2026-07-08
+### Changed
+- datapilot-sql-runner: 将定位调整为 DataPilot MCP 跑数结果闭环，默认覆盖提交 SQL、查状态、等待下载、下载结果和可选透视表产出
+- datapilot-sql-runner: 大幅瘦身 `SKILL.md`，把 Chrome/Monaco 页面操作经验迁移到 `references/chrome_fallback.md`，仅 MCP 不可用或能力不覆盖时按需读取
+- datapilot-sql-runner: 补充下载结果后联动 `nad-acx-pivot-table` 生成商业 AB 实验透视表的交付流程
+- datapilot-sql-runner: skill 版本升级到 `0.1.3`
+- README / manifest: 同步 DataPilot 跑数结果闭环说明，插件版本升级到 `0.22.3`
+
 ## [0.22.2] - 2026-07-08
 ### Changed
 - datapilot-sql-runner: 默认优先使用 DataPilot MCP 提交 SQL、查询任务状态、下载或转储结果，MCP 不可用或能力不覆盖时再回退 Chrome/Monaco 页面流程

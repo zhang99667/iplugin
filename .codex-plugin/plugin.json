@@ -1,7 +1,7 @@
 {
   "name": "iplugin",
-  "version": "0.22.2",
-  "description": "toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码模式打开",
+  "version": "0.22.3",
+  "description": "toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码模式打开",
   "author": {
     "name": "markz"
   },
@@ -59,6 +59,8 @@
     "sql-runner",
     "runner",
     "task-id",
+    "result",
+    "download",
     "chrome",
     "commercial-sql-writer",
     "commercial",
@@ -172,7 +174,7 @@
   "interface": {
     "displayName": "iPlugin",
     "shortDescription": "个人开发工作流工具箱",
-    "longDescription": "面向个人研发工作流的通用插件，提供代码链路阅读、爱迪生考试题库答题、复杂任务委派、结构化询问命令、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业广告 SQL 写作、DataPilot SQL 跑数与任务 ID 回收、商业 AB 实验数据透视表生成、项目总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 风格编码约束、MGIT/EasyBox 多仓辅助、xbuild 源码模式打开等可复用能力。",
+    "longDescription": "面向个人研发工作流的通用插件，提供代码链路阅读、爱迪生考试题库答题、复杂任务委派、结构化询问命令、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业广告 SQL 写作、DataPilot SQL 跑数、结果下载与任务 ID 回收、商业 AB 实验数据透视表生成、项目总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 风格编码约束、MGIT/EasyBox 多仓辅助、xbuild 源码模式打开等可复用能力。",
     "developerName": "markz",
     "category": "Productivity",
     "capabilities": [
@@ -193,7 +195,7 @@
       "根据这个 prompt 生成图片并保存",
       "替换 SQL 里的实验号和日期",
       "帮我写一个商业广告展点消 SQL",
-      "在 DataPilot 上跑这个 SQL 并回收任务 ID",
+      "在 DataPilot 上跑这个 SQL，等下载结果并生成透视表",
       "合并最近 3 个 csv/txt 生成商业 AB 实验透视表",
       "写到 Obsidian 笔记里",
       "给这次 Android 改动添加差异化标记",

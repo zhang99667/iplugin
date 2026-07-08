@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码模式打开的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览与可编辑离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码模式打开的个人研发工作流通用插件。
 
 ## 仓库顶层目录结构
 
@@ -44,7 +44,7 @@ iplugin/
 | `generate-image` | 生成图片并按需求保存到本地；普通出图可用平台内置能力，明确指定 `gptimage` / `gptimg2` / `banana2` 等接口链路时必须走通用 API 客户端，默认并发生成 3 张候选图并视觉筛选只保留最佳图，路由词不会进入最终图片 prompt，API key 首次提供后保存到本地私有缓存复用 | "生成图片"、"banana2 出图"、"用 gptimg2 保存这张图" |
 | `sql-exp-replace` | 用确定性脚本批量替换 SQL 中的实验号和日期范围 | "把实验号改成 162160，日期改成 0508 到 0513" |
 | `commercial-sql-writer` | 编写、改写和检查商业/NAD 广告分析 SQL，按场景选择表、字段、指标口径和模板，覆盖落地页性能/抵达率口径 | "帮我写一个展点消大盘 SQL"、"检查这个商业 SQL 的 join 和转化口径" |
-| `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，优先使用 MCP 提交、查状态和下载结果；MCP 不可用时回退 Chrome 登录态、Monaco 编辑器粘贴、任务 ID 回收和运行中心跳检查 | "DataPilot 跑一下这个 SQL"、"把这些 .sql 提交到 datapilot 并回收任务 ID" |
+| `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，默认使用 MCP 完成提交、查状态、等待下载和结果下载；结果字段匹配时联动商业 AB 透视表 skill 直接产出 xlsx，Chrome 只作为页面专属设置或 MCP 不可用时的兜底 | "DataPilot 跑一下这个 SQL 并下载结果"、"跑完这些 SQL 直接生成透视表" |
 | `nad-acx-pivot-table` | 生成商业 AB 实验数据分析透视表 xlsx，支持 CSV/TXT/XLSX 合并、字段别名映射、原生 Excel 透视表和相对差指标 | "生成商业 AB 实验透视表"、"合并最近 3 个 csv/txt 生成透视表" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
 | `obsidian` | 写入 Obsidian Vault 时先执行任务定义、证据收集、内容规格、大纲、初稿、改写、配图计划和质检交付流程，再应用统一 Markdown 排版、双链和示意图规范，避免空泛模板化笔记 | "写到 Obsidian"、"记到笔记里"、"加到 vault 里" |
