@@ -98,6 +98,21 @@ underlayers {
 
 改 `syncSource true` 只表示构建希望使用源码模式，不一定已经把仓库同步到 `repos`。
 
+### 先判断当前状态
+
+把 default 中的模块映射、覆盖配置和本地目录交叉检查后再动作：
+
+| `syncSource` | 本地源码目录 | 处理方式 |
+|---|---|---|
+| `true` | 存在 | 不改配置、不重复同步，直接继续原任务 |
+| `true` | 不存在 | 不改配置，只精确同步目标仓 |
+| `false` 或未配置 | 存在 | 代码阅读可直接继续；用户要求源码构建时才改为 `true` |
+| `false` 或未配置 | 不存在 | 唯一映射时补个人 local 的 `syncSource true`，再精确同步目标仓 |
+
+检查 local 和 overlay 时要记录命中的具体文件。个人调试或其他代码任务中隐式发现源码缺失时，默认写现有个人 local 文件；如果存在多个 local 文件，优先选择当前构建已引用或与壳工程/场景命名匹配的文件，无法确定哪个生效时再询问。只有用户明确要求开发分支上车、CI 共用或指定 overlay，才修改公共 overlay。
+
+源码已存在时，“继续原任务”优先级高于整理构建配置。代码阅读不依赖 `syncSource true`；不要因为配置没开而打断已经可以进行的源码分析。
+
 在需要实际拉取源码时，先做 MGIT 预检：
 
 ```bash
@@ -106,15 +121,30 @@ ruby -v
 ruby -e 'require "colored2"; require "peach"; require "tty-pager"; require "logger"; puts "mgit ruby deps ok"'
 ```
 
-预检失败时，不继续执行 MGIT；报告缺少的 gem。预检通过后才考虑只读命令：
+预检失败时，不继续执行 MGIT；报告缺少的 gem。预检通过后先用只读命令确认 MGIT 工作区和精确仓库名：
 
 ```bash
+mgit -w
 mgit -l
-mgit status
-mgit branch --compact
+mgit -al
+mgit info <exact-repo>
 ```
 
-执行 `mgit sync`、切分支、清理、reset、跨仓命令前必须说明影响范围并等待用户确认。
+`absoluteRepo` 是远端映射证据，不保证它的末段就是 MGIT 参数。必须用 `mgit -al` 或 `mgit info` 验证 `<exact-repo>`，不能从 URL 短名直接猜。
+
+用户明确要求“开源码”，或代码阅读、排障、修改任务已经因目标源码缺失而无法继续时，视为已授权补齐这个唯一目标仓。执行：
+
+```bash
+mgit sync -c <exact-repo>
+```
+
+该例外只覆盖“本地缺失 + 唯一映射 + 精确仓库”的下载动作。以下操作仍要先说明影响范围并等待确认：
+
+- 不带精确仓库的 `mgit sync`、`mgit sync -n` 或批量同步。
+- 对已有仓执行 pull、同步更新或切分支。
+- 清理、reset、删除、跨仓自定义命令。
+
+同步完成后检查 default 映射预期的 `repos/<层级>/<仓库>` 目录是否出现。若精确同步失败，报告命令和错误，保留已写的 local 配置，不要自动扩大到全量同步。
 
 ## 汇报格式
 
@@ -124,6 +154,6 @@ mgit branch --compact
 已打开 <module-path> 源码模式。
 覆盖文件：<path>
 证据：<default-file>:<line> absoluteRepo ...
-本地源码目录：repos/<...>（存在/尚未同步）
-下一步：如目录尚不存在，需要 MGIT 同步该仓。
+本地源码目录：repos/<...>（原本存在/已精确同步/同步失败）
+原任务：已继续处理/因 <具体原因> 阻塞
 ```

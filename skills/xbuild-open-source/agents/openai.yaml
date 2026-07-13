@@ -1,4 +1,6 @@
 interface:
   display_name: "Xbuild Open Source"
-  short_description: "打开 EasyBox/xbuild 本地源码模式配置"
-  default_prompt: "Use $xbuild-open-source to open source mode for relevant EasyBox/xbuild modules."
+  short_description: "自动补开并同步 EasyBox/xbuild 缺失源码仓"
+  default_prompt: "Use $xbuild-open-source to locate and automatically open missing EasyBox/xbuild source repositories."
+policy:
+  allow_implicit_invocation: true

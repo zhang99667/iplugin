@@ -75,6 +75,16 @@ mgit sync -ap
 - `mgit sync -c repo`：下载指定仓库，包含未被 MGIT 管理的仓库。
 - `mgit sync -p`：在同步基础上进一步 pull，影响更大，执行前先看状态。
 
+### xbuild 开源码的精确同步例外
+
+用户明确要求“开源码”，或代码阅读、排障、修改已经因 EasyBox/xbuild 的唯一目标仓缺失而无法继续时，先用 `xbuild/modules/default` 的 `absoluteRepo` 和模块路径确认映射，再用 `mgit -al` / `mgit info` 验证 MGIT 仓库名。两边唯一对应后，可以直接执行：
+
+```bash
+mgit sync -c <exact-repo>
+```
+
+这个动作是补齐用户所需源码的一部分，不需要二次确认。不要把例外扩大到 `mgit sync -n`、无仓库参数的全量同步、多个候选仓、已有仓更新、pull 或切分支；这些操作仍按写操作规则确认。
+
 ## 切换或创建分支
 
 ```bash

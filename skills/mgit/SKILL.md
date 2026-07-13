@@ -1,8 +1,8 @@
 ---
 name: mgit
-version: 0.1.5
+version: 0.1.6
 tags: [git, multi-repo, baidu, dev-tool]
-description: 百度 MGIT 多仓库管理助手。当任务上下文显示当前工作区可能是 MGIT/多仓库工程，或用户需要查看、同步、比较、提交、推送多个子仓库时触发，即使用户没有明确说 mgit；涉及百度 EasyBox/xbuild modules 配置、overlay/local、modules-local*.gradle、syncSource、本地源码模式或多仓模块范围判断时也触发；遇到 Ruby/gem/colored2 等 MGIT 启动依赖问题时先诊断环境。优先用于只读诊断多仓状态、分支、仓库范围和中间态；普通单仓 git 操作不触发。涉及写入、同步、推送、清理、reset 或跨仓自定义命令时必须先确认影响范围。
+description: 百度 MGIT 多仓库管理助手。当任务上下文显示当前工作区可能是 MGIT/多仓库工程，或用户需要查看、同步、比较、提交、推送多个子仓库时触发，即使用户没有明确说 mgit；涉及百度 EasyBox/xbuild modules 配置、overlay/local、modules-local*.gradle、syncSource、本地源码模式或多仓模块范围判断时也触发；遇到 Ruby/gem/colored2 等 MGIT 启动依赖问题时先诊断环境。优先用于只读诊断多仓状态、分支、仓库范围和中间态；普通单仓 git 操作不触发。写入和同步默认先确认影响范围，但 xbuild 开源码流程可自动精确同步唯一且本地缺失的目标仓。
 ---
 
 # MGIT 多仓库管理助手
@@ -36,6 +36,8 @@ SKILL.md 只保留触发、安全边界和命令路由。需要细节时按场�
 
 涉及写入、同步、推送、清理、删除、reset、跨仓自定义命令或无法确定 MGIT 工作区范围时，先展示影响范围并等用户确认。只读诊断命令可以在判断需要时主动执行。
 
+唯一例外：用户明确要求打开某个 EasyBox/xbuild 源码仓，或当前代码阅读、排障、修改任务因唯一目标仓本地缺失而无法继续时，可以在 default 映射和 `mgit -al` / `mgit info` 双重确认仓库名后，直接执行 `mgit sync -c <exact-repo>`。该授权不覆盖全量同步、更新已有仓、pull 或切分支。
+
 ## 最短执行流程
 
 1. 先判断是否真的是多仓 MGIT 任务；用户没有点名 mgit 也可以触发，但普通单仓 Git 不使用本技能。
@@ -61,12 +63,12 @@ rbenv rehash
 5. 预检通过后，优先只读建立上下文：`mgit -w`、`mgit -l`、`mgit branch --compact`、`mgit status`。
 6. 在 EasyBox/xbuild 场景中，如果用户提到 `syncSource`、`overlay/local` 或上车配置，读取 `references/easybox-overlay-local.md`，先用实际改动仓库推断需要开启源码模式的模块范围。
 7. 能限定仓库范围就限定，优先使用 `--mrepo`；不确定仓库名时先查 `mgit -l` 或 `mgit info <repo>`。
-8. 写入、推送、清理、删除、`mgit forall -c` 自定义命令执行前，说明影响范围和风险，等待用户确认。
+8. 写入、推送、清理、删除、`mgit forall -c` 自定义命令执行前，说明影响范围和风险，等待用户确认。只有 xbuild 开源码闭环中的唯一缺失仓可按上述例外精确同步。
 9. 需要具体命令时读取 `references/command-guide.md`；遇到 manifest、锁定仓库、中间态或冲突时读取 `references/config-troubleshooting.md`。
 
 ## 安全底线
 
-- 不要盲目 `mgit init`、`mgit sync`、`mgit clean`、`mgit reset --hard`。
+- 不要盲目 `mgit init`、全量 `mgit sync`、`mgit clean`、`mgit reset --hard`；唯一缺失 xbuild 源码仓的 `mgit sync -c <exact-repo>` 仅按“需要确认”中的窄例外执行。
 - 不要在日常 RD 流程里主动加 `--auto-exec` 或 `--no-check`。
 - 不要把 `mgit clean` 当作解决问题的快捷方式；它会清空目标仓库工作区和暂存区。
 - 不要对未知范围执行 `mgit forall -c` 写入命令。

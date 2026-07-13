@@ -1,0 +1,66 @@
+{
+  "skill_name": "xbuild-open-source",
+  "description": "xbuild-open-source 的行为回归集，覆盖源码缺失时的隐式触发、最小配置、精确同步和安全边界。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "implicit-open-while-reading-code",
+      "prompt": "带我读 RenderContainer 从创建到 nativeDestroyContainer 的完整链路。当前是 EasyBox/xbuild 工程，repos 里搜不到 TalosPro 源码，但 xbuild/modules/default 唯一映射到 underlayers.containers.talospro。",
+      "expected_output": "自动进入 xbuild 开源码流程，检查 local/overlay 与本地仓状态；在个人 local 中最小补开唯一模块、精确同步缺失仓，然后继续原本的代码阅读，不要求用户重复说开源码。",
+      "expectations": [
+        "识别源码缺失是原代码阅读任务的前置阻塞，并自动使用 xbuild-open-source。",
+        "以 default 的模块路径和 absoluteRepo 作为映射证据，不凭 TalosPro 名称猜仓库。",
+        "隐式补开只修改个人 local，不修改公共 overlay。",
+        "同步成功后继续追踪 RenderContainer 调用链，而不是停在源码已打开的汇报。"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "unique-missing-repo-exact-sync",
+      "prompt": "帮我打开 bba_talospro 源码。default 里只有一个匹配，local 尚未配置 syncSource，repos/underlayers/containers/bba_talospro 不存在；MGIT 预检通过，mgit info 已确认精确仓库名为 bba_talospro。",
+      "expected_output": "在正确的个人 local 文件里只给 bba_talospro 补 syncSource true，并直接执行 mgit sync -c bba_talospro；同步后验证目标目录。",
+      "expectations": [
+        "只修改 bba_talospro 目标节点，保留其他模块配置和文件格式。",
+        "读回修改后的目标段落。",
+        "精确仓库名已经由 MGIT 验证，因此不再询问是否同步。",
+        "不运行 mgit sync -n、无参数 mgit sync、pull 或 checkout。"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "existing-source-no-op",
+      "prompt": "排查 AdTalosComponent 的调用链。default 映射唯一，目标 repos/business/ad_business 已存在，但当前 local 没写 syncSource true。这里只需要读代码，不需要切换构建依赖。",
+      "expected_output": "直接使用已经存在的源码继续排查，不为纯代码阅读修改 syncSource，也不执行 MGIT 同步。",
+      "expectations": [
+        "区分源码可读与构建源码模式，不把 syncSource 当成代码阅读前提。",
+        "不修改 local 或 overlay。",
+        "不执行任何 mgit sync。",
+        "继续完成用户要求的调用链排查。"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "multiple-mappings-require-choice",
+      "prompt": "这个 com.baidu.searchbox.containers.talospro 类源码没拉下来，帮我继续定位。default 同时命中 talospro 和 bba_talospro，现有证据无法判断类属于哪一个仓。",
+      "expected_output": "列出两个候选及各自映射证据，请用户确认或继续只读缩小范围；在唯一目标确定前不编辑配置、不下载仓库。",
+      "expectations": [
+        "明确说明存在多个候选且证据不足。",
+        "展示模块路径、absoluteRepo 或包名证据帮助选择。",
+        "不修改 local 或 overlay。",
+        "不执行任意形式的 mgit sync。"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "exact-sync-failure-does-not-expand",
+      "prompt": "开 underlayers.containers.talospro 源码。唯一映射已确认并已在 local 写入 syncSource true，但 mgit sync -c talospro_interface 因网络错误失败。",
+      "expected_output": "保留已完成的最小 local 配置，报告精确同步命令及网络错误，并说明原任务仍因源码缺失阻塞；不尝试全量同步或其他仓库。",
+      "expectations": [
+        "不回滚已正确写入的 syncSource true。",
+        "准确报告 mgit sync -c 的失败原因。",
+        "不改用 mgit sync -n、全量 mgit sync、pull 或其他扩大范围的命令。",
+        "明确目标源码目录仍不存在以及原任务的阻塞状态。"
+      ]
+    }
+  ]
+}

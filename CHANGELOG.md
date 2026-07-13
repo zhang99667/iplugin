@@ -1,3 +1,12 @@
+## [0.22.5] - 2026-07-13
+### Changed
+- xbuild-open-source: 在代码阅读、调用链追踪、排障或修改中发现 EasyBox/xbuild 目标源码缺失时自动触发，唯一映射下最小补个人 local 配置并精确同步缺失仓
+- xbuild-open-source: 新增 effective 配置/本地仓状态决策表，已存在源码时直接继续原任务，多候选、公共 overlay、全量同步和已有仓更新仍保留确认边界
+- xbuild-open-source: 新增 5 个行为回归场景，覆盖隐式补开、精确同步、已有源码 no-op、多候选和同步失败不扩大范围
+- xbuild-open-source: skill 版本升级到 `0.1.1`
+- code-reading / mgit: 增加 xbuild 源码缺失协作路由与唯一缺失仓精确同步例外；skill 版本分别升级到 `0.1.3`、`0.1.6`
+- README / manifest: 同步 xbuild 源码自动补开能力，插件版本升级到 `0.22.5`
+
 ## [0.22.4] - 2026-07-13
 ### Added
 - html-report: 审核侧栏新增 `保存审核结果到 HTML`，将唯一、安全转义的 `AgentQuestionPack` 内嵌回单文件，Agent 可直接读取并更新报告
