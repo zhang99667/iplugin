@@ -3,12 +3,20 @@
     (() => {
       const iconQuestion = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 0 1 4.4 1.35c0 1.65-2.2 1.85-2.2 3.35"></path><path d="M12 17h.01"></path></svg>';
       const iconNote = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+      const embeddedReviewStartMarker = 'QA_' + 'EMBEDDED_REVIEW_START';
+      const embeddedReviewEndMarker = 'QA_' + 'EMBEDDED_REVIEW_END';
       const injectedReportMeta = __QA_REPORT_META__;
       const reportTitle = (document.querySelector('.doc-header h1')?.innerText || document.title || 'HTML 报告').trim();
       const reportFileName = injectedReportMeta.fileName || currentFileName();
-      const reportAbsolutePath = injectedReportMeta.absolutePath || decodeURIComponent(location.pathname || '');
+      const runtimePath = decodeURIComponent(location.pathname || '');
+      const reportAbsolutePath = injectedReportMeta.absolutePath || runtimePath;
       const reportFileUrl = injectedReportMeta.fileUrl || location.href || '';
-      const storageKey = 'agent-report-annotations:' + (reportAbsolutePath || location.pathname) + ':' + reportTitle;
+      // 另存的审核版用运行时路径隔离 localStorage，同时继续把生成期绝对路径保留给 Agent 回查来源。
+      const storageKeyPrefix = 'agent-report-annotations:';
+      const storageKey = storageKeyPrefix + (runtimePath || reportAbsolutePath) + ':' + reportTitle;
+      // 旧版优先使用生成期绝对路径；保留迁移键，避免 HTTP 预览和 Windows file URL 升级后找不到草稿。
+      const legacyStorageKey = storageKeyPrefix + (reportAbsolutePath || location.pathname) + ':' + reportTitle;
+      const storageKeys = Array.from(new Set([storageKey, legacyStorageKey]));
       const main = document.querySelector('main');
       const launcher = document.getElementById('qaLauncher');
       const launcherLabel = document.getElementById('qaLauncherLabel');
@@ -36,6 +44,11 @@
 
       if (!main) return;
 
+      // 审核版会保留既有定位 ID；先恢复最大序号，保护 Agent 增段后新 ID 不与旧批注冲突。
+      main.querySelectorAll('[data-block-id]').forEach(el => {
+        const match = el.dataset.blockId.match(/-b(\d+)$/);
+        if (match) blockSeq = Math.max(blockSeq, Number(match[1]));
+      });
       main.querySelectorAll('h2, h3, p, li, table, pre, .panel, .mini, .check, .flow-svg, section').forEach(el => {
         if (!el.dataset.blockId) {
           blockSeq += 1;
@@ -48,7 +61,7 @@
       syncAnnotatedState();
 
       launcher?.addEventListener('click', () => {
-        if (!annotations.length) {
+        if (!annotations.length && !hasPersistedReviewState()) {
           exportPublicHtml();
           return;
         }
@@ -56,10 +69,17 @@
       });
       closeBtn?.addEventListener('click', () => setSidebarOpen(false));
       composerSave?.addEventListener('click', saveDraftAnnotation);
+      composerText?.addEventListener('keydown', event => {
+        if (!isComposerSubmitShortcut(event)) return;
+        // 组合键提交与按钮复用同一入口；IME 组字阶段仍由输入法消费 Enter，避免误提交。
+        event.preventDefault();
+        event.stopPropagation();
+        saveDraftAnnotation();
+      });
       copyClose?.addEventListener('click', () => copyBackdrop.classList.remove('show'));
       document.getElementById('qaCopyMarkdown')?.addEventListener('click', () => copyText(buildMarkdownPack()));
       document.getElementById('qaDownloadMarkdown')?.addEventListener('click', () => downloadText(safeFileName(reportTitle) + '_questions.md', buildMarkdownPack(), 'text/markdown'));
-      document.getElementById('qaDownloadJson')?.addEventListener('click', () => downloadText(safeFileName(reportTitle) + '_questions.json', JSON.stringify(buildJsonPack(), null, 2), 'application/json'));
+      document.getElementById('qaSaveReviewHtml')?.addEventListener('click', saveReviewHtml);
       document.getElementById('qaExportPublic')?.addEventListener('click', exportPublicHtml);
       document.getElementById('qaClearAll')?.addEventListener('click', () => {
         if (!annotations.length) return;
@@ -161,6 +181,13 @@
         const left = Math.min(window.innerWidth - width - 10, Math.max(10, (rect?.left || 24)));
         composer.style.top = top + 'px';
         composer.style.left = left + 'px';
+      }
+
+      // 只接受跨平台提交组合键，普通 Enter 继续服务多行输入。
+      function isComposerSubmitShortcut(event) {
+        return event.key === 'Enter'
+          && !event.isComposing
+          && (event.metaKey || event.ctrlKey);
       }
 
       function saveDraftAnnotation() {
@@ -460,14 +487,20 @@
 
       function updateLauncherMode() {
         const count = annotations.length;
-        const publishMode = count === 0;
-        if (launcherLabel) launcherLabel.textContent = publishMode ? '导出发布版' : '批注';
+        // 清空过旧批注的页面仍属于审核态，必须允许再次打开侧栏并把空结果写回 HTML。
+        const clearedReviewMode = count === 0 && hasPersistedReviewState();
+        const publishMode = count === 0 && !clearedReviewMode;
+        if (launcherLabel) launcherLabel.textContent = publishMode ? '导出无批注版' : clearedReviewMode ? '保存审核结果' : '批注';
         if (launcherCount) {
-          launcherCount.textContent = publishMode ? '' : String(count);
-          launcherCount.hidden = publishMode;
+          launcherCount.textContent = count > 0 ? String(count) : '';
+          launcherCount.hidden = count === 0;
         }
         launcher?.classList.toggle('publish-mode', publishMode);
-        launcher?.setAttribute('aria-label', publishMode ? '导出发布版 HTML' : '打开报告批注，当前 ' + count + ' 条');
+        launcher?.setAttribute('aria-label', publishMode
+          ? '导出不含批注的发布版 HTML'
+          : clearedReviewMode
+            ? '打开审核结果，当前批注已清空，可保存空结果到 HTML'
+            : '打开报告批注，当前 ' + count + ' 条');
       }
 
       function locateAnnotation(item) {
@@ -500,34 +533,137 @@
         }
       }
 
-      async function exportPublicHtml() {
-        const shouldExport = confirm('导出发布版 HTML。\n\n确定：选择保存位置，建议使用当前文件名覆盖原审核版。\n取消：取消导出。');
-        if (!shouldExport) return;
-        const publicHtml = buildPublicHtml();
+      // 把当前批注包直接写入 HTML，成功覆盖或另存后即可把该文件交给 Agent。
+      async function saveReviewHtml() {
         const currentName = currentFileName();
+        const result = await saveHtmlFile({
+          suggestedName: currentName,
+          fallbackName: reviewFallbackFileName(currentName),
+          buildHtml: buildReviewedHtml
+        });
+        if (result === 'saved') {
+          clearStoredAnnotations();
+        }
+        if (result === 'saved') {
+          showToast('审核结果已写入 HTML，可直接交给 Agent');
+        }
+        if (result === 'downloaded') {
+          showToast('已发起审核版下载，原页草稿仍保留');
+        }
+      }
+
+      // 发布版只保留正文；默认另存，避免覆盖唯一的含批注审核版。
+      async function exportPublicHtml() {
+        const shouldExport = confirm('导出不含批注的发布版 HTML。\n\n确定：选择保存位置，建议另存，避免覆盖含批注审核版。\n取消：取消导出。');
+        if (!shouldExport) return;
+        const currentName = currentFileName();
+        const publicName = fileNameWithSuffix(currentName, '_public');
+        const result = await saveHtmlFile({
+          suggestedName: publicName,
+          fallbackName: publicName,
+          buildHtml: buildPublicHtml
+        });
+        if (result === 'saved') showToast('已导出无批注版');
+        if (result === 'downloaded') showToast('浏览器不支持直接保存，已下载无批注版');
+      }
+
+      // 先取得文件句柄再构建大 HTML，保护浏览器要求的用户激活；不支持时退化为下载。
+      async function saveHtmlFile({ suggestedName, fallbackName, buildHtml }) {
         if (window.showSaveFilePicker) {
           try {
             const handle = await window.showSaveFilePicker({
-              suggestedName: currentName,
+              suggestedName,
               types: [{ description: 'HTML 文件', accept: { 'text/html': ['.html'] } }]
             });
             const writable = await handle.createWritable();
-            await writable.write(publicHtml);
+            await writable.write(buildHtml());
             await writable.close();
-            showToast('已导出发布版');
-            return;
+            return 'saved';
           } catch (error) {
-            if (error && error.name === 'AbortError') return;
+            if (error && error.name === 'AbortError') return 'cancelled';
           }
         }
         // 不支持 File System Access API 的浏览器无法静默覆盖本地文件，只能下载当前文件名作为兜底。
-        downloadText(currentName, publicHtml, 'text/html');
-        showToast('浏览器不支持直接覆盖，已下载发布版，请在保存时覆盖原文件');
+        downloadText(fallbackName, buildHtml(), 'text/html');
+        return 'downloaded';
+      }
+
+      // 保存审核版时清理瞬时 UI，正文高亮会在重新打开后由内嵌批注重新生成。
+      function buildReviewedHtml() {
+        const clone = document.documentElement.cloneNode(true);
+        clone.querySelectorAll('[data-qa-review-data]').forEach(el => el.remove());
+        clone.querySelectorAll('.qa-sidebar.open').forEach(el => el.classList.remove('open'));
+        clone.querySelectorAll('.qa-selection-popover.show, .qa-context-menu.show, .qa-composer.show, .qa-copy-backdrop.show').forEach(el => el.classList.remove('show'));
+        clone.querySelectorAll('mark.qa-highlight').forEach(unwrapElement);
+        clone.querySelectorAll('.qa-annotated-block, .qa-focus-pulse').forEach(el => {
+          el.classList.remove('qa-annotated-block', 'qa-focus-pulse');
+        });
+        clone.querySelector('body')?.classList.remove('qa-panel-open');
+        clone.querySelector('#qaLauncher')?.setAttribute('aria-expanded', 'false');
+        const clonedList = clone.querySelector('#qaList');
+        if (clonedList) clonedList.innerHTML = '';
+        ['#qaComposerTitle', '#qaComposerExcerpt'].forEach(selector => {
+          const element = clone.querySelector(selector);
+          if (element) element.textContent = '';
+        });
+        ['#qaComposerText', '#qaCopyTextarea'].forEach(selector => {
+          const textarea = clone.querySelector(selector);
+          if (!textarea) return;
+          textarea.value = '';
+          textarea.textContent = '';
+        });
+
+        let result = '<!doctype html>\n' + clone.outerHTML;
+        result = stripEmbeddedReviewBlock(result);
+        const reviewBlock = buildEmbeddedReviewBlock();
+        result = result.includes('</head>')
+          ? result.replace('</head>', reviewBlock + '\n</head>')
+          : result.replace('</body>', reviewBlock + '\n</body>');
+        return result.replace(/\n{3,}/g, '\n\n');
+      }
+
+      // 标记名在源码中拆开拼接，避免清理整页 HTML 时误匹配批注脚本自身。
+      function buildEmbeddedReviewBlock() {
+        const json = serializeReviewPack(buildJsonPack());
+        return [
+          '  <!' + '-- ' + embeddedReviewStartMarker + ': Agent 读取并逐条处理以下审核结果。 --' + '>',
+          '  <' + 'script type="application/json" id="qaEmbeddedReviewData" data-qa-review-data>',
+          json.split('\n').map(line => '  ' + line).join('\n'),
+          '  </' + 'script>',
+          '  <!' + '-- ' + embeddedReviewEndMarker + ' --' + '>'
+        ].join('\n');
+      }
+
+      // script 是 raw-text 元素，必须使用 JSON Unicode 转义阻断结束标签和 HTML 注入。
+      function serializeReviewPack(pack) {
+        const escapes = {
+          '<': '\\u003c',
+          '>': '\\u003e',
+          '&': '\\u0026',
+          '\u2028': '\\u2028',
+          '\u2029': '\\u2029'
+        };
+        return JSON.stringify(pack, null, 2).replace(/[<>&\u2028\u2029]/g, char => escapes[char]);
+      }
+
+      // 删除已有内嵌包后再写入，保证连续保存始终只有一份 AgentQuestionPack。
+      function stripEmbeddedReviewBlock(html) {
+        let result = String(html || '');
+        const startToken = '<!' + '-- ' + embeddedReviewStartMarker;
+        const endToken = embeddedReviewEndMarker + ' --' + '>';
+        let start = result.indexOf(startToken);
+        while (start >= 0) {
+          const end = result.indexOf(endToken, start);
+          if (end < 0) break;
+          result = result.slice(0, start) + result.slice(end + endToken.length);
+          start = result.indexOf(startToken);
+        }
+        return result;
       }
 
       function buildPublicHtml() {
         const clone = document.documentElement.cloneNode(true);
-        clone.querySelectorAll('[data-qa-ui], [data-qa-script]').forEach(el => el.remove());
+        clone.querySelectorAll('[data-qa-ui], [data-qa-script], [data-qa-review-data]').forEach(el => el.remove());
         clone.querySelectorAll('style').forEach(style => {
           style.textContent = style.textContent.replace(/\/\* QA_ANNOTATION_CSS_START:[\s\S]*?QA_ANNOTATION_CSS_END \*\//g, '');
         });
@@ -538,6 +674,7 @@
         clone.querySelectorAll('[data-block-id]').forEach(el => el.removeAttribute('data-block-id'));
         clone.querySelector('body')?.classList.remove('qa-panel-open');
         let result = '<!doctype html>\n' + clone.outerHTML;
+        result = stripEmbeddedReviewBlock(result);
         result = result.replace(/\n?\s*<!-- QA_ANNOTATION_HTML_START:[\s\S]*?QA_ANNOTATION_HTML_END -->/g, '');
         result = result.replace(/\n?\s*<!-- QA_ANNOTATION_SCRIPT_START -->[\s\S]*?<!-- QA_ANNOTATION_SCRIPT_END -->/g, '');
         result = result.replace(/\n{3,}/g, '\n\n');
@@ -605,7 +742,7 @@
       function buildJsonPack() {
         return {
           type: 'AgentQuestionPack',
-          version: '0.2.0',
+          version: '0.3.0',
           reportTitle,
           reportFileName,
           reportAbsolutePath,
@@ -616,6 +753,11 @@
             fileName: reportFileName,
             absolutePath: reportAbsolutePath,
             fileUrl: reportFileUrl
+          },
+          delivery: {
+            mode: 'embedded-html',
+            status: 'ready-for-agent',
+            instruction: '以当前承载此包的 HTML 为回写目标；逐条处理 annotations；完成后删除审核区块，重新运行 inject_annotation_mode.py，再运行不带 --require-review-pack 的 check_html_report.py。'
           },
           exportedAt: new Date().toISOString(),
           annotations
@@ -651,19 +793,80 @@
       }
 
       function loadAnnotations() {
-        try {
-          return JSON.parse(localStorage.getItem(storageKey) || '[]');
-        } catch (error) {
-          return [];
+        for (const key of storageKeys) {
+          try {
+            const stored = localStorage.getItem(key);
+            if (stored !== null) {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed)) {
+                // 读取旧键时迁移，读取新键时也清掉残留旧值；清理失败不影响返回已成功解析的草稿。
+                try {
+                  if (key !== storageKey) {
+                    localStorage.setItem(storageKey, stored);
+                  }
+                  storageKeys.filter(candidate => candidate !== storageKey).forEach(candidate => localStorage.removeItem(candidate));
+                } catch (error) {
+                  // 迁移失败仍返回已成功读取的草稿，后续保存会再次尝试收敛到新键。
+                }
+                return normalizeAnnotations(parsed);
+              }
+            }
+          } catch (error) {
+            // 单个 localStorage 键不可用或损坏时继续尝试兼容键和 HTML 内嵌审核包。
+          }
         }
+        return normalizeAnnotations(readEmbeddedReviewPack()?.annotations);
+      }
+
+      // 显式的空数组也代表“已清空待写回”，不能退回 0 批注时的快捷发布入口。
+      function hasPersistedReviewState() {
+        if (document.querySelector('[data-qa-review-data]')) return true;
+        for (const key of storageKeys) {
+          try {
+            if (localStorage.getItem(key) !== null) return true;
+          } catch (error) {
+            // localStorage 不可读时只依据 HTML 内嵌包判断。
+          }
+        }
+        return false;
+      }
+
+      // 内嵌包只作为无本地更新时的持久化来源，显式清空的 [] 不会被旧批注复活。
+      function readEmbeddedReviewPack() {
+        const node = document.getElementById('qaEmbeddedReviewData');
+        if (!node?.textContent) return null;
+        try {
+          const pack = JSON.parse(node.textContent);
+          if (pack?.type !== 'AgentQuestionPack' || !Array.isArray(pack.annotations)) return null;
+          return pack;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      // 丢弃损坏的非对象条目，避免侧栏渲染读取无效字段。
+      function normalizeAnnotations(items) {
+        return Array.isArray(items) ? items.filter(item => item && typeof item === 'object') : [];
       }
 
       function saveAnnotations() {
         try {
           localStorage.setItem(storageKey, JSON.stringify(annotations));
+          storageKeys.filter(key => key !== storageKey).forEach(key => localStorage.removeItem(key));
         } catch (error) {
-          // file:// 下 localStorage 行为因浏览器而异，导出 Markdown/JSON 是可靠兜底。
+          // file:// 下 localStorage 行为因浏览器而异，内嵌审核版和 Markdown 是可靠兜底。
         }
+      }
+
+      // 直接保存成功后让磁盘内嵌包成为下次打开的基线，Agent 清除该区块后不会残留旧批注。
+      function clearStoredAnnotations() {
+        storageKeys.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+          } catch (error) {
+            // localStorage 不可用不影响已经写入磁盘的审核结果。
+          }
+        });
       }
 
       function showToast(message) {
@@ -685,6 +888,20 @@
       function currentFileName() {
         const name = decodeURIComponent(location.pathname.split('/').pop() || 'report.html');
         return /\.html?$/i.test(name) ? name : 'report.html';
+      }
+
+      // 下载兜底使用区分审核版/发布版的文件名，避免浏览器静默覆盖错误文件。
+      function fileNameWithSuffix(fileName, suffix) {
+        const match = String(fileName || 'report.html').match(/^(.*?)(\.html?)$/i);
+        const base = match ? match[1] : 'report';
+        const extension = match ? match[2] : '.html';
+        return (base.endsWith(suffix) ? base : base + suffix) + extension;
+      }
+
+      // 已是 _reviewed 的页面再次走下载兜底时改用 _copy，避免默认文件名与当前草稿路径碰撞。
+      function reviewFallbackFileName(fileName) {
+        const reviewedName = fileNameWithSuffix(fileName, '_reviewed');
+        return reviewedName === fileName ? fileNameWithSuffix(fileName, '_copy') : reviewedName;
       }
 
       function normalizeText(text) {

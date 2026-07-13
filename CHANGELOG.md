@@ -1,3 +1,18 @@
+## [0.22.4] - 2026-07-13
+### Added
+- html-report: 审核侧栏新增 `保存审核结果到 HTML`，将唯一、安全转义的 `AgentQuestionPack` 内嵌回单文件，Agent 可直接读取并更新报告
+- html-report: 重新打开含批注审核版时可从内嵌包恢复批注；发布版显式剥离内嵌审核数据，避免内部意见和本地路径泄漏
+- html-report: 兼容迁移旧版本地草稿键，并允许把清空后的空审核包保存回 HTML，避免旧批注复活
+
+### Changed
+- html-report: 批注审核模式的输入浮层新增 `⌘ + Enter` 提交，并兼容 Windows/Linux 的 `Ctrl + Enter`
+- html-report: 用 HTML 内嵌交接替换独立 `下载 JSON`，并把对外产物明确为 `导出无批注版`
+- html-report: 普通 Enter 继续换行，输入法组字阶段不触发提交；校验脚本新增快捷键、内嵌包 schema、安全转义与发布版剥离检查
+- html-report: 新增 `--require-review-pack` 审核交接门禁，修复正文标记误判、清空态“批注 0”、增段定位 ID 冲突；下载兜底保留原页草稿，避免取消下载造成批注丢失
+- html-report: 明确当前承载审核包的 HTML 是 Agent 回写目标，另存后的来源路径只用于回查
+- html-report: skill 版本升级到 `0.4.0`
+- README / manifest: 同步可编辑、可内嵌交接的离线批注审核定位，插件版本升级到 `0.22.4`
+
 ## [0.22.3] - 2026-07-08
 ### Changed
 - datapilot-sql-runner: 将定位调整为 DataPilot MCP 跑数结果闭环，默认覆盖提交 SQL、查状态、等待下载、下载结果和可选透视表产出

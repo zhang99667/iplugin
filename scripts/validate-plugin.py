@@ -37,11 +37,18 @@ HTML_REPORT_ANNOTATION_ASSETS = {
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.html": (
         "QA_ANNOTATION_HTML_START",
         "QA_ANNOTATION_HTML_END",
+        'id="qaSaveReviewHtml"',
     ),
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.js": (
         "QA_ANNOTATION_SCRIPT_START",
         "QA_ANNOTATION_SCRIPT_END",
         "__QA_REPORT_META__",
+        "buildReviewedHtml",
+        "serializeReviewPack",
+        "readEmbeddedReviewPack",
+        "legacyStorageKey",
+        "hasPersistedReviewState",
+        "reviewFallbackFileName",
     ),
 }
 
@@ -766,7 +773,7 @@ def check_html_report_annotation_assets() -> CheckResult:
     """检查 html-report 批注模式资产是否保留剥离 marker 和路径元数据占位符。
 
     批注资产最终会被注入到单文件 HTML 中，marker 是重复注入清理和导出发布版
-    物理剥离的边界；`__QA_REPORT_META__` 则保护导出的 Markdown/JSON 能回查原文件。
+    物理剥离的边界；`__QA_REPORT_META__` 则保护内嵌审核包和 Markdown 能回查来源。
     """
 
     result = CheckResult("HTML report annotation assets are valid")
@@ -779,6 +786,10 @@ def check_html_report_annotation_assets() -> CheckResult:
         for fragment in required_fragments:
             if fragment not in text:
                 result.details.append(f"{rel(path)} is missing {fragment}")
+
+        if path.name == "annotation.js" and text.count("</script>") != 1:
+            # 资产自身就是 inline script；注释或字符串出现结束标签也会让浏览器提前截断脚本。
+            result.details.append(f"{rel(path)} must contain exactly one literal </script> wrapper closing tag")
 
     return result
 

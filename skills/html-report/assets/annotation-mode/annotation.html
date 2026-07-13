@@ -1,7 +1,7 @@
   <!-- QA_ANNOTATION_HTML_START: 离线批注审核模式，导出发布版时会被移除。 -->
   <button class="qa-launcher" type="button" id="qaLauncher" aria-controls="qaSidebar" aria-expanded="false" data-qa-ui>
     <svg class="qa-launcher-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 8 5-5 5 5"></path><path d="M5 15v4h14v-4"></path></svg>
-    <span class="qa-launcher-label" id="qaLauncherLabel">导出发布版</span>
+    <span class="qa-launcher-label" id="qaLauncherLabel">导出无批注版</span>
     <span class="qa-launcher-count" id="qaLauncherCount" hidden>0</span>
   </button>
 
@@ -21,7 +21,7 @@
     <p class="qa-composer-excerpt" id="qaComposerExcerpt"></p>
     <textarea id="qaComposerText" placeholder="写下你想让 Agent 回答或修改的点"></textarea>
     <div class="qa-composer-actions">
-      <button class="qa-small-btn primary" type="button" id="qaComposerSave">提交</button>
+      <button class="qa-small-btn primary" type="button" id="qaComposerSave" aria-keyshortcuts="Meta+Enter Control+Enter" title="提交（⌘/Ctrl + Enter）">提交</button>
     </div>
   </div>
 
@@ -41,15 +41,15 @@
         <span class="qa-mode-chip">审核模式</span>
         <button class="qa-close" type="button" id="qaClose" aria-label="关闭批注栏">×</button>
       </div>
-      <p class="qa-help">选中文本后点小气泡提问/批注。发布给外部前，可导出物理剥离批注能力的发布版 HTML。</p>
+      <p class="qa-help">审查完成后保存审核结果到 HTML，Agent 可直接读取内嵌批注；对外发送时再导出无批注版。</p>
       <div class="qa-actions">
-        <button class="qa-primary-btn qa-publish-btn qa-wide" type="button" id="qaExportPublic">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 8 5-5 5 5"></path><path d="M5 15v4h14v-4"></path></svg>
-          导出发布版
+        <button class="qa-primary-btn qa-save-review-btn qa-wide" type="button" id="qaSaveReviewHtml">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M5 4h12l2 2v14H5Z"></path><path d="M8 4v6h8V4"></path><path d="M8 20v-6h8v6"></path></svg>
+          保存审核结果到 HTML
         </button>
+        <button class="qa-secondary-btn qa-wide" type="button" id="qaExportPublic">导出无批注版</button>
         <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
         <button class="qa-secondary-btn" type="button" id="qaDownloadMarkdown">下载 Markdown</button>
-        <button class="qa-secondary-btn" type="button" id="qaDownloadJson">下载 JSON</button>
         <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空批注</button>
       </div>
     </div>

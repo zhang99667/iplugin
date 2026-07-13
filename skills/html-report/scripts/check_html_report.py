@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import html as html_lib
 import importlib.util
+import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -29,6 +30,27 @@ RAW_UNIFIED_DIFF_RE = re.compile(
     r"(?m)(?:^|\n)(?:diff --git [^\n]+\n)?--- [^\n]+\n\+\+\+ [^\n]+\n@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@"
 )
 HUNK_MARKER_RE = re.compile(r"@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
+EMBEDDED_REVIEW_DATA_RE = re.compile(
+    r'<script\b(?=[^>]*\bid=["\']qaEmbeddedReviewData["\'])(?=[^>]*\bdata-qa-review-data(?:\s|=|>))[^>]*>(.*?)</script>',
+    re.DOTALL | re.IGNORECASE,
+)
+EMBEDDED_REVIEW_START_RE = re.compile(r"<!--\s*QA_EMBEDDED_REVIEW_START:[\s\S]*?-->", re.IGNORECASE)
+EMBEDDED_REVIEW_END_RE = re.compile(r"<!--\s*QA_EMBEDDED_REVIEW_END\s*-->", re.IGNORECASE)
+ANNOTATION_MODE_MARKER_RE = re.compile(
+    r"<!--\s*QA_ANNOTATION_(?:HTML_START:|SCRIPT_START\s*-->)",
+    re.IGNORECASE,
+)
+ANNOTATION_SCRIPT_TAG_RE = re.compile(r"<script\b[^>]*\bdata-qa-script(?:\s|=|>)", re.IGNORECASE)
+ANNOTATION_UI_TAG_RE = re.compile(r"<(?:button|aside|div)\b[^>]*\bdata-qa-ui(?:\s|=|>)", re.IGNORECASE)
+ANNOTATION_CSS_ASSET_RE = re.compile(
+    r"/\*\s*QA_ANNOTATION_CSS_START:[\s\S]*?QA_ANNOTATION_CSS_END\s*\*/",
+    re.IGNORECASE,
+)
+ANNOTATION_ASSET_BLOCK_RE = re.compile(
+    r"(?:<!--\s*QA_ANNOTATION_HTML_START:[\s\S]*?QA_ANNOTATION_HTML_END\s*-->"
+    r"|<!--\s*QA_ANNOTATION_SCRIPT_START\s*-->\s*<script\b[^>]*\bdata-qa-script(?:\s|=|>)[\s\S]*?</script>\s*<!--\s*QA_ANNOTATION_SCRIPT_END\s*-->)",
+    re.IGNORECASE,
+)
 
 TEXT_LIKE_LANGS = {"markdown", "text", "txt", "log", "logs", "plain", "plaintext"}
 MEDIA_EXTENSIONS = {".apng", ".avif", ".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".ogg", ".ogv", ".png", ".svg", ".webm", ".webp"}
@@ -108,11 +130,13 @@ class ReportParser(HTMLParser):
         self.video_media_stack: list[int] = []
         self.figcaption_depth = 0
         self.next_figure_index = 1
+        self.block_ids: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attr_map = {name.lower(): value or "" for name, value in attrs}
         classes = class_set(attr_map.get("class", ""))
         inside_toc = "toc" in classes or any("toc" in frame.classes for frame in self.stack)
+        inside_main = tag == "main" or any(frame.tag == "main" for frame in self.stack)
         current_figure = self.figure_stack[-1] if self.figure_stack else None
 
         if tag == "meta" and attr_map.get("name", "").lower() == "viewport":
@@ -120,6 +144,9 @@ class ReportParser(HTMLParser):
 
         if tag == "style":
             self.in_style = True
+
+        if inside_main and attr_map.get("data-block-id"):
+            self.block_ids.append(attr_map["data-block-id"])
 
         if tag == "figure":
             figure = FigureState(index=self.next_figure_index, attrs=attr_map, classes=classes)
@@ -375,12 +402,33 @@ def check_diff_viewer_tokens(html: str, css: str) -> list[str]:
     return errors
 
 
-def check_annotation_mode(html: str, css: str) -> list[str]:
+def check_annotation_mode(
+    html: str,
+    css: str,
+    require_review_pack: bool = False,
+    block_ids: list[str] | None = None,
+) -> list[str]:
     """检查离线批注模式的关键结构，避免审核版 HTML 交互缺件。"""
     errors: list[str] = []
-    has_annotation = "QA_ANNOTATION" in html or "data-qa-script" in html or "qa-launcher" in html
+    # 只识别真实 marker、标签和数据节点；正文代码示例里的同名字符串不能把普通报告误判为审核版。
+    has_embedded_review = bool(
+        EMBEDDED_REVIEW_START_RE.search(html)
+        or EMBEDDED_REVIEW_END_RE.search(html)
+        or EMBEDDED_REVIEW_DATA_RE.search(html)
+    )
+    has_annotation = bool(
+        ANNOTATION_MODE_MARKER_RE.search(html)
+        or ANNOTATION_SCRIPT_TAG_RE.search(html)
+        or ANNOTATION_UI_TAG_RE.search(html)
+        or ANNOTATION_CSS_ASSET_RE.search(css)
+        or has_embedded_review
+    )
     if not has_annotation:
-        return errors
+        return ["未找到 HTML 内嵌审核包；请确认用户保存的是含批注审核版，而不是原始版或无批注发布版"] if require_review_pack else errors
+
+    # 只在三段批注资产中检查实现片段，避免正文代码示例里的旧按钮名造成误报或掩盖缺件。
+    annotation_parts = ANNOTATION_CSS_ASSET_RE.findall(css) + ANNOTATION_ASSET_BLOCK_RE.findall(html)
+    annotation_scope = "\n".join(annotation_parts) or html
 
     required_fragments = {
         "QA_ANNOTATION_CSS_START": "批注模式缺少 CSS 起始标记，导出发布版无法稳定剥离样式",
@@ -392,10 +440,31 @@ def check_annotation_mode(html: str, css: str) -> list[str]:
         'id="qaComposer"': "批注模式缺少轻量输入浮层",
         'id="qaSidebar"': "批注模式缺少右侧批注栏",
         'id="qaExportPublic"': "批注模式缺少导出发布版按钮",
-        'id="qaLauncherLabel"': "批注模式右上角入口必须能在 0 批注时显示“导出发布版”而不是“批注 0”",
-        "updateLauncherMode": "批注模式必须根据批注数量切换右上角“导出发布版”/“批注 N”入口",
+        'id="qaLauncherLabel"': "批注模式右上角入口必须能在 0 批注时显示“导出无批注版”而不是“批注 0”",
+        "updateLauncherMode": "批注模式必须根据批注数量切换右上角“导出无批注版”/“批注 N”入口",
         "publish-mode": "批注模式必须给 0 批注发布入口提供更醒目的视觉状态",
-        "qa-publish-btn": "批注侧栏中的发布按钮必须作为醒目的主按钮展示",
+        'id="qaSaveReviewHtml"': "批注侧栏缺少“保存审核结果到 HTML”入口",
+        "保存审核结果到 HTML": "批注侧栏必须把 HTML 内嵌交接作为主要审核操作",
+        'id="qaExportPublic">导出无批注版</button>': "发布版按钮必须明确标注为不含批注",
+        "qa-save-review-btn": "保存审核结果按钮必须作为醒目的主按钮展示",
+        "saveReviewHtml": "批注模式缺少保存含批注审核版的交互逻辑",
+        "saveHtmlFile": "审核版和发布版必须复用统一的 HTML 保存/下载回退逻辑",
+        "reviewFallbackFileName": "下载审核版必须使用与当前草稿不同的默认文件名，避免本地状态碰撞",
+        "buildReviewedHtml": "批注模式缺少含批注 HTML 构建逻辑",
+        "buildEmbeddedReviewBlock": "批注模式缺少 AgentQuestionPack 内嵌逻辑",
+        "serializeReviewPack": "批注模式缺少内嵌 JSON 安全序列化逻辑",
+        "\\u003c": "内嵌 JSON 必须转义 <，防止 </script> 提前闭合或注入 HTML",
+        "data-qa-review-data": "含批注审核版缺少稳定的内嵌数据节点",
+        "readEmbeddedReviewPack": "批注模式缺少从 HTML 恢复内嵌批注的逻辑",
+        "stored !== null": "批注加载必须区分 localStorage 不存在与用户明确清空的 []",
+        "legacyStorageKey": "批注模式必须兼容迁移旧版 localStorage 草稿键",
+        "hasPersistedReviewState": "清空最后一条批注后必须保留审核态，允许把空结果写回 HTML",
+        "clearedReviewMode": "清空后的审核态必须使用独立入口并隐藏 0 数量徽标",
+        "Math.max(blockSeq": "审核版必须从已有定位 ID 恢复序号，避免 Agent 增段后生成重复 blockId",
+        "clearStoredAnnotations": "直接写入 HTML 后必须清理旧本地基线，避免 Agent 更新后复活旧批注",
+        "stripEmbeddedReviewBlock": "重复保存和发布版导出必须能剥离旧内嵌审核包",
+        "mode: 'embedded-html'": "AgentQuestionPack 必须声明 HTML 内嵌交付模式",
+        "inject_annotation_mode.py": "AgentQuestionPack 必须明确处理后重新注入审核模式",
         "取消：取消导出": "导出发布版确认框的取消动作必须真正取消，不能触发下载",
         "buildPublicHtml": "批注模式缺少发布版 HTML 剥离逻辑",
         "buildMarkdownPack": "批注模式缺少 Markdown 批注包导出逻辑",
@@ -413,19 +482,28 @@ def check_annotation_mode(html: str, css: str) -> list[str]:
         "syncAnnotatedState": "批注模式必须在保存、删除、清空后同步正文高亮和边框状态",
         "removeAllRanges": "批注模式删除批注后必须清理浏览器选区，避免正文残留选中态",
         ">提交<": "批注输入浮层只保留一个“提交”按钮",
+        'aria-keyshortcuts="Meta+Enter Control+Enter"': "批注输入浮层必须声明 ⌘/Ctrl + Enter 提交快捷键",
+        "composerText?.addEventListener('keydown'": "批注输入框缺少局部键盘快捷键监听",
+        "isComposerSubmitShortcut": "批注输入浮层缺少快捷键提交判断",
+        "event.metaKey || event.ctrlKey": "批注输入浮层必须同时支持 ⌘ + Enter 和 Ctrl + Enter",
+        "!event.isComposing": "批注输入浮层必须避开输入法组字阶段，防止 Enter 误提交",
     }
     for fragment, message in required_fragments.items():
-        if fragment not in html:
+        if fragment not in annotation_scope:
             errors.append(message)
 
     forbidden_fragments = {
         "qaComposerCancel": "批注输入浮层不要保留取消按钮；点击浮层外侧即关闭",
         ">保存<": "批注输入浮层按钮文案应为“提交”，不要使用“保存”",
-        "_public.html": "导出发布版取消分支不能下载 _public 文件；取消必须取消导出",
+        "qaDownloadJson": "批注侧栏不再提供独立 JSON 下载，应保存内嵌审核结果到 HTML",
+        ">下载 JSON<": "批注侧栏不再提供独立 JSON 下载按钮",
+        "建议使用当前文件名覆盖原审核版": "无批注发布版不能再建议覆盖含批注审核版",
         "取消：下载": "导出发布版确认框不能把取消解释为下载",
+        "暂无批注可保存": "清空批注后仍必须允许保存空审核包，覆盖 HTML 中的旧批注",
+        "result === 'saved' || result === 'downloaded'": "下载只能确认已发起，不能据此清空尚未持久化的本地草稿",
     }
     for fragment, message in forbidden_fragments.items():
-        if fragment in html:
+        if fragment in annotation_scope:
             errors.append(message)
 
     compact_css = re.sub(r"\s+", " ", css)
@@ -442,7 +520,137 @@ def check_annotation_mode(html: str, css: str) -> list[str]:
     if ".qa-launcher-count[hidden]" not in compact_css and ".qa-launcher.publish-mode .qa-launcher-count" not in compact_css:
         errors.append("发布模式下必须强制隐藏右上角批注数量徽标，避免导出发布版按钮残留蓝色圆点")
 
+    errors.extend(check_embedded_review_pack(html, required=require_review_pack, block_ids=block_ids))
     return errors
+
+
+def check_embedded_review_pack(
+    html: str,
+    required: bool = False,
+    block_ids: list[str] | None = None,
+) -> list[str]:
+    """当 HTML 已保存审核结果时，校验唯一内嵌包的标记、JSON 和 Agent 定位字段。"""
+
+    errors: list[str] = []
+    start_matches = list(EMBEDDED_REVIEW_START_RE.finditer(html))
+    end_matches = list(EMBEDDED_REVIEW_END_RE.finditer(html))
+    node_matches = list(EMBEDDED_REVIEW_DATA_RE.finditer(html))
+    if not start_matches and not end_matches and not node_matches:
+        if required:
+            errors.append("未找到 HTML 内嵌审核包；请确认用户已点击“保存审核结果到 HTML”并提供了该文件")
+        return errors
+    if len(start_matches) != 1 or len(end_matches) != 1:
+        errors.append("含批注审核版必须且只能包含一对 QA_EMBEDDED_REVIEW_START/END 标记")
+    if len(node_matches) != 1:
+        errors.append("含批注审核版必须且只能包含一个 #qaEmbeddedReviewData[data-qa-review-data] 节点")
+        return errors
+
+    node_match = node_matches[0]
+    opening_tag = node_match.group(0).split(">", 1)[0] + ">"
+    if not re.search(r"\btype\s*=\s*[\"']application/json[\"']", opening_tag, re.IGNORECASE):
+        errors.append("HTML 内嵌审核包节点 type 必须为 application/json，不能作为可执行脚本")
+    if len(start_matches) == 1 and len(end_matches) == 1:
+        if not (start_matches[0].end() <= node_match.start() < node_match.end() <= end_matches[0].start()):
+            errors.append("HTML 内嵌审核包必须位于 QA_EMBEDDED_REVIEW_START/END 标记之间且顺序正确")
+
+    payload = node_match.group(1)
+    unsafe_raw_chars = {"<": "<", ">": ">", "&": "&", "\u2028": "U+2028", "\u2029": "U+2029"}
+    leaked_chars = [label for char, label in unsafe_raw_chars.items() if char in payload]
+    if leaked_chars:
+        errors.append("HTML 内嵌审核包 raw-text 含未转义字符：" + "、".join(leaked_chars))
+
+    try:
+        pack = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        errors.append(f"HTML 内嵌审核包不是合法 JSON: {exc.msg}")
+        return errors
+    if not isinstance(pack, dict) or pack.get("type") != "AgentQuestionPack":
+        errors.append("HTML 内嵌审核包 type 必须为 AgentQuestionPack")
+        return errors
+    if pack.get("version") != "0.3.0":
+        errors.append("HTML 内嵌审核包 version 必须为 0.3.0")
+    annotations = pack.get("annotations")
+    if not isinstance(annotations, list) or not all(isinstance(item, dict) for item in annotations):
+        errors.append("HTML 内嵌审核包 annotations 必须是对象数组")
+    elif annotations:
+        required_annotation_fields = {
+            "id", "sectionTitle", "blockId", "contextBefore", "contextAfter", "kind", "text", "createdAt"
+        }
+        annotation_ids: list[str] = []
+        for index, item in enumerate(annotations, start=1):
+            missing = sorted(required_annotation_fields - item.keys())
+            invalid = [
+                field
+                for field in ("id", "sectionTitle", "blockId", "kind", "text", "createdAt")
+                if field in item and (not isinstance(item[field], str) or not item[field].strip())
+            ]
+            invalid.extend(
+                field
+                for field in ("contextBefore", "contextAfter")
+                if field in item and not isinstance(item[field], str)
+            )
+            has_source_text = any(
+                isinstance(item.get(field), str) and item[field].strip() for field in ("selectedText", "blockText")
+            )
+            if missing or invalid or not has_source_text:
+                detail = ("缺少 " + "、".join(missing)) if missing else ""
+                if invalid:
+                    detail += ("；" if detail else "") + "字段值无效 " + "、".join(sorted(set(invalid)))
+                if not has_source_text:
+                    detail += ("；" if detail else "") + "缺少 selectedText/blockText 原文"
+                errors.append(f"HTML 内嵌审核包第 {index} 条 annotation 字段不完整：{detail}")
+            block_id = item.get("blockId")
+            if isinstance(block_id, str) and block_id.strip() and block_ids is not None:
+                match_count = block_ids.count(block_id)
+                if match_count != 1:
+                    errors.append(
+                        f"HTML 内嵌审核包第 {index} 条 annotation 的 blockId={block_id} "
+                        f"在当前 HTML 的 main 中命中 {match_count} 个节点，必须恰好为 1"
+                    )
+            annotation_id = item.get("id")
+            if isinstance(annotation_id, str) and annotation_id.strip():
+                annotation_ids.append(annotation_id)
+        annotation_id_counts: dict[str, int] = {}
+        for annotation_id in annotation_ids:
+            annotation_id_counts[annotation_id] = annotation_id_counts.get(annotation_id, 0) + 1
+        duplicate_annotation_ids = sorted(
+            annotation_id for annotation_id, count in annotation_id_counts.items() if count > 1
+        )
+        if duplicate_annotation_ids:
+            errors.append("HTML 内嵌审核包 annotation.id 必须唯一，发现重复：" + "、".join(duplicate_annotation_ids))
+    source = pack.get("source")
+    if not isinstance(source, dict) or not all(
+        isinstance(source.get(key), str) and source[key] for key in ("fileName", "absolutePath", "fileUrl")
+    ):
+        errors.append("HTML 内嵌审核包 source 必须包含 fileName、absolutePath 和 fileUrl")
+    delivery = pack.get("delivery")
+    if not isinstance(delivery, dict) or delivery.get("mode") != "embedded-html":
+        errors.append("HTML 内嵌审核包 delivery.mode 必须为 embedded-html")
+    else:
+        instruction = delivery.get("instruction")
+        if (
+            delivery.get("status") != "ready-for-agent"
+            or not isinstance(instruction, str)
+            or not instruction.strip()
+            or "inject_annotation_mode.py" not in instruction
+            or "check_html_report.py" not in instruction
+        ):
+            errors.append("HTML 内嵌审核包 delivery 必须包含 ready-for-agent 状态和完整的重新注入、校验 instruction")
+    if not isinstance(pack.get("exportedAt"), str) or not pack["exportedAt"].strip():
+        errors.append("HTML 内嵌审核包必须包含非空 exportedAt")
+    return errors
+
+
+def check_block_id_uniqueness(parser: ReportParser) -> list[str]:
+    """审核定位属性必须唯一，否则批注点击定位会命中错误正文节点。"""
+
+    counts: dict[str, int] = {}
+    for block_id in parser.block_ids:
+        counts[block_id] = counts.get(block_id, 0) + 1
+    duplicates = sorted(block_id for block_id, count in counts.items() if count > 1)
+    if not duplicates:
+        return []
+    return ["发现重复 data-block-id：" + "、".join(duplicates) + "；审核定位属性必须唯一"]
 
 
 def check_media_support(parser: ReportParser, report_path: Path, css: str) -> tuple[list[str], list[str]]:
@@ -536,7 +744,7 @@ def check_document_chrome(parser: ReportParser) -> list[str]:
     return errors
 
 
-def validate_with_warnings(path: Path) -> tuple[list[str], list[str]]:
+def validate_with_warnings(path: Path, require_review_pack: bool = False) -> tuple[list[str], list[str]]:
     html = path.read_text(encoding="utf-8")
     parser = ReportParser()
     parser.feed(html)
@@ -549,7 +757,15 @@ def validate_with_warnings(path: Path) -> tuple[list[str], list[str]]:
     errors.extend(check_diff_viewer_blocks(html, css))
     errors.extend(check_raw_unified_diff_outside_viewer(html))
     errors.extend(check_diff_viewer_tokens(html, css))
-    errors.extend(check_annotation_mode(html, css))
+    errors.extend(
+        check_annotation_mode(
+            html,
+            css,
+            require_review_pack=require_review_pack,
+            block_ids=parser.block_ids,
+        )
+    )
+    errors.extend(check_block_id_uniqueness(parser))
     media_errors, media_warnings = check_media_support(parser, path, css)
     errors.extend(media_errors)
     warnings.extend(media_warnings)
@@ -564,13 +780,18 @@ def validate(path: Path) -> list[str]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="校验 html-report 单文件 HTML 的代码块、外部依赖和已使用的媒体资源。")
     parser.add_argument("html", help="待检查的 HTML 文件路径。")
+    parser.add_argument(
+        "--require-review-pack",
+        action="store_true",
+        help="用户已声明完成 HTML 批注时，要求文件必须包含唯一、合法的内嵌审核包。",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     path = Path(args.html)
-    errors, warnings = validate_with_warnings(path)
+    errors, warnings = validate_with_warnings(path, require_review_pack=args.require_review_pack)
     if errors:
         print(f"FAIL {path}")
         for error in errors:
