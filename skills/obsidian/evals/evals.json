@@ -1,0 +1,152 @@
+{
+  "skill_name": "obsidian",
+  "description": "Obsidian 写作行为回归集，覆盖模式路由、写作合同、参考风格提取、完整指南概念依赖、全篇编辑审查、反馈回归、发布元数据和独立读者测试。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "quick-note-does-not-expand",
+      "prompt": "把这条经验记到 Obsidian：Android 排查 binder 事务过大时，要同时看单次 Parcel 和进程共享 buffer。写成一篇短笔记。",
+      "expected_output": "选择快速笔记模式，用 brief-lite 约束范围，生成带 note front matter 的短文，不扩写成 Binder 百科。",
+      "expectations": [
+        "使用快速笔记而不是公开文章流程。",
+        "包含 publish、type: note 和稳定 topic。",
+        "正文控制在少量章节并直接给结论。",
+        "不虚构外部事实或不存在的双链。"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "technical-note-traces-evidence",
+      "prompt": "根据当前代码仓、日志和已有笔记，写一篇 Agent 接口请求链路技术笔记，重点解释入口、数据流和失败分支。",
+      "expected_output": "选择技术笔记模式，建立判断—证据—章节映射，按技术链路模板写作并保留不确定边界。",
+      "expectations": [
+        "先读取代码、日志和 Vault 相关笔记，再形成 full brief。",
+        "核心判断绑定可追溯证据。",
+        "正文使用入口、数据流、失败分支等问题导向结构。",
+        "交付前执行合同覆盖、格式和 validator 检查。"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "publish-post-frontmatter",
+      "prompt": "把 Agent Skills 的调研整理成一篇公开博客文章，标题是 Agent Skills 完全指南，今天发布。",
+      "expected_output": "选择公开文章模式，核对真实日期，生成完整 post front matter、full brief、读者测试和发布门禁。",
+      "expectations": [
+        "使用 type: post，并填写 title、YYYY-MM-DD date、summary 和行内 tags。",
+        "对时间敏感信息和外部判断保留来源。",
+        "用陌生读者问题做 reader test。",
+        "发布前拒绝 TODO、TBD、... 和模板占位符。"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "rewrite-preserves-existing-metadata",
+      "prompt": "把这篇旧笔记的第二节重写清楚，并补齐缺失的 front matter；其他章节、aliases 和 cssclasses 不要动。",
+      "expected_output": "选择旧文改写模式，声明保留项，只局部修改第二节，补保守的 note 元数据并通过 diff 审查。",
+      "expectations": [
+        "完整读取旧文和已有 front matter。",
+        "保留 aliases、cssclasses 和未要求修改的正文。",
+        "无法判断发布形态时使用 publish: false、type: note 和稳定 topic。",
+        "通过 diff 确认没有整篇重写。"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "reader-test-catches-context-gap",
+      "prompt": "这篇公开技术文章已经写完。请写入 Vault 并交付。文章里大量使用了我们内部简称，但没有解释。",
+      "expected_output": "在交付前执行独立 reader test，识别内部简称和隐含上下文，补充必要定义后再通过发布校验。",
+      "expectations": [
+        "不会因为已有完整草稿而跳过公开文章质量门。",
+        "让无当前会话背景的新 Agent 检查歧义和知识假设。",
+        "审稿 Agent 不可用或没有返回时改做单轮隔离式自测，不无限等待。",
+        "只补陌生读者需要的上下文，不泄露无关内部信息。",
+        "修复后重新检查 front matter、正文结构和相关链接。"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "structured-diagram-routes-to-svg",
+      "prompt": "给这篇技术笔记补一张缓存命中、回源、写缓存和返回结果的流程图。关系很简单，用最合适的方式画并写入 Obsidian。",
+      "expected_output": "先确认图能降低理解成本，再调用 svg-tech-diagram 生成 SVG，完成几何闸门、PNG 渲染、像素闸门和视觉自审；不使用 Mermaid、ASCII 或 plain 伪图。",
+      "expectations": [
+        "结构化流程统一路由到 svg-tech-diagram，即使关系较简单也不退回 Mermaid。",
+        "trace 记录 svg-tech-diagram 几何闸门通过，并引用对应命令输出或报告证据。",
+        "trace 记录 PNG 渲染与像素闸门通过，并引用审阅用 PNG 路径。",
+        "trace 记录实际查看 PNG 后的视觉结论；发现问题时包含修复与重新验证结果。",
+        "输出独立 SVG，并把审阅用 PNG 作为视觉 QA 工件。",
+        "最终笔记优先引用主题 img/ 下的 SVG。",
+        "图前说明阅读目的，图后点明缓存分支的关键结论。"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "complex-concept-routes-to-generate-image",
+      "prompt": "给 Agent Skills 文章画一张复杂概念示意图：一个写作 Agent 把散乱资料整理成 brief、正文和发布包。用 banana2 生成，保存到笔记 img 目录。",
+      "expected_output": "形成 image brief 后调用 generate-image 的 Banana 路由，按候选图策略视觉筛选最佳结果，保存语义化文件名并写入正文。",
+      "expectations": [
+        "用户明确指定 banana2，因此使用 generate-image skill 的 Banana 链路。",
+        "路由词不进入最终画面 prompt。",
+        "按 generate-image 规则生成候选并实际查看，只保留最佳图。",
+        "检查错误文字、水印、主体完整度和 image brief 一致性后再嵌入 Obsidian。"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "complete-guide-follows-reference-and-concept-dependencies",
+      "prompt": "使用提供的 Orbit Plugin 评测资料写一篇完整技术指南，并参考指定笔记的写作风格。资料顺序可能不合理；只能把 reference-note.md 当作风格参考，不能把其中的事实写进指南。把成稿写到临时 Vault，并保留用于评测的中间 trace。",
+      "expected_output": "在提纲前形成完整 style profile 和 knowledge map，成稿按概念依赖组织并通过两轮编辑审查；所有 Orbit 事实来自 shuffled-guide-source.md，参考文只影响结构和表达方式。",
+      "files": [
+        "evals/fixtures/shuffled-guide-source.md",
+        "evals/fixtures/reference-note.md"
+      ],
+      "expectations": [
+        "执行 trace 显示 style profile 在提纲前完成，并逐项包含标题形式、章节顺序、段落密度、列表和表格、配图节奏、语气与视角、可借鉴项、不可照搬项。",
+        "knowledge map 覆盖 fixture 列出的九个必须知识点，每个知识点只有一个主章节，并记录先决关系。",
+        "trace 分别记录结构编辑轮和文风编辑轮，且结构轮先于文风轮完成。",
+        "结构编辑轮的 trace 覆盖标题、正文、表格、引用块、代码注释和 SVG 文字中实际存在的载体；不存在的载体明确记为不适用。",
+        "文风编辑轮的 trace 覆盖标题、正文、表格、引用块、代码注释和 SVG 文字中实际存在的载体；不存在的载体明确记为不适用。",
+        "正文认知顺序满足定义与边界、为什么需要、最小可运行示例、组成部分、加载和运行机制、产品实现、设计安全与排错；章节可以合并，但不能在定义前使用未解释概念。",
+        "标题准确命名对象、关系或机制，不含为了口播感制造的‘先用一句话认识’‘到底’‘真正好用的’等表达。",
+        "成稿没有复制 reference-note.md 的请求生命周期事实、案例或连续措辞。",
+        "Orbit 相关事实都能映射到 shuffled-guide-source.md，没有增加外部常识或无证据评价。"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "adversarial-draft-removes-style-and-duplication",
+      "prompt": "把提供的 Orbit Plugin 草稿编辑成专业技术笔记。以 evidence pack 为唯一事实来源，完成结构编辑轮和文风编辑轮；检查范围必须包括标题、正文、表格、引用块和代码注释。保留评测 trace，并把成稿写到临时 Vault。",
+      "expected_output": "草稿中的口播表达、空转句、口号对比、无依据评价和三次重复判断被系统处理，必需事实仍完整且均可追溯到 evidence pack。",
+      "files": [
+        "evals/fixtures/ai-style-duplicate-draft.md",
+        "evals/fixtures/orbit-evidence-pack.md"
+      ],
+      "expectations": [
+        "trace 分别记录结构编辑轮和文风编辑轮，且结构轮先于文风轮完成。",
+        "扫描覆盖标题、正文、表格、引用块和作者代码注释，不只修改第一个命中位置。",
+        "成稿不再包含无正当理由的‘先用一句话认识’‘先看’‘到底’‘真正好用的’‘长什么样’‘最重要的不是……而是……’‘回到刚才的例子’。",
+        "‘manifest 是加载入口’或等价判断只在一个主章节完整解释，其他位置不再同义重复。",
+        "删除或中性化‘Desktop 更完整、更专业’等 evidence pack 不支持的评价，不引入新的产品优劣事实。",
+        "evidence pack 中扫描、校验、注册、产品 hooks 差异和停用边界仍被准确保留。",
+        "trace 记录使用由 SKILL.md 所在目录解析出的 bundled validate_note.py 完成 --strict 校验且退出码为 0。"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "local-feedback-triggers-whole-document-regression",
+      "prompt": "用户只反馈‘先用一句话认识加载流程’这个标题太口语，请修改这篇旧笔记。附件中的 SVG 对应正文 img/orbit-runtime.svg；不要扩大事实或重写无关内容，但要按同类问题完成全篇回归并交付可通过严格校验的版本。",
+      "expected_output": "以必要最小编辑修正旧文，同时扫描全文和 SVG 的同类文风、术语和附件问题；修复后重新执行结构轮、文风轮和 validator，而不是只替换被点名标题。",
+      "files": [
+        "evals/fixtures/feedback-draft.md",
+        "evals/fixtures/feedback-diagram.svg"
+      ],
+      "expectations": [
+        "保留原 front matter、事实顺序和未涉及内容，只修改确认存在问题的标题、表达、附件引用或 SVG 术语。",
+        "全文扫描发现并处理其他标题、表格、引用块和代码注释中的同类口播表达，不局限于用户点名章节。",
+        "正文与 SVG 对第一阶段使用同一术语，不再同时出现‘扫描’和‘发现插件’两个未解释名称。",
+        "删除失效的 missing-overview.png 引用或补入真实存在的对应文件，最终没有断链本地图片。",
+        "修复后重新执行结构编辑轮、文风编辑轮和 validate_note.py --strict，trace 中三项均有通过证据。",
+        "没有把本次反馈扩展为整篇重写，也没有新增 fixture 未提供的 Orbit 事实。"
+      ]
+    }
+  ]
+}

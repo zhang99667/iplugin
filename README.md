@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 笔记写作、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开的个人研发工作流通用插件。
 
 ## 仓库顶层目录结构
 
@@ -47,7 +47,7 @@ iplugin/
 | `datapilot-sql-runner` | 在 DataPilot 上提交单条或多条 SQL，默认使用 MCP 完成提交、查状态、等待下载和结果下载；结果字段匹配时联动商业 AB 透视表 skill 直接产出 xlsx，Chrome 只作为页面专属设置或 MCP 不可用时的兜底 | "DataPilot 跑一下这个 SQL 并下载结果"、"跑完这些 SQL 直接生成透视表" |
 | `nad-acx-pivot-table` | 生成商业 AB 实验数据分析透视表 xlsx，支持 CSV/TXT/XLSX 合并、字段别名映射、原生 Excel 透视表和相对差指标 | "生成商业 AB 实验透视表"、"合并最近 3 个 csv/txt 生成透视表" |
 | `project-summary` | 整理项目、需求、Bug 修复或阶段性工作的总结与复盘 | "总结一下这个需求"、"把这次做的事整理成项目总结" |
-| `obsidian` | 写入 Obsidian Vault 时先执行任务定义、证据收集、内容规格、大纲、初稿、改写、配图计划和质检交付流程，再应用统一 Markdown 排版、双链和示意图规范，避免空泛模板化笔记 | "写到 Obsidian"、"记到笔记里"、"加到 vault 里" |
+| `obsidian` | 按工作模式与文档类型组织证据和写作合同；指定参考文时强制提取风格画像，完整指南检查概念依赖，并执行结构、文风两轮全篇审查和反馈回归 | "写到 Obsidian"、"参考这篇文章写完整技术指南"、"修改这篇旧笔记并检查全文" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |

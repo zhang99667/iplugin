@@ -1,3 +1,12 @@
+## [0.22.6] - 2026-07-13
+### Changed
+- obsidian: 将工作模式与文档类型拆开，新增完整技术指南的概念依赖和知识点唯一主章节门禁
+- obsidian: 用户指定参考文章时，强制在提纲前提取标题、章节、段落、列表/表格、配图、语气及借鉴边界的 style profile
+- obsidian: 新增专业标题风险规则、结构与文风两轮全篇审查，以及用户反馈后的同类缺陷全文与 SVG 回归
+- obsidian: validator 新增 front matter 子集、正文收尾、本地图片断链和 SVG 根元素校验；行为 eval 新增三组故障注入场景与可重复任务/评分 harness
+- obsidian: 技术链路模板改用名词性标题，skill 保持未发布的 `0.3.0` 版本
+- README / manifest: 同步 Obsidian 编辑工作流说明，插件版本升级到 `0.22.6`
+
 ## [0.22.5] - 2026-07-13
 ### Changed
 - xbuild-open-source: 在代码阅读、调用链追踪、排障或修改中发现 EasyBox/xbuild 目标源码缺失时自动触发，唯一映射下最小补个人 local 配置并精确同步缺失仓
