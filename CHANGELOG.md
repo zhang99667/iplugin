@@ -1,3 +1,10 @@
+## [0.22.7] - 2026-07-14
+### Changed
+- html-report: 将离线批注功能的正式名称从“审核模式”统一为“评论模式”，同步页面标签、保存提示、skill 指引、回归用例和插件说明
+- html-report: 保留“审核模式”旧称触发兼容，并保持 `AgentQuestionPack`、`--require-review-pack`、DOM id 和 `review` 数据字段不变，已有评论结果可继续读取
+- html-report: skill 版本升级到 `0.4.1`
+- README / manifest: 同步评论模式定位，插件版本升级到 `0.22.7`
+
 ## [0.22.6] - 2026-07-13
 ### Changed
 - obsidian: 将工作模式与文档类型拆开，新增完整技术指南的概念依赖和知识点唯一主章节门禁

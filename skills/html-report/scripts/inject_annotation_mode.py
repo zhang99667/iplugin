@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""给 html-report 单文件 HTML 注入离线批注审核模式。
+"""给 html-report 单文件 HTML 注入离线评论模式。
 
-这个脚本用于把已经生成好的普通 HTML 报告升级成“审核版”：
+这个脚本用于把已经生成好的普通 HTML 报告升级成“评论版”：
 - 选中文本后显示轻量气泡，可选择“提问”或“批注”。
 - 输入浮层只有一个“提交”按钮，支持快捷提交，点击外侧自动关闭。
-- 右侧栏可以编辑批注、把审核结果内嵌回 HTML、复制/下载 Markdown，并导出物理剥离批注能力和内嵌审核包的发布版 HTML。
+- 右侧栏可以编辑批注、把评论结果内嵌回 HTML、复制/下载 Markdown，并导出物理剥离批注能力和内嵌评论包的发布版 HTML。
 
 脚本只依赖 Python 标准库，输出仍是单文件 HTML。批注 UI 的 CSS / HTML / JS 维护在
 assets/annotation-mode/，这里负责读取资产、注入来源路径元数据和幂等装配。
@@ -33,12 +33,12 @@ ANNOTATION_JS_PATH = ASSET_DIR / "annotation.js"
 
 
 def read_asset(path: Path) -> str:
-    """读取批注模式资产，缺失时给出可定位的错误。"""
+    """读取评论模式资产，缺失时给出可定位的错误。"""
 
     try:
         return path.read_text(encoding="utf-8")
     except FileNotFoundError as exc:
-        raise FileNotFoundError(f"批注模式资产缺失: {path}") from exc
+        raise FileNotFoundError(f"评论模式资产缺失: {path}") from exc
 
 
 def read_marked_asset(path: Path, marker_start: str, marker_end: str) -> str:
@@ -46,23 +46,23 @@ def read_marked_asset(path: Path, marker_start: str, marker_end: str) -> str:
 
     content = read_asset(path)
     if marker_start not in content or marker_end not in content:
-        raise ValueError(f"批注模式资产缺少剥离标记: {path}")
+        raise ValueError(f"评论模式资产缺少剥离标记: {path}")
     return content
 
 
 def read_annotation_assets() -> tuple[str, str, str]:
-    """读取批注模式三类资产，并校验 JS 里保留元数据占位符。"""
+    """读取评论模式三类资产，并校验 JS 里保留元数据占位符。"""
 
     css = read_marked_asset(ANNOTATION_CSS_PATH, CSS_MARKER_START, CSS_MARKER_END)
     html = read_marked_asset(ANNOTATION_HTML_PATH, HTML_MARKER_START, HTML_MARKER_END)
     js = read_marked_asset(ANNOTATION_JS_PATH, SCRIPT_MARKER_START, SCRIPT_MARKER_END)
     if "__QA_REPORT_META__" not in js:
-        raise ValueError(f"批注模式 JS 缺少 __QA_REPORT_META__ 占位符: {ANNOTATION_JS_PATH}")
+        raise ValueError(f"评论模式 JS 缺少 __QA_REPORT_META__ 占位符: {ANNOTATION_JS_PATH}")
     return css, html, js
 
 
 def strip_annotation_mode(html: str) -> str:
-    """删除已经注入过的批注模式，保证脚本可重复运行。"""
+    """删除已经注入过的评论模式，保证脚本可重复运行。"""
     # 先删除整段批注脚本，避免脚本内部的正则文本被下面的标记清理误匹配。
     html = re.sub(r"\n?\s*<script\s+data-qa-script>[\s\S]*?</script>", "", html)
     html = re.sub(r"\n?\s*/\* QA_ANNOTATION_CSS_START:[\s\S]*?QA_ANNOTATION_CSS_END \*/", "", html)
@@ -109,14 +109,14 @@ def inject_annotation_mode(html: str, output_path: Path | None = None) -> str:
 
 def parse_args() -> argparse.Namespace:
     """解析命令行参数。"""
-    parser = argparse.ArgumentParser(description="给 html-report 单文件 HTML 注入离线批注审核模式。")
+    parser = argparse.ArgumentParser(description="给 html-report 单文件 HTML 注入离线评论模式。")
     parser.add_argument("html", help="输入 HTML 文件。")
     parser.add_argument("-o", "--output", help="输出 HTML 文件；默认覆盖输入文件。")
     return parser.parse_args()
 
 
 def main() -> None:
-    """读取 HTML、注入批注模式并写回文件。"""
+    """读取 HTML、注入评论模式并写回文件。"""
     args = parse_args()
     input_path = Path(args.html)
     output_path = Path(args.output) if args.output else input_path

@@ -1,6 +1,6 @@
 {
   "skill_name": "html-report",
-  "description": "html-report 的高频输出回归集，覆盖报告结构、证据链、diff viewer、媒体证据占位和批注审核模式。",
+  "description": "html-report 的高频输出回归集，覆盖报告结构、证据链、diff viewer、媒体证据占位和评论模式。",
   "evals": [
     {
       "id": 1,
@@ -87,20 +87,20 @@
     {
       "id": 6,
       "name": "annotation-mode-publish-validation",
-      "prompt": "请把输入的普通 HTML 报告升级为离线批注审核版：先运行 check_html_report.py 校验原始 HTML，通过后使用 inject_annotation_mode.py 注入审核模式，再重新运行 check_html_report.py。输出审核版 HTML 路径，并说明保存审核结果到 HTML 和导出无批注版入口是否存在；说明新注入但尚未保存批注的文件不应伪造审核包，用户保存后 Agent 应如何用 --require-review-pack 验证交接。不要手写批注 JS。",
-      "expected_output": "生成或更新审核版 HTML，并通过注入前和注入后的校验。审核版包含批注侧栏、选中文本提问、把 AgentQuestionPack 内嵌回 HTML 的保存能力、Markdown 兜底和导出无批注版入口；能区分新注入审核版与已保存含包审核版。",
+      "prompt": "请把输入的普通 HTML 报告升级为离线评论版：先运行 check_html_report.py 校验原始 HTML，通过后使用 inject_annotation_mode.py 注入评论模式，再重新运行 check_html_report.py。输出评论版 HTML 路径，并说明保存评论结果到 HTML 和导出无批注版入口是否存在；说明新注入但尚未保存批注的文件不应伪造评论包，用户保存后 Agent 应如何用 --require-review-pack 验证交接。不要手写评论 JS。",
+      "expected_output": "生成或更新评论版 HTML，并通过注入前和注入后的校验。评论版包含批注侧栏、选中文本提问、把 AgentQuestionPack 内嵌回 HTML 的保存能力、Markdown 兜底和导出无批注版入口；能区分新注入评论版与已保存含包评论版。",
       "files": [
         "evals/fixtures/annotation_source_report.html",
         "evals/fixtures/annotation_review_notes.md"
       ],
       "expectations": [
         "执行记录或报告说明中体现原始 HTML 先通过 check_html_report.py。",
-        "批注模式由 skills/html-report/scripts/inject_annotation_mode.py 注入，而不是手写批注脚本。",
+        "评论模式由 skills/html-report/scripts/inject_annotation_mode.py 注入，而不是手写评论脚本。",
         "注入后再次通过 check_html_report.py。",
-        "审核版包含保存审核结果到 HTML、Markdown 兜底、导出无批注版和编辑已有批注能力，不再提供独立下载 JSON 入口。",
-        "新注入且尚未保存批注的审核版可以没有内嵌包；点击保存后必须生成唯一、安全转义的 AgentQuestionPack 节点。",
+        "评论版包含保存评论结果到 HTML、Markdown 兜底、导出无批注版和编辑已有批注能力，不再提供独立下载 JSON 入口。",
+        "新注入且尚未保存批注的评论版可以没有内嵌包；点击保存后必须生成唯一、安全转义的 AgentQuestionPack 节点。",
         "用户声明已完成批注时，Agent 使用 --require-review-pack 阻止缺包、坏包或多包文件进入回写流程。",
-        "无批注发布版入口语义清楚，不保留审核 UI、内嵌批注或本地路径。"
+        "无批注发布版入口语义清楚，不保留评论 UI、内嵌批注或本地路径。"
       ]
     }
   ]

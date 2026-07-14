@@ -1,11 +1,11 @@
 ---
 name: html-report
-version: 0.4.0
+version: 0.4.1
 tags:
   - report
   - html
   - output
-description: 生成独立 HTML 报告文件，支持图片/视频证据预览、离线批注审核、将审核结果内嵌回 HTML 供 Agent 直接读取，以及发布版导出。用户明确要求 HTML 输出（如“生成 HTML”“HTML 报告”“写成 HTML”“放到桌面”）、HTML 内批注/审核/提问，调用 `/html-report`，或说“我已在 HTML 里完成批注”“按 HTML 内嵌批注更新报告”时必须触发；用户未明说 HTML，但任务明显更适合独立可视化交付物时，也应自动触发或由其他 skill 调用，例如多章节长报告、代码评审报告、验收报告、问题排查/修复方案、技术方案、方案对比、项目总结、包含 diff/表格/时间线/图片/视频证据链的归档材料。普通简短的“总结一下”“整理一下”“直接给结论”默认用 Markdown，不触发。
+description: 生成独立 HTML 报告文件，支持图片/视频证据预览、离线评论模式、将评论结果内嵌回 HTML 供 Agent 直接读取，以及发布版导出。用户明确要求 HTML 输出（如“生成 HTML”“HTML 报告”“写成 HTML”“放到桌面”）、HTML 内评论/批注/审核/提问，调用 `/html-report`，或说“我已在 HTML 里完成批注”“按 HTML 内嵌评论更新报告”时必须触发；用户未明说 HTML，但任务明显更适合独立可视化交付物时，也应自动触发或由其他 skill 调用，例如多章节长报告、代码评审报告、验收报告、问题排查/修复方案、技术方案、方案对比、项目总结、包含 diff/表格/时间线/图片/视频证据链的归档材料。普通简短的“总结一下”“整理一下”“直接给结论”默认用 Markdown，不触发。
 ---
 
 # HTML 报告
@@ -21,13 +21,13 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、超长路径省略展示、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 组件装配规则、HTML 骨架和少量 JS 片段。只有开始写 HTML 文件时再读取；它会按内容路由到 `references/css/*.css`。
 - `references/css/*.css`：组件化 CSS 源文件。`base.css` 与 `interactions.css` 是默认组合；`code-diff.css`、`media.css`、`diagram.css`、`toc.css`、`tabs.css`、`sortable-table.css` 按内容需要读取并内联进最终 HTML。
-- `references/annotation-mode.md`：当用户要求离线批注、审核模式、把审核结果写回 HTML、按内嵌批注更新报告或导出无批注发布版时读取。
-- `assets/annotation-mode/`：批注审核模式的 CSS、HTML 容器和 JS 资产。普通生成报告时不要读取；维护批注 UI 或发布版剥离逻辑时再修改这些文件，最终仍由 `inject_annotation_mode.py` 内联成单文件 HTML。
+- `references/annotation-mode.md`：当用户要求离线评论模式（兼容旧称“审核模式”）、把评论结果写回 HTML、按内嵌批注更新报告或导出无批注发布版时读取。
+- `assets/annotation-mode/`：评论模式的 CSS、HTML 容器和 JS 资产。普通生成报告时不要读取；维护评论 UI 或发布版剥离逻辑时再修改这些文件，最终仍由 `inject_annotation_mode.py` 内联成单文件 HTML。
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
 - `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、Objective-C / Swift / C-family 等语言片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
-- `scripts/inject_annotation_mode.py`：当需要审核批注模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线批注 UI、审核结果内嵌交接、Markdown 兜底和无批注发布版导出能力；不要手写批注 JS。
+- `scripts/inject_annotation_mode.py`：当需要评论模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线评论 UI、评论结果内嵌交接、Markdown 兜底和无批注发布版导出能力；不要手写批注 JS。
 - `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
-- `evals/evals.json`：html-report 的回归用例清单。只有评估或维护 skill 质量时读取，不参与普通报告生成；当前覆盖代码评审、问题排查、技术方案、聚焦 diff、Android mock 验收和批注审核模式。
+- `evals/evals.json`：html-report 的回归用例清单。只有评估或维护 skill 质量时读取，不参与普通报告生成；当前覆盖代码评审、问题排查、技术方案、聚焦 diff、Android mock 验收和评论模式。
 
 ## 触发边界
 
@@ -59,8 +59,8 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 5. 报告需要复杂技术架构图、流程图、状态图或模块关系图时，读取 `../svg-tech-diagram/SKILL.md` 及其相关 references，生成可内联 SVG；该图必须先渲染 PNG 并完成自审，再嵌入 HTML。
 6. 报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时，先用 `scripts/highlight_code.py` 生成高亮 HTML 片段，再嵌入报告；不要手写裸 `<pre><code>`。最终 `<style>` 必须内联 `references/css/code-diff.css`。
 7. 写 HTML 文件前读取 `references/css-template.md`，按组件清单读取需要的 `references/css/*.css` 并内联到单文件 HTML；长文档目录必须默认展开，并能点击按钮收起/展开整个目录侧栏。
-8. 如果用户要求离线批注、审核模式或希望把 HTML 中的意见交给 Agent，先运行基础校验，再读取 `references/annotation-mode.md`，执行 `python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>` 注入审核模式。审核完成后由页面的 `保存审核结果到 HTML` 把结构化批注直接内嵌回单文件。
-   - 如果用户说已经在 HTML 中完成批注并要求更新，先执行 `check_html_report.py <html-file> --require-review-pack`；缺包、坏包或多包时停止修改并请用户重新保存正确审核版，不能静默当作零批注。
+8. 如果用户要求离线评论模式（包括旧称“审核模式”）或希望把 HTML 中的意见交给 Agent，先运行基础校验，再读取 `references/annotation-mode.md`，执行 `python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>` 注入评论模式。评论完成后由页面的 `保存评论结果到 HTML` 把结构化批注直接内嵌回单文件。
+   - 如果用户说已经在 HTML 中完成批注并要求更新，先执行 `check_html_report.py <html-file> --require-review-pack`；缺包、坏包或多包时停止修改并请用户重新保存正确评论版，不能静默当作零批注。
 9. 完成前运行 `python3 skills/html-report/scripts/check_html_report.py <html-file>`；若失败，修正 HTML 后重跑直到通过。
 10. 完成后只回复文件路径和一句话概要，不复述报告全文。
 
@@ -70,10 +70,10 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 图片/视频证据是可选能力，不是所有报告的强制结构；需要展示截图、录屏或关键帧时，默认用相对路径引用同目录 `evidence_YYYYMMDD/` 资源，小图可选 base64，视频不建议 base64。
 - 用户没有指定路径时，默认输出到桌面。
 - 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
-- 批注审核模式只在用户明确需要时加入。审核版 HTML 必须以内嵌 `AgentQuestionPack` 的 `保存审核结果到 HTML` 为主操作，并保留 Markdown 兜底；独立 `下载 JSON` 不再作为用户入口。
-- 审核版内嵌包必须包含原 HTML 的文件名、绝对路径和 `file://` URL，使用唯一 `#qaEmbeddedReviewData[data-qa-review-data]` 节点和 `QA_EMBEDDED_REVIEW_START/END` 标记，避免 Agent 或子 Agent 丢失上下文。
-- 用户声明已完成批注时，必须用 `--require-review-pack` 校验交接文件；合法空数组表示明确的空审核结果，缺少、损坏或重复的包则是阻塞错误。
-- 审核版必须内置 `导出无批注版`；对外发布版要物理剥离批注 UI、批注 JS、批注高亮、`data-block-id` 和内嵌审核包，不能泄露内部意见或本地路径。
+- 评论模式只在用户明确需要时加入。评论版 HTML 必须以内嵌 `AgentQuestionPack` 的 `保存评论结果到 HTML` 为主操作，并保留 Markdown 兜底；独立 `下载 JSON` 不再作为用户入口。
+- 评论版内嵌包必须包含原 HTML 的文件名、绝对路径和 `file://` URL，使用唯一 `#qaEmbeddedReviewData[data-qa-review-data]` 节点和 `QA_EMBEDDED_REVIEW_START/END` 标记，避免 Agent 或子 Agent 丢失上下文。
+- 用户声明已完成批注时，必须用 `--require-review-pack` 校验交接文件；合法空数组表示明确的空评论结果，缺少、损坏或重复的包则是阻塞错误。
+- 评论版必须内置 `导出无批注版`；对外发布版要物理剥离批注 UI、批注 JS、批注高亮、`data-block-id` 和内嵌评论包，不能泄露内部意见或本地路径。
 - 判断为正式技术/业务文档或分析报告时，必须加文档抬头；普通对话转 HTML 不强制加。
 - 报告内容必须来自用户内容或可靠上下文，不编造仓库、负责人、日期、卡片号、上线计划或收益数据。
 - 代码高亮、长文档目录、响应式和打印样式的细节按 `references/visual-rules.md`、`references/css-template.md` 和对应 `references/css/*.css` 执行；最终必须通过 `scripts/check_html_report.py`。
@@ -81,7 +81,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 ## 核心原则
 
 - HTML 的价值是可视化表达力，不是花哨交互。
-- 审核交接的默认载体仍是同一个 HTML 文件；`localStorage` 只负责编辑期暂存，不能作为 Agent 看不到的唯一数据源。
+- 评论交接的默认载体仍是同一个 HTML 文件；`localStorage` 只负责编辑期暂存，不能作为 Agent 看不到的唯一数据源。
 - 首屏给结论，详情和证据往下排。
 - 颜色、卡片、表格、目录、折叠都服务于阅读和定位。
 - 代码块必须先转义再高亮，使用 `scripts/highlight_code.py` 生成静态 HTML；如果脚本语言参数不匹配，先换用受支持语言或修正脚本，不要降级成交付未高亮代码块。

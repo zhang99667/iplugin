@@ -1,5 +1,5 @@
 
-    /* QA_ANNOTATION_CSS_START: 离线批注审核模式，导出发布版时会被移除。 */
+    /* QA_ANNOTATION_CSS_START: 离线评论模式，导出发布版时会被移除。 */
     :root {
       --qa-accent: #2563eb;
       --qa-accent-soft: #eff6ff;

@@ -1,7 +1,7 @@
 {
   "name": "iplugin",
-  "version": "0.22.6",
-  "description": "toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开",
+  "version": "0.22.7",
+  "description": "toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线评论模式、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开",
   "author": {
     "name": "markz"
   },
@@ -20,6 +20,8 @@
     "typescript",
     "c-family",
     "annotation",
+    "comment",
+    "comment-mode",
     "review",
     "question-pack",
     "svg-tech-diagram",
@@ -174,7 +176,7 @@
   "interface": {
     "displayName": "iPlugin",
     "shortDescription": "个人开发工作流工具箱",
-    "longDescription": "面向个人研发工作流的通用插件，提供代码链路阅读、爱迪生考试题库答题、复杂任务委派、结构化询问命令、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业广告 SQL 写作、DataPilot SQL 跑数、结果下载与任务 ID 回收、商业 AB 实验数据透视表生成、项目总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、矩阵差异化标记、Karpathy 风格编码约束、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开等可复用能力。",
+    "longDescription": "面向个人研发工作流的通用插件，提供代码链路阅读、爱迪生考试题库答题、复杂任务委派、结构化询问命令、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线评论模式、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业广告 SQL 写作、DataPilot SQL 跑数、结果下载与任务 ID 回收、商业 AB 实验数据透视表生成、项目总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、矩阵差异化标记、Karpathy 风格编码约束、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开等可复用能力。",
     "developerName": "markz",
     "category": "Productivity",
     "capabilities": [
@@ -188,8 +190,8 @@
       "提交前让我确认一下",
       "按 Android mock 文档跑完整自测并生成验收报告",
       "把这份结论整理成 HTML 报告",
-      "给这个 HTML 报告加离线批注审核模式",
-      "我已在 HTML 里完成批注，请按内嵌审核结果更新报告",
+      "给这个 HTML 报告加离线评论模式",
+      "我已在 HTML 里完成批注，请按内嵌评论结果更新报告",
       "给这段技术说明画一张 SVG 架构图",
       "把这个 HTML 文件输出成 Markdown",
       "/best-of-web 结合互联网上最优秀的内容，帮我梳理这个主题",

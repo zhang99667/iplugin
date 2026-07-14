@@ -408,9 +408,9 @@ def check_annotation_mode(
     require_review_pack: bool = False,
     block_ids: list[str] | None = None,
 ) -> list[str]:
-    """检查离线批注模式的关键结构，避免审核版 HTML 交互缺件。"""
+    """检查离线评论模式的关键结构，避免评论版 HTML 交互缺件。"""
     errors: list[str] = []
-    # 只识别真实 marker、标签和数据节点；正文代码示例里的同名字符串不能把普通报告误判为审核版。
+    # 只识别真实 marker、标签和数据节点；正文代码示例里的同名字符串不能把普通报告误判为评论版。
     has_embedded_review = bool(
         EMBEDDED_REVIEW_START_RE.search(html)
         or EMBEDDED_REVIEW_END_RE.search(html)
@@ -424,63 +424,62 @@ def check_annotation_mode(
         or has_embedded_review
     )
     if not has_annotation:
-        return ["未找到 HTML 内嵌审核包；请确认用户保存的是含批注审核版，而不是原始版或无批注发布版"] if require_review_pack else errors
+        return ["未找到 HTML 内嵌评论包；请确认用户保存的是评论版，而不是原始版或无批注发布版"] if require_review_pack else errors
 
     # 只在三段批注资产中检查实现片段，避免正文代码示例里的旧按钮名造成误报或掩盖缺件。
     annotation_parts = ANNOTATION_CSS_ASSET_RE.findall(css) + ANNOTATION_ASSET_BLOCK_RE.findall(html)
     annotation_scope = "\n".join(annotation_parts) or html
 
     required_fragments = {
-        "QA_ANNOTATION_CSS_START": "批注模式缺少 CSS 起始标记，导出发布版无法稳定剥离样式",
-        "QA_ANNOTATION_HTML_START": "批注模式缺少 HTML 起始标记，导出发布版无法稳定剥离 UI",
-        "QA_ANNOTATION_SCRIPT_START": "批注模式缺少脚本起始标记，导出发布版无法稳定剥离 JS",
-        "data-qa-script": "批注模式缺少 data-qa-script，导出发布版无法从 DOM 中移除批注脚本",
-        "data-qa-ui": "批注模式缺少 data-qa-ui，导出发布版无法从 DOM 中移除批注 UI",
-        'id="qaSelectionPopover"': "批注模式缺少选中文本气泡",
-        'id="qaComposer"': "批注模式缺少轻量输入浮层",
-        'id="qaSidebar"': "批注模式缺少右侧批注栏",
-        'id="qaExportPublic"': "批注模式缺少导出发布版按钮",
-        'id="qaLauncherLabel"': "批注模式右上角入口必须能在 0 批注时显示“导出无批注版”而不是“批注 0”",
-        "updateLauncherMode": "批注模式必须根据批注数量切换右上角“导出无批注版”/“批注 N”入口",
-        "publish-mode": "批注模式必须给 0 批注发布入口提供更醒目的视觉状态",
-        'id="qaSaveReviewHtml"': "批注侧栏缺少“保存审核结果到 HTML”入口",
-        "保存审核结果到 HTML": "批注侧栏必须把 HTML 内嵌交接作为主要审核操作",
+        "QA_ANNOTATION_CSS_START": "评论模式缺少 CSS 起始标记，导出发布版无法稳定剥离样式",
+        "QA_ANNOTATION_HTML_START": "评论模式缺少 HTML 起始标记，导出发布版无法稳定剥离 UI",
+        "QA_ANNOTATION_SCRIPT_START": "评论模式缺少脚本起始标记，导出发布版无法稳定剥离 JS",
+        "data-qa-script": "评论模式缺少 data-qa-script，导出发布版无法从 DOM 中移除批注脚本",
+        "data-qa-ui": "评论模式缺少 data-qa-ui，导出发布版无法从 DOM 中移除评论 UI",
+        'id="qaSelectionPopover"': "评论模式缺少选中文本气泡",
+        'id="qaComposer"': "评论模式缺少轻量输入浮层",
+        'id="qaSidebar"': "评论模式缺少右侧批注栏",
+        'id="qaExportPublic"': "评论模式缺少导出发布版按钮",
+        'id="qaLauncherLabel"': "评论模式右上角入口必须能在 0 批注时显示“导出无批注版”而不是“批注 0”",
+        "updateLauncherMode": "评论模式必须根据批注数量切换右上角“导出无批注版”/“批注 N”入口",
+        "publish-mode": "评论模式必须给 0 批注发布入口提供更醒目的视觉状态",
+        'id="qaSaveReviewHtml"': "批注侧栏缺少保存评论结果入口",
         'id="qaExportPublic">导出无批注版</button>': "发布版按钮必须明确标注为不含批注",
-        "qa-save-review-btn": "保存审核结果按钮必须作为醒目的主按钮展示",
-        "saveReviewHtml": "批注模式缺少保存含批注审核版的交互逻辑",
-        "saveHtmlFile": "审核版和发布版必须复用统一的 HTML 保存/下载回退逻辑",
-        "reviewFallbackFileName": "下载审核版必须使用与当前草稿不同的默认文件名，避免本地状态碰撞",
-        "buildReviewedHtml": "批注模式缺少含批注 HTML 构建逻辑",
-        "buildEmbeddedReviewBlock": "批注模式缺少 AgentQuestionPack 内嵌逻辑",
-        "serializeReviewPack": "批注模式缺少内嵌 JSON 安全序列化逻辑",
+        "qa-save-review-btn": "保存评论结果按钮必须作为醒目的主按钮展示",
+        "saveReviewHtml": "评论模式缺少保存评论版的交互逻辑",
+        "saveHtmlFile": "评论版和发布版必须复用统一的 HTML 保存/下载回退逻辑",
+        "reviewFallbackFileName": "下载评论版必须使用与当前草稿不同的默认文件名，避免本地状态碰撞",
+        "buildReviewedHtml": "评论模式缺少含批注 HTML 构建逻辑",
+        "buildEmbeddedReviewBlock": "评论模式缺少 AgentQuestionPack 内嵌逻辑",
+        "serializeReviewPack": "评论模式缺少内嵌 JSON 安全序列化逻辑",
         "\\u003c": "内嵌 JSON 必须转义 <，防止 </script> 提前闭合或注入 HTML",
-        "data-qa-review-data": "含批注审核版缺少稳定的内嵌数据节点",
-        "readEmbeddedReviewPack": "批注模式缺少从 HTML 恢复内嵌批注的逻辑",
+        "data-qa-review-data": "评论版缺少稳定的内嵌数据节点",
+        "readEmbeddedReviewPack": "评论模式缺少从 HTML 恢复内嵌批注的逻辑",
         "stored !== null": "批注加载必须区分 localStorage 不存在与用户明确清空的 []",
-        "legacyStorageKey": "批注模式必须兼容迁移旧版 localStorage 草稿键",
-        "hasPersistedReviewState": "清空最后一条批注后必须保留审核态，允许把空结果写回 HTML",
-        "clearedReviewMode": "清空后的审核态必须使用独立入口并隐藏 0 数量徽标",
-        "Math.max(blockSeq": "审核版必须从已有定位 ID 恢复序号，避免 Agent 增段后生成重复 blockId",
+        "legacyStorageKey": "评论模式必须兼容迁移旧版 localStorage 草稿键",
+        "hasPersistedReviewState": "清空最后一条批注后必须保留评论态，允许把空结果写回 HTML",
+        "clearedReviewMode": "清空后的评论态必须使用独立入口并隐藏 0 数量徽标",
+        "Math.max(blockSeq": "评论版必须从已有定位 ID 恢复序号，避免 Agent 增段后生成重复 blockId",
         "clearStoredAnnotations": "直接写入 HTML 后必须清理旧本地基线，避免 Agent 更新后复活旧批注",
-        "stripEmbeddedReviewBlock": "重复保存和发布版导出必须能剥离旧内嵌审核包",
+        "stripEmbeddedReviewBlock": "重复保存和发布版导出必须能剥离旧内嵌评论包",
         "mode: 'embedded-html'": "AgentQuestionPack 必须声明 HTML 内嵌交付模式",
-        "inject_annotation_mode.py": "AgentQuestionPack 必须明确处理后重新注入审核模式",
+        "inject_annotation_mode.py": "AgentQuestionPack 必须明确处理后重新注入评论模式",
         "取消：取消导出": "导出发布版确认框的取消动作必须真正取消，不能触发下载",
-        "buildPublicHtml": "批注模式缺少发布版 HTML 剥离逻辑",
-        "buildMarkdownPack": "批注模式缺少 Markdown 批注包导出逻辑",
-        "buildJsonPack": "批注模式缺少 JSON 批注包导出逻辑",
+        "buildPublicHtml": "评论模式缺少发布版 HTML 剥离逻辑",
+        "buildMarkdownPack": "评论模式缺少 Markdown 批注包导出逻辑",
+        "buildJsonPack": "评论模式缺少 JSON 批注包导出逻辑",
         'data-qa-card-action="edit"': "批注侧栏必须支持编辑已有批注，避免只能删除重加",
-        "openEditAnnotation": "批注模式缺少编辑已有批注的交互逻辑",
-        "editingAnnotationId": "批注模式编辑已有批注时必须记录当前编辑目标",
-        "updatedAt": "批注模式编辑已有批注后必须记录更新时间",
-        "injectedReportMeta": "批注模式必须在生成时注入原 HTML 路径元数据，避免打开方式改变后丢失绝对路径",
-        "reportAbsolutePath": "批注模式导出包必须包含原 HTML 绝对路径",
-        "reportFileUrl": "批注模式导出包必须包含 file URL",
+        "openEditAnnotation": "评论模式缺少编辑已有批注的交互逻辑",
+        "editingAnnotationId": "评论模式编辑已有批注时必须记录当前编辑目标",
+        "updatedAt": "评论模式编辑已有批注后必须记录更新时间",
+        "injectedReportMeta": "评论模式必须在生成时注入原 HTML 路径元数据，避免打开方式改变后丢失绝对路径",
+        "reportAbsolutePath": "评论模式导出包必须包含原 HTML 绝对路径",
+        "reportFileUrl": "评论模式导出包必须包含 file URL",
         "File URL：": "Markdown 批注包必须写入 file URL，方便 Agent 回查原文件",
         "绝对路径：": "Markdown 批注包必须写入绝对路径，方便 Agent 回查原文件",
-        "cachedSelectionTarget": "批注模式必须缓存选区，避免点击气泡后选区丢失",
-        "syncAnnotatedState": "批注模式必须在保存、删除、清空后同步正文高亮和边框状态",
-        "removeAllRanges": "批注模式删除批注后必须清理浏览器选区，避免正文残留选中态",
+        "cachedSelectionTarget": "评论模式必须缓存选区，避免点击气泡后选区丢失",
+        "syncAnnotatedState": "评论模式必须在保存、删除、清空后同步正文高亮和边框状态",
+        "removeAllRanges": "评论模式删除批注后必须清理浏览器选区，避免正文残留选中态",
         ">提交<": "批注输入浮层只保留一个“提交”按钮",
         'aria-keyshortcuts="Meta+Enter Control+Enter"': "批注输入浮层必须声明 ⌘/Ctrl + Enter 提交快捷键",
         "composerText?.addEventListener('keydown'": "批注输入框缺少局部键盘快捷键监听",
@@ -488,6 +487,10 @@ def check_annotation_mode(
         "event.metaKey || event.ctrlKey": "批注输入浮层必须同时支持 ⌘ + Enter 和 Ctrl + Enter",
         "!event.isComposing": "批注输入浮层必须避开输入法组字阶段，防止 Enter 误提交",
     }
+    # 接收上一版本已保存的评论包时允许旧 UI 文案；处理完成并重新注入后，普通校验会强制升级新名称。
+    if not require_review_pack:
+        required_fragments['<span class="qa-mode-chip">评论模式</span>'] = "评论模式标签缺失或仍使用旧名称"
+        required_fragments["保存评论结果到 HTML"] = "批注侧栏必须把 HTML 内嵌交接作为主要评论操作"
     for fragment, message in required_fragments.items():
         if fragment not in annotation_scope:
             errors.append(message)
@@ -495,24 +498,27 @@ def check_annotation_mode(
     forbidden_fragments = {
         "qaComposerCancel": "批注输入浮层不要保留取消按钮；点击浮层外侧即关闭",
         ">保存<": "批注输入浮层按钮文案应为“提交”，不要使用“保存”",
-        "qaDownloadJson": "批注侧栏不再提供独立 JSON 下载，应保存内嵌审核结果到 HTML",
+        "qaDownloadJson": "批注侧栏不再提供独立 JSON 下载，应保存内嵌评论结果到 HTML",
         ">下载 JSON<": "批注侧栏不再提供独立 JSON 下载按钮",
-        "建议使用当前文件名覆盖原审核版": "无批注发布版不能再建议覆盖含批注审核版",
+        "建议使用当前文件名覆盖原评论版": "无批注发布版不能再建议覆盖评论版",
+        "建议使用当前文件名覆盖原审核版": "无批注发布版不能再建议覆盖旧称审核版",
         "取消：下载": "导出发布版确认框不能把取消解释为下载",
-        "暂无批注可保存": "清空批注后仍必须允许保存空审核包，覆盖 HTML 中的旧批注",
+        "暂无批注可保存": "清空批注后仍必须允许保存空评论包，覆盖 HTML 中的旧批注",
         "result === 'saved' || result === 'downloaded'": "下载只能确认已发起，不能据此清空尚未持久化的本地草稿",
     }
+    if not require_review_pack:
+        forbidden_fragments['<span class="qa-mode-chip">审核模式</span>'] = "评论模式标签不能使用旧名称“审核模式”"
     for fragment, message in forbidden_fragments.items():
         if fragment in annotation_scope:
             errors.append(message)
 
     compact_css = re.sub(r"\s+", " ", css)
     for fragment, message in {
-        ".qa-selection-popover": "批注模式缺少选区气泡样式",
-        ".qa-composer": "批注模式缺少输入浮层样式",
-        ".qa-sidebar": "批注模式缺少右侧栏样式",
-        ".qa-highlight": "批注模式缺少选中文本高亮样式",
-        ".qa-panel-open": "批注模式缺少右侧栏打开时的正文避让样式",
+        ".qa-selection-popover": "评论模式缺少选区气泡样式",
+        ".qa-composer": "评论模式缺少输入浮层样式",
+        ".qa-sidebar": "评论模式缺少右侧栏样式",
+        ".qa-highlight": "评论模式缺少选中文本高亮样式",
+        ".qa-panel-open": "评论模式缺少右侧栏打开时的正文避让样式",
     }.items():
         if fragment not in compact_css:
             errors.append(message)
@@ -529,7 +535,7 @@ def check_embedded_review_pack(
     required: bool = False,
     block_ids: list[str] | None = None,
 ) -> list[str]:
-    """当 HTML 已保存审核结果时，校验唯一内嵌包的标记、JSON 和 Agent 定位字段。"""
+    """当 HTML 已保存评论结果时，校验唯一内嵌包的标记、JSON 和 Agent 定位字段。"""
 
     errors: list[str] = []
     start_matches = list(EMBEDDED_REVIEW_START_RE.finditer(html))
@@ -537,41 +543,41 @@ def check_embedded_review_pack(
     node_matches = list(EMBEDDED_REVIEW_DATA_RE.finditer(html))
     if not start_matches and not end_matches and not node_matches:
         if required:
-            errors.append("未找到 HTML 内嵌审核包；请确认用户已点击“保存审核结果到 HTML”并提供了该文件")
+            errors.append("未找到 HTML 内嵌评论包；请确认用户已点击“保存评论结果到 HTML”并提供了该文件")
         return errors
     if len(start_matches) != 1 or len(end_matches) != 1:
-        errors.append("含批注审核版必须且只能包含一对 QA_EMBEDDED_REVIEW_START/END 标记")
+        errors.append("评论版必须且只能包含一对 QA_EMBEDDED_REVIEW_START/END 标记")
     if len(node_matches) != 1:
-        errors.append("含批注审核版必须且只能包含一个 #qaEmbeddedReviewData[data-qa-review-data] 节点")
+        errors.append("评论版必须且只能包含一个 #qaEmbeddedReviewData[data-qa-review-data] 节点")
         return errors
 
     node_match = node_matches[0]
     opening_tag = node_match.group(0).split(">", 1)[0] + ">"
     if not re.search(r"\btype\s*=\s*[\"']application/json[\"']", opening_tag, re.IGNORECASE):
-        errors.append("HTML 内嵌审核包节点 type 必须为 application/json，不能作为可执行脚本")
+        errors.append("HTML 内嵌评论包节点 type 必须为 application/json，不能作为可执行脚本")
     if len(start_matches) == 1 and len(end_matches) == 1:
         if not (start_matches[0].end() <= node_match.start() < node_match.end() <= end_matches[0].start()):
-            errors.append("HTML 内嵌审核包必须位于 QA_EMBEDDED_REVIEW_START/END 标记之间且顺序正确")
+            errors.append("HTML 内嵌评论包必须位于 QA_EMBEDDED_REVIEW_START/END 标记之间且顺序正确")
 
     payload = node_match.group(1)
     unsafe_raw_chars = {"<": "<", ">": ">", "&": "&", "\u2028": "U+2028", "\u2029": "U+2029"}
     leaked_chars = [label for char, label in unsafe_raw_chars.items() if char in payload]
     if leaked_chars:
-        errors.append("HTML 内嵌审核包 raw-text 含未转义字符：" + "、".join(leaked_chars))
+        errors.append("HTML 内嵌评论包 raw-text 含未转义字符：" + "、".join(leaked_chars))
 
     try:
         pack = json.loads(payload)
     except json.JSONDecodeError as exc:
-        errors.append(f"HTML 内嵌审核包不是合法 JSON: {exc.msg}")
+        errors.append(f"HTML 内嵌评论包不是合法 JSON: {exc.msg}")
         return errors
     if not isinstance(pack, dict) or pack.get("type") != "AgentQuestionPack":
-        errors.append("HTML 内嵌审核包 type 必须为 AgentQuestionPack")
+        errors.append("HTML 内嵌评论包 type 必须为 AgentQuestionPack")
         return errors
     if pack.get("version") != "0.3.0":
-        errors.append("HTML 内嵌审核包 version 必须为 0.3.0")
+        errors.append("HTML 内嵌评论包 version 必须为 0.3.0")
     annotations = pack.get("annotations")
     if not isinstance(annotations, list) or not all(isinstance(item, dict) for item in annotations):
-        errors.append("HTML 内嵌审核包 annotations 必须是对象数组")
+        errors.append("HTML 内嵌评论包 annotations 必须是对象数组")
     elif annotations:
         required_annotation_fields = {
             "id", "sectionTitle", "blockId", "contextBefore", "contextAfter", "kind", "text", "createdAt"
@@ -598,13 +604,13 @@ def check_embedded_review_pack(
                     detail += ("；" if detail else "") + "字段值无效 " + "、".join(sorted(set(invalid)))
                 if not has_source_text:
                     detail += ("；" if detail else "") + "缺少 selectedText/blockText 原文"
-                errors.append(f"HTML 内嵌审核包第 {index} 条 annotation 字段不完整：{detail}")
+                errors.append(f"HTML 内嵌评论包第 {index} 条 annotation 字段不完整：{detail}")
             block_id = item.get("blockId")
             if isinstance(block_id, str) and block_id.strip() and block_ids is not None:
                 match_count = block_ids.count(block_id)
                 if match_count != 1:
                     errors.append(
-                        f"HTML 内嵌审核包第 {index} 条 annotation 的 blockId={block_id} "
+                        f"HTML 内嵌评论包第 {index} 条 annotation 的 blockId={block_id} "
                         f"在当前 HTML 的 main 中命中 {match_count} 个节点，必须恰好为 1"
                     )
             annotation_id = item.get("id")
@@ -617,15 +623,15 @@ def check_embedded_review_pack(
             annotation_id for annotation_id, count in annotation_id_counts.items() if count > 1
         )
         if duplicate_annotation_ids:
-            errors.append("HTML 内嵌审核包 annotation.id 必须唯一，发现重复：" + "、".join(duplicate_annotation_ids))
+            errors.append("HTML 内嵌评论包 annotation.id 必须唯一，发现重复：" + "、".join(duplicate_annotation_ids))
     source = pack.get("source")
     if not isinstance(source, dict) or not all(
         isinstance(source.get(key), str) and source[key] for key in ("fileName", "absolutePath", "fileUrl")
     ):
-        errors.append("HTML 内嵌审核包 source 必须包含 fileName、absolutePath 和 fileUrl")
+        errors.append("HTML 内嵌评论包 source 必须包含 fileName、absolutePath 和 fileUrl")
     delivery = pack.get("delivery")
     if not isinstance(delivery, dict) or delivery.get("mode") != "embedded-html":
-        errors.append("HTML 内嵌审核包 delivery.mode 必须为 embedded-html")
+        errors.append("HTML 内嵌评论包 delivery.mode 必须为 embedded-html")
     else:
         instruction = delivery.get("instruction")
         if (
@@ -635,14 +641,14 @@ def check_embedded_review_pack(
             or "inject_annotation_mode.py" not in instruction
             or "check_html_report.py" not in instruction
         ):
-            errors.append("HTML 内嵌审核包 delivery 必须包含 ready-for-agent 状态和完整的重新注入、校验 instruction")
+            errors.append("HTML 内嵌评论包 delivery 必须包含 ready-for-agent 状态和完整的重新注入、校验 instruction")
     if not isinstance(pack.get("exportedAt"), str) or not pack["exportedAt"].strip():
-        errors.append("HTML 内嵌审核包必须包含非空 exportedAt")
+        errors.append("HTML 内嵌评论包必须包含非空 exportedAt")
     return errors
 
 
 def check_block_id_uniqueness(parser: ReportParser) -> list[str]:
-    """审核定位属性必须唯一，否则批注点击定位会命中错误正文节点。"""
+    """评论定位属性必须唯一，否则批注点击定位会命中错误正文节点。"""
 
     counts: dict[str, int] = {}
     for block_id in parser.block_ids:
@@ -650,7 +656,7 @@ def check_block_id_uniqueness(parser: ReportParser) -> list[str]:
     duplicates = sorted(block_id for block_id, count in counts.items() if count > 1)
     if not duplicates:
         return []
-    return ["发现重复 data-block-id：" + "、".join(duplicates) + "；审核定位属性必须唯一"]
+    return ["发现重复 data-block-id：" + "、".join(duplicates) + "；评论定位属性必须唯一"]
 
 
 def check_media_support(parser: ReportParser, report_path: Path, css: str) -> tuple[list[str], list[str]]:
@@ -783,7 +789,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-review-pack",
         action="store_true",
-        help="用户已声明完成 HTML 批注时，要求文件必须包含唯一、合法的内嵌审核包。",
+        help="用户已声明完成 HTML 批注时，要求文件必须包含唯一、合法的内嵌评论包。",
     )
     return parser.parse_args()
 

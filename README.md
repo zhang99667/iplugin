@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线批注审核、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、HTML 报告生成、图片/视频证据预览、可编辑且可内嵌交接的离线评论模式、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开的个人研发工作流通用插件。
 
 ## 仓库顶层目录结构
 
@@ -38,7 +38,7 @@ iplugin/
 | `android-mock` | 按 Android mock 文档和测试用例逐 case 执行真机验收，区分多条链路，沉淀截图/录屏/logcat/mockserver 证据并生成验收报告 | "帮我自测这个 Android mock 方案"、"跑完这些用例并补截图证据"、"生成链路分离的验收报告" |
 | `best-of-web` | 仅通过 `/best-of-web` 命令触发；联网搜索并按来源质量分层核验公开资料，再综合成可引用、可执行的回答 | `/best-of-web 结合互联网上最优秀的内容梳理这个主题` |
 | `delegated-search` | 在复杂排查、找全调用链、影响面分析、跨模块实现或高输出验证前先做委派判断，将可独立调查、实现或验证的子任务拆给 explorer/worker/verifier，主线程负责整合与交付 | "帮我找全相关实现"、"这个链路可能在哪里断"、"先拆子 Agent 并行查一下"、"这个复杂任务看看能不能拆给 worker 做" |
-| `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，内置代码评审、验收、选型对比、项目总结等结构模板，支持多语言离线高亮、图片/视频证据和内联 SVG；可注入离线批注审核模式，把 `AgentQuestionPack` 直接内嵌回 HTML 交给 Agent 更新，并导出无批注发布版 | "整理成 HTML 报告"、"给这个 HTML 加批注审核模式"、"按 HTML 内嵌批注更新报告"、`/html-report` |
+| `html-report` | 生成独立单文件 HTML 报告；正式文档加抬头，内置代码评审、验收、选型对比、项目总结等结构模板，支持多语言离线高亮、图片/视频证据和内联 SVG；可注入离线评论模式，把 `AgentQuestionPack` 直接内嵌回 HTML 交给 Agent 更新，并导出无批注发布版 | "整理成 HTML 报告"、"给这个 HTML 加评论模式"、"按 HTML 内嵌评论更新报告"、`/html-report` |
 | `svg-tech-diagram` | 为技术长文、HTML 报告、架构说明和代码链路生成朴素清晰的 SVG 技术图，按内容包围盒自适应画布，并通过几何/像素闸门和渲染 PNG 自审保证箭头、文字和布局可读 | "画 SVG 图"、"配张架构图"、"生成技术示意图"、"公众号配图" |
 | `html2md` | 用标准库脚本把本地 HTML、`file://` 页面或粘贴的 HTML 内容转换成 Markdown | "HTML 转 MD"、"file:///... 输出成 md"、"把这个 HTML 报告转 Markdown" |
 | `generate-image` | 生成图片并按需求保存到本地；普通出图可用平台内置能力，明确指定 `gptimage` / `gptimg2` / `banana2` 等接口链路时必须走通用 API 客户端，默认并发生成 3 张候选图并视觉筛选只保留最佳图，路由词不会进入最终图片 prompt，API key 首次提供后保存到本地私有缓存复用 | "生成图片"、"banana2 出图"、"用 gptimg2 保存这张图" |

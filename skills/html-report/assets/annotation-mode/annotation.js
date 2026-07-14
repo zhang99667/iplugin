@@ -11,7 +11,7 @@
       const runtimePath = decodeURIComponent(location.pathname || '');
       const reportAbsolutePath = injectedReportMeta.absolutePath || runtimePath;
       const reportFileUrl = injectedReportMeta.fileUrl || location.href || '';
-      // 另存的审核版用运行时路径隔离 localStorage，同时继续把生成期绝对路径保留给 Agent 回查来源。
+      // 另存的评论版用运行时路径隔离 localStorage，同时继续把生成期绝对路径保留给 Agent 回查来源。
       const storageKeyPrefix = 'agent-report-annotations:';
       const storageKey = storageKeyPrefix + (runtimePath || reportAbsolutePath) + ':' + reportTitle;
       // 旧版优先使用生成期绝对路径；保留迁移键，避免 HTTP 预览和 Windows file URL 升级后找不到草稿。
@@ -44,7 +44,7 @@
 
       if (!main) return;
 
-      // 审核版会保留既有定位 ID；先恢复最大序号，保护 Agent 增段后新 ID 不与旧批注冲突。
+      // 评论版会保留既有定位 ID；先恢复最大序号，保护 Agent 增段后新 ID 不与旧批注冲突。
       main.querySelectorAll('[data-block-id]').forEach(el => {
         const match = el.dataset.blockId.match(/-b(\d+)$/);
         if (match) blockSeq = Math.max(blockSeq, Number(match[1]));
@@ -487,10 +487,10 @@
 
       function updateLauncherMode() {
         const count = annotations.length;
-        // 清空过旧批注的页面仍属于审核态，必须允许再次打开侧栏并把空结果写回 HTML。
+        // 清空过旧批注的页面仍属于评论态，必须允许再次打开侧栏并把空结果写回 HTML。
         const clearedReviewMode = count === 0 && hasPersistedReviewState();
         const publishMode = count === 0 && !clearedReviewMode;
-        if (launcherLabel) launcherLabel.textContent = publishMode ? '导出无批注版' : clearedReviewMode ? '保存审核结果' : '批注';
+        if (launcherLabel) launcherLabel.textContent = publishMode ? '导出无批注版' : clearedReviewMode ? '保存评论结果' : '批注';
         if (launcherCount) {
           launcherCount.textContent = count > 0 ? String(count) : '';
           launcherCount.hidden = count === 0;
@@ -499,7 +499,7 @@
         launcher?.setAttribute('aria-label', publishMode
           ? '导出不含批注的发布版 HTML'
           : clearedReviewMode
-            ? '打开审核结果，当前批注已清空，可保存空结果到 HTML'
+            ? '打开评论结果，当前批注已清空，可保存空结果到 HTML'
             : '打开报告批注，当前 ' + count + ' 条');
       }
 
@@ -545,16 +545,16 @@
           clearStoredAnnotations();
         }
         if (result === 'saved') {
-          showToast('审核结果已写入 HTML，可直接交给 Agent');
+          showToast('评论结果已写入 HTML，可直接交给 Agent');
         }
         if (result === 'downloaded') {
-          showToast('已发起审核版下载，原页草稿仍保留');
+          showToast('已发起评论版下载，原页草稿仍保留');
         }
       }
 
-      // 发布版只保留正文；默认另存，避免覆盖唯一的含批注审核版。
+      // 发布版只保留正文；默认另存，避免覆盖唯一的评论版。
       async function exportPublicHtml() {
-        const shouldExport = confirm('导出不含批注的发布版 HTML。\n\n确定：选择保存位置，建议另存，避免覆盖含批注审核版。\n取消：取消导出。');
+        const shouldExport = confirm('导出不含批注的发布版 HTML。\n\n确定：选择保存位置，建议另存，避免覆盖评论版。\n取消：取消导出。');
         if (!shouldExport) return;
         const currentName = currentFileName();
         const publicName = fileNameWithSuffix(currentName, '_public');
@@ -588,7 +588,7 @@
         return 'downloaded';
       }
 
-      // 保存审核版时清理瞬时 UI，正文高亮会在重新打开后由内嵌批注重新生成。
+      // 保存评论版时清理瞬时 UI，正文高亮会在重新打开后由内嵌批注重新生成。
       function buildReviewedHtml() {
         const clone = document.documentElement.cloneNode(true);
         clone.querySelectorAll('[data-qa-review-data]').forEach(el => el.remove());
@@ -626,7 +626,7 @@
       function buildEmbeddedReviewBlock() {
         const json = serializeReviewPack(buildJsonPack());
         return [
-          '  <!' + '-- ' + embeddedReviewStartMarker + ': Agent 读取并逐条处理以下审核结果。 --' + '>',
+          '  <!' + '-- ' + embeddedReviewStartMarker + ': Agent 读取并逐条处理以下评论结果。 --' + '>',
           '  <' + 'script type="application/json" id="qaEmbeddedReviewData" data-qa-review-data>',
           json.split('\n').map(line => '  ' + line).join('\n'),
           '  </' + 'script>',
@@ -757,7 +757,7 @@
           delivery: {
             mode: 'embedded-html',
             status: 'ready-for-agent',
-            instruction: '以当前承载此包的 HTML 为回写目标；逐条处理 annotations；完成后删除审核区块，重新运行 inject_annotation_mode.py，再运行不带 --require-review-pack 的 check_html_report.py。'
+            instruction: '以当前承载此包的 HTML 为回写目标；逐条处理 annotations；完成后删除评论区块，重新运行 inject_annotation_mode.py，再运行不带 --require-review-pack 的 check_html_report.py。'
           },
           exportedAt: new Date().toISOString(),
           annotations
@@ -812,7 +812,7 @@
               }
             }
           } catch (error) {
-            // 单个 localStorage 键不可用或损坏时继续尝试兼容键和 HTML 内嵌审核包。
+            // 单个 localStorage 键不可用或损坏时继续尝试兼容键和 HTML 内嵌评论包。
           }
         }
         return normalizeAnnotations(readEmbeddedReviewPack()?.annotations);
@@ -854,7 +854,7 @@
           localStorage.setItem(storageKey, JSON.stringify(annotations));
           storageKeys.filter(key => key !== storageKey).forEach(key => localStorage.removeItem(key));
         } catch (error) {
-          // file:// 下 localStorage 行为因浏览器而异，内嵌审核版和 Markdown 是可靠兜底。
+          // file:// 下 localStorage 行为因浏览器而异，内嵌评论版和 Markdown 是可靠兜底。
         }
       }
 
@@ -864,7 +864,7 @@
           try {
             localStorage.removeItem(key);
           } catch (error) {
-            // localStorage 不可用不影响已经写入磁盘的审核结果。
+            // localStorage 不可用不影响已经写入磁盘的评论结果。
           }
         });
       }
@@ -890,7 +890,7 @@
         return /\.html?$/i.test(name) ? name : 'report.html';
       }
 
-      // 下载兜底使用区分审核版/发布版的文件名，避免浏览器静默覆盖错误文件。
+      // 下载兜底使用区分评论版/发布版的文件名，避免浏览器静默覆盖错误文件。
       function fileNameWithSuffix(fileName, suffix) {
         const match = String(fileName || 'report.html').match(/^(.*?)(\.html?)$/i);
         const base = match ? match[1] : 'report';
