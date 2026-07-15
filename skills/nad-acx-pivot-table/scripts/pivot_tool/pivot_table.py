@@ -165,7 +165,7 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
     )
 
     # ── location ─────────────────────────────────────────────────
-    # 估算行数
+    # 估算枚举行项数；最终范围还会额外包含 grand total。
     if row_indices and row_indices[0] in fm.enumerated_items:
         field_name = config.all_field_names()[row_indices[0]]
         if layout.row_item_order and field_name in layout.row_item_order:
@@ -176,12 +176,27 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
         num_data_rows = 2
 
     last_data_col = col_letter_for_count(num_data_fields + 1)
-    # colFields 含 __data__ 时 Excel 渲染 2 行表头 (Values 标签行 + 字段名行)
-    has_explicit_col_fields = bool(col_fields_xml)
-    num_header_rows = 2 if has_explicit_col_fields else 1
-    last_row = num_header_rows + num_data_rows + 1
-    location_ref = f"A1:{last_data_col}{last_row}"
-    first_data_row = num_header_rows
+
+    # location 只描述透视主体，不包含 pageFields。页面筛选字段纵向占 N 行，
+    # 与主体之间还要留 1 个空行；否则从 A1 开始的主体会与筛选区重叠，
+    # Excel 会在打开时提示修复。有页面筛选时 firstDataRow=1 已由 Excel
+    # 与 LibreOffice 对同一布局的重写结果共同验证；无筛选时保留既有的
+    # Values 标签行规则，避免改变已经生成的普通透视布局。
+    page_field_count = len(filter_indices)
+    first_body_row = page_field_count + 2 if page_field_count else 1
+    num_header_rows = 1 if page_field_count else (2 if col_fields_xml else 1)
+    last_body_row = first_body_row + num_header_rows + num_data_rows
+    location_ref = f"A{first_body_row}:{last_data_col}{last_body_row}"
+    location_attrs = [
+        f'ref="{location_ref}"',
+        'firstHeaderRow="0"',
+        f'firstDataRow="{num_header_rows}"',
+        'firstDataCol="1"',
+    ]
+    if page_field_count:
+        location_attrs.extend(
+            [f'rowPageCount="{page_field_count}"', 'colPageCount="1"']
+        )
 
     return (
         f'{XML_HEADER}\n'
@@ -192,7 +207,7 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
         f' dataCaption="" updatedVersion="8" minRefreshableVersion="3"\n'
         f' useAutoFormatting="1" itemPrintTitles="1" createdVersion="8"\n'
         f' indent="0" outline="1" outlineData="1" multipleFieldFilters="0">\n'
-        f'<location ref="{location_ref}" firstHeaderRow="0" firstDataRow="{first_data_row}" firstDataCol="1"/>\n'
+        f'<location {" ".join(location_attrs)}/>\n'
         f'<pivotFields count="{total_fields}">{pivot_fields_xml}</pivotFields>\n'
         f'{row_fields_xml}\n'
         f'{row_items_xml}\n'

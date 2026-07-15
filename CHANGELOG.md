@@ -1,3 +1,10 @@
+## [0.22.8] - 2026-07-15
+### Changed
+- nad-acx-pivot-table: 修正页面筛选字段与透视主体重叠的问题，按筛选字段数量下移 `location`，并补齐 `rowPageCount` / `colPageCount`
+- nad-acx-pivot-table: 修正有页面筛选时的 `firstDataRow` 与主体高度计算，避免 Microsoft Excel 打开文件时提示修复
+- nad-acx-pivot-table: OOXML guard 改为校验页面区、主体范围和行项数量的一致性，新增 0/1/2 个筛选字段的回归测试
+- nad-acx-pivot-table: skill 版本升级到 `0.1.4`，插件版本升级到 `0.22.8`
+
 ## [0.22.7] - 2026-07-14
 ### Changed
 - html-report: 将离线批注功能的正式名称从“审核模式”统一为“评论模式”，同步页面标签、保存提示、skill 指引、回归用例和插件说明

@@ -14,6 +14,7 @@ from pathlib import Path
 
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+RANGE_REF_RE = re.compile(r"^\$?[A-Z]+\$?(\d+):\$?[A-Z]+\$?(\d+)$")
 
 
 class PivotOoxmlError(ValueError):
@@ -170,16 +171,6 @@ def _validate_layout(pivot_root: ET.Element | None, pivot_xml: str, errors: list
         elif _int_attr(col_items, "count", len(_children(col_items, "i"))) != data_count:
             errors.append(f"colItems count 与 dataFields count 不一致: {col_items.get('count')} vs {data_count}")
 
-    location = pivot_root.find(f"{NS}location")
-    if location is None:
-        errors.append("pivotTableDefinition 缺少 location")
-    else:
-        expected_first_data_row = "2" if has_col_fields else "1"
-        if location.get("firstDataRow") != expected_first_data_row:
-            errors.append(
-                f"location firstDataRow={location.get('firstDataRow')}，期望 {expected_first_data_row}"
-            )
-
     page_fields = pivot_root.find(f"{NS}pageFields")
     pivot_fields = _children(pivot_root.find(f"{NS}pivotFields"), "pivotField")
     axis_page_indices = {idx for idx, field in enumerate(pivot_fields) if field.get("axis") == "axisPage"}
@@ -203,6 +194,55 @@ def _validate_layout(pivot_root: ET.Element | None, pivot_xml: str, errors: list
             errors.append(
                 f"pageFields fld 集合 {sorted(page_field_indices)} 与 axisPage 集合 {sorted(axis_page_indices)} 不一致"
             )
+
+    location = pivot_root.find(f"{NS}location")
+    if location is None:
+        errors.append("pivotTableDefinition 缺少 location")
+    else:
+        page_field_count = len(axis_page_indices)
+        expected_first_data_row = "1" if page_field_count else ("2" if has_col_fields else "1")
+        if location.get("firstDataRow") != expected_first_data_row:
+            errors.append(
+                f"location firstDataRow={location.get('firstDataRow')}，期望 {expected_first_data_row}"
+            )
+
+        # 页面筛选区位于透视主体上方，纵向 N 个筛选字段至少占 N 行，
+        # 并与主体间隔 1 行。location@ref 只覆盖主体，不能与筛选区重叠。
+        ref = location.get("ref", "")
+        match = RANGE_REF_RE.fullmatch(ref)
+        if match is None:
+            errors.append(f"location ref 格式非法: {ref!r}")
+        else:
+            first_row, last_row = (int(value) for value in match.groups())
+            min_first_row = page_field_count + 2 if page_field_count else 1
+            if first_row < min_first_row:
+                errors.append(
+                    f"location ref={ref} 与 {page_field_count} 个 pageFields 重叠，"
+                    f"主体首行不得早于 {min_first_row}"
+                )
+
+            row_items = pivot_root.find(f"{NS}rowItems")
+            row_item_count = _int_attr(
+                row_items, "count", len(_children(row_items, "i")) or 1
+            )
+            first_data_row = _int_attr(location, "firstDataRow")
+            expected_last_row = first_row + first_data_row + row_item_count - 1
+            if last_row != expected_last_row:
+                errors.append(
+                    f"location ref={ref} 高度与 firstDataRow/rowItems 不一致，"
+                    f"末行应为 {expected_last_row}"
+                )
+
+        if page_field_count:
+            if location.get("rowPageCount") != str(page_field_count):
+                errors.append(
+                    f"location rowPageCount={location.get('rowPageCount')}，"
+                    f"期望 {page_field_count}"
+                )
+            if location.get("colPageCount") != "1":
+                errors.append(
+                    f"location colPageCount={location.get('colPageCount')}，期望 1"
+                )
 
     if "<pageFields" in pivot_xml and "<dataFields" in pivot_xml:
         if pivot_xml.index("<pageFields") > pivot_xml.index("<dataFields"):

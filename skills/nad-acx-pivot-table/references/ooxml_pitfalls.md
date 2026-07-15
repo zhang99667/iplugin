@@ -23,12 +23,23 @@ python3 -m pivot_tool.ooxml_guard <output.xlsx>
 
 第一行的 "Values" 标签行是 Excel 透视表在多数据字段列模式下的**固有行为**，在 Excel 中手动创建同样结构的透视表也会有这一行。该行有功能性：点击可切换数据字段的排列。
 
-## 3. location ref 与 firstDataRow 必须匹配
+## 3. location ref 必须避开 pageFields 页面区
 
-- `colFields` 含 `<field x="-2"/>` 时，Excel 渲染 **2 行表头**（Values 标签行 + 数据字段名行），此时 `firstDataRow` 必须为 `2`
-- 无 `colFields` 时只需 1 行表头，`firstDataRow` 为 `1`
-- `ref` 范围的总行数 = `num_header_rows + num_data_rows + 1(grand total)`
-- 如果行数不匹配，会导致空白行或 Excel 报错
+`location@ref` 只描述透视表主体，不包含页面筛选区。页面筛选字段默认纵向排列：
+
+- N 个 `pageFields` 占主体上方 N 行，并与主体间隔 1 个空行；主体首行至少为 `N + 2`
+- 有页面筛选字段时，`location` 必须写 `rowPageCount="N" colPageCount="1"`，且 `firstDataRow="1"`
+- 无页面筛选字段时保留普通布局：主体从 A1 开始；`colFields` 含 `<field x="-2"/>` 时 `firstDataRow="2"`，否则为 `1`
+- `ref` 范围高度必须等于 `firstDataRow + rowItems count`
+
+例如两个筛选字段、两个枚举行项加总计、三个横向数据字段时，正确主体为：
+
+```xml
+<location ref="A4:D7" firstHeaderRow="0" firstDataRow="1" firstDataCol="1"
+          rowPageCount="2" colPageCount="1"/>
+```
+
+错误地写成 `A1:D5 firstDataRow="2"` 会让页面筛选区与透视主体重叠。此类文件 ZIP/XML 均可解析，旧 guard 也可能误判通过，但 Microsoft Excel 打开时会提示修复。该布局已用真实 Excel 重复打开和 LibreOffice OOXML 正规化结果交叉验证。
 
 ## 4. filter_fields 必须同时生成 pageFields
 
