@@ -51,6 +51,30 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "reviewFallbackFileName",
     ),
 }
+HTML_REPORT_REVIEW_WORKSPACE_ASSETS = {
+    SKILLS_DIR / "html-report" / "assets" / "review-workspace" / "workspace.js": (
+        "HTML_REPORT_REVIEW_WORKSPACE_RUNTIME_START",
+        "HTML_REPORT_REVIEW_WORKSPACE_RUNTIME_END",
+        "HtmlReportReviewWorkspace",
+        "data-review-workspace-root",
+        "rw-diff-only",
+        "document.execCommand",
+    ),
+    SKILLS_DIR / "html-report" / "references" / "css" / "review-workspace.css": (
+        ".review-workspace .rw-toolbar",
+        ".review-workspace .rw-panes",
+        ".review-workspace .rw-code-scroll",
+        ".review-workspace.rw-diff-only",
+        "@media print",
+    ),
+    SKILLS_DIR / "html-report" / "scripts" / "build_review_workspace.py": (
+        "script_safe_json",
+        "render_fragment",
+        "render_standalone",
+        "workspace.js",
+        "review-workspace.css",
+    ),
+}
 
 # 两个平台 manifest 中必须保持一致的公共字段。
 PRIMARY_COMMON_FIELDS = ("name", "version", "description", "keywords")
@@ -794,6 +818,31 @@ def check_html_report_annotation_assets() -> CheckResult:
     return result
 
 
+def check_html_report_review_workspace_assets() -> CheckResult:
+    """检查多版本审阅组件的 runtime、CSS 和构建脚本仍保持配套契约。
+
+    Workspace 的 JSON 会把静态高亮源码交给 runtime 写入 innerHTML，因此构建脚本的
+    raw-text 转义、runtime 完整性标记和 CSS 关键结构必须一起存在，不能只发布其中一部分。
+    """
+
+    result = CheckResult("HTML report Review Workspace assets are valid")
+    for path, required_fragments in HTML_REPORT_REVIEW_WORKSPACE_ASSETS.items():
+        if not path.is_file():
+            result.details.append(f"{rel(path)} does not exist")
+            continue
+
+        text = read_text(path)
+        for fragment in required_fragments:
+            if fragment not in text:
+                result.details.append(f"{rel(path)} is missing {fragment}")
+
+        if path.name == "workspace.js" and "</script>" in text.lower():
+            # runtime 会被原样包进 inline script，任何字面结束标签都会让浏览器提前截断。
+            result.details.append(f"{rel(path)} must not contain a literal </script>")
+
+    return result
+
+
 def print_results(results: list[CheckResult]) -> None:
     """按固定格式输出所有检查项，便于提交前快速扫一眼。"""
 
@@ -836,6 +885,7 @@ def main() -> int:
         check_no_hardcoded_homedir(skills),
         check_skill_evals(skills),
         check_html_report_annotation_assets(),
+        check_html_report_review_workspace_assets(),
     ]
 
     print_results(results)

@@ -51,6 +51,20 @@ ANNOTATION_ASSET_BLOCK_RE = re.compile(
     r"|<!--\s*QA_ANNOTATION_SCRIPT_START\s*-->\s*<script\b[^>]*\bdata-qa-script(?:\s|=|>)[\s\S]*?</script>\s*<!--\s*QA_ANNOTATION_SCRIPT_END\s*-->)",
     re.IGNORECASE,
 )
+REVIEW_WORKSPACE_SECTION_RE = re.compile(
+    r'<section\b(?=[^>]*\bclass=["\'][^"\']*\breview-workspace\b[^"\']*["\'])'
+    r'(?=[^>]*\bdata-review-workspace(?:\s|=|>))[^>]*>(.*?)</section>',
+    re.DOTALL | re.IGNORECASE,
+)
+REVIEW_WORKSPACE_DATA_RE = re.compile(
+    r'<script\b(?=[^>]*\btype=["\']application/json["\'])'
+    r'(?=[^>]*\bdata-review-workspace-data(?:\s|=|>))[^>]*>(.*?)</script>',
+    re.DOTALL | re.IGNORECASE,
+)
+REVIEW_WORKSPACE_RUNTIME_RE = re.compile(
+    r'<script\b(?=[^>]*\bdata-review-workspace-runtime(?:\s|=|>))[^>]*>(.*?)</script>',
+    re.DOTALL | re.IGNORECASE,
+)
 
 TEXT_LIKE_LANGS = {"markdown", "text", "txt", "log", "logs", "plain", "plaintext"}
 MEDIA_EXTENSIONS = {".apng", ".avif", ".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".ogg", ".ogv", ".png", ".svg", ".webm", ".webp"}
@@ -399,6 +413,190 @@ def check_diff_viewer_tokens(html: str, css: str) -> list[str]:
         errors.append(
             f"diff viewer 使用 {', '.join(missing_classes)}，但 CSS 缺少对应 token 样式，代码列会显示成未高亮"
         )
+    return errors
+
+
+def check_review_workspace_pack(pack: object, index: int, css: str) -> list[str]:
+    """校验单个 Workspace 数据包，避免运行时才暴露缺版本、越界行号或不安全源码 HTML。"""
+
+    errors: list[str] = []
+    prefix = f"第 {index} 个 Review Workspace"
+    if not isinstance(pack, dict):
+        return [f"{prefix} 数据必须是 JSON 对象"]
+
+    for field_name in ("workspaceId", "storageKey"):
+        if not isinstance(pack.get(field_name), str) or not pack[field_name].strip():
+            errors.append(f"{prefix} 缺少非空 {field_name}")
+
+    versions = pack.get("versions")
+    if not isinstance(versions, list) or not 2 <= len(versions) <= 3:
+        errors.append(f"{prefix} versions 必须包含 2 到 3 个版本")
+        return errors
+
+    version_ids: list[str] = []
+    for version_index, version in enumerate(versions, start=1):
+        if not isinstance(version, dict):
+            errors.append(f"{prefix} 第 {version_index} 个 version 必须是对象")
+            continue
+        version_id = version.get("id")
+        if not isinstance(version_id, str) or not version_id.strip():
+            errors.append(f"{prefix} 第 {version_index} 个 version 缺少非空 id")
+            continue
+        version_ids.append(version_id)
+        if not isinstance(version.get("label"), str) or not version["label"].strip():
+            errors.append(f"{prefix} version {version_id} 缺少非空 label")
+    if len(set(version_ids)) != len(version_ids):
+        errors.append(f"{prefix} version id 必须唯一")
+
+    files = pack.get("files")
+    if not isinstance(files, list) or not files:
+        errors.append(f"{prefix} files 必须是非空数组")
+        return errors
+
+    token_classes: set[str] = set()
+    seen_file_ids: set[str] = set()
+    allowed_line_tag = re.compile(r'(?:<span class="(tok-[a-zA-Z0-9_-]+)">|</span>)')
+    for file_index, file in enumerate(files, start=1):
+        file_prefix = f"{prefix} 第 {file_index} 个文件"
+        if not isinstance(file, dict):
+            errors.append(f"{file_prefix} 必须是对象")
+            continue
+        file_id = file.get("id")
+        if not isinstance(file_id, str) or not file_id.strip():
+            errors.append(f"{file_prefix} 缺少非空 id")
+        elif file_id in seen_file_ids:
+            errors.append(f"{prefix} file id 重复：{file_id}")
+        else:
+            seen_file_ids.add(file_id)
+        if not isinstance(file.get("filename"), str) or not file["filename"].strip():
+            errors.append(f"{file_prefix} 缺少非空 filename")
+        idea_href = file.get("ideaHref", "")
+        if idea_href and (not isinstance(idea_href, str) or not idea_href.startswith("idea://open?")):
+            errors.append(f"{file_prefix} ideaHref 只能为空或使用 idea://open")
+
+        file_versions = file.get("versions")
+        if not isinstance(file_versions, dict):
+            errors.append(f"{file_prefix} versions 必须是对象")
+            continue
+        if set(file_versions) != set(version_ids):
+            errors.append(f"{file_prefix} versions 必须与顶层版本一一对应")
+            continue
+
+        for version_id in version_ids:
+            source = file_versions.get(version_id)
+            source_prefix = f"{file_prefix} 的 {version_id}"
+            if not isinstance(source, dict):
+                errors.append(f"{source_prefix} 必须是对象")
+                continue
+            lines = source.get("lines")
+            if not isinstance(lines, list) or not lines or not all(isinstance(line, str) for line in lines):
+                errors.append(f"{source_prefix}.lines 必须是非空字符串数组")
+                continue
+
+            # 运行时会把源码行写入 innerHTML，因此只允许高亮脚本生成的 tok-* span。
+            for line_number, line in enumerate(lines, start=1):
+                for match in allowed_line_tag.finditer(line):
+                    if match.group(1):
+                        token_classes.add(match.group(1))
+                residue = allowed_line_tag.sub("", line)
+                if "<" in residue or ">" in residue:
+                    errors.append(
+                        f"{source_prefix}.lines 第 {line_number} 行包含非 tok-* HTML 标签；"
+                        "请使用 build_review_workspace.py 生成"
+                    )
+                    break
+
+            marks = source.get("marks")
+            if not isinstance(marks, dict):
+                errors.append(f"{source_prefix}.marks 必须是对象")
+                continue
+            for mark_name in ("primary", "secondary", "focus", "context"):
+                values = marks.get(mark_name)
+                if not isinstance(values, list) or not all(
+                    isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= len(lines)
+                    for value in values
+                ):
+                    errors.append(f"{source_prefix}.marks.{mark_name} 必须是未越界的整数行号数组")
+
+    compact_css = re.sub(r"\s+", " ", css)
+    missing_token_css = sorted(class_name for class_name in token_classes if f".{class_name}" not in compact_css)
+    if missing_token_css:
+        errors.append(
+            f"{prefix} 使用 {', '.join(missing_token_css)}，但 CSS 缺少对应 token 样式"
+        )
+    return errors
+
+
+def check_review_workspaces(html: str, css: str) -> list[str]:
+    """检查按需多版本审阅组件的结构、数据、安全转义、运行时和响应式样式。"""
+
+    errors: list[str] = []
+    sections = REVIEW_WORKSPACE_SECTION_RE.findall(html)
+    data_nodes = REVIEW_WORKSPACE_DATA_RE.findall(html)
+    runtimes = REVIEW_WORKSPACE_RUNTIME_RE.findall(html)
+    if not sections and not data_nodes and not runtimes:
+        return errors
+
+    if not sections:
+        errors.append("发现 Review Workspace 数据或运行时，但缺少 .review-workspace[data-review-workspace] 容器")
+        return errors
+    if len(data_nodes) != len(sections):
+        errors.append("每个 Review Workspace 必须且只能包含一个 application/json 数据节点")
+    for index, section in enumerate(sections, start=1):
+        if "data-review-workspace-root" not in section:
+            errors.append(f"第 {index} 个 Review Workspace 缺少 data-review-workspace-root 挂载点")
+        section_data = REVIEW_WORKSPACE_DATA_RE.findall(section)
+        if len(section_data) != 1:
+            errors.append(f"第 {index} 个 Review Workspace 必须且只能包含一个数据节点")
+
+    if len(runtimes) != 1:
+        errors.append("使用 Review Workspace 时，整份报告必须且只能内联一个 data-review-workspace-runtime")
+    elif runtimes:
+        runtime = runtimes[0]
+        required_runtime_fragments = {
+            "HTML_REPORT_REVIEW_WORKSPACE_RUNTIME_START": "Review Workspace runtime 缺少完整性起始标记",
+            "HTML_REPORT_REVIEW_WORKSPACE_RUNTIME_END": "Review Workspace runtime 缺少完整性结束标记",
+            "HtmlReportReviewWorkspace": "Review Workspace runtime 缺少全局初始化入口",
+            "reviewWorkspaceReady": "Review Workspace runtime 缺少重复初始化保护",
+            "rw-diff-only": "Review Workspace runtime 缺少只看差异切换",
+            "localStorage": "Review Workspace runtime 缺少已审阅状态持久化",
+            "navigator.clipboard": "Review Workspace runtime 缺少现代复制入口",
+            "document.execCommand": "Review Workspace runtime 缺少 file:// 复制回退",
+        }
+        for fragment, message in required_runtime_fragments.items():
+            if fragment not in runtime:
+                errors.append(message)
+
+    compact_css = re.sub(r"\s+", " ", css)
+    required_css = {
+        ".review-workspace .rw-toolbar": "Review Workspace 缺少工具栏样式",
+        ".review-workspace .rw-body": "Review Workspace 缺少文件导航与审阅区布局",
+        ".review-workspace .rw-file-nav": "Review Workspace 缺少文件列表样式",
+        ".review-workspace .rw-panes": "Review Workspace 缺少多版本窗格布局",
+        ".review-workspace .rw-code-scroll": "Review Workspace 缺少源码滚动容器样式",
+        ".review-workspace .rw-code-line": "Review Workspace 缺少行号与源码行样式",
+        ".review-workspace.rw-diff-only": "Review Workspace 缺少只看差异 CSS",
+        "@media (max-width: 900px)": "Review Workspace 缺少窄屏单列降级",
+        "@media print": "Review Workspace 缺少打印降级",
+    }
+    for fragment, message in required_css.items():
+        if fragment not in compact_css:
+            errors.append(message)
+
+    for index, payload in enumerate(data_nodes, start=1):
+        leaked = [label for char, label in {"<": "<", ">": ">", "&": "&", "\u2028": "U+2028", "\u2029": "U+2029"}.items() if char in payload]
+        if leaked:
+            errors.append(
+                f"第 {index} 个 Review Workspace JSON raw-text 含未转义字符："
+                + "、".join(leaked)
+                + "；请使用 build_review_workspace.py 生成"
+            )
+        try:
+            pack = json.loads(payload)
+        except json.JSONDecodeError as exc:
+            errors.append(f"第 {index} 个 Review Workspace 数据不是合法 JSON: {exc.msg}")
+            continue
+        errors.extend(check_review_workspace_pack(pack, index, css))
     return errors
 
 
@@ -763,6 +961,7 @@ def validate_with_warnings(path: Path, require_review_pack: bool = False) -> tup
     errors.extend(check_diff_viewer_blocks(html, css))
     errors.extend(check_raw_unified_diff_outside_viewer(html))
     errors.extend(check_diff_viewer_tokens(html, css))
+    errors.extend(check_review_workspaces(html, css))
     errors.extend(
         check_annotation_mode(
             html,
@@ -784,7 +983,9 @@ def validate(path: Path) -> list[str]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="校验 html-report 单文件 HTML 的代码块、外部依赖和已使用的媒体资源。")
+    parser = argparse.ArgumentParser(
+        description="校验 html-report 单文件 HTML 的代码块、Review Workspace、外部依赖和已使用的媒体资源。"
+    )
     parser.add_argument("html", help="待检查的 HTML 文件路径。")
     parser.add_argument(
         "--require-review-pack",

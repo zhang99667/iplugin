@@ -1,0 +1,61 @@
+{
+  "workspace_id": "html-report-workspace-two-way-eval",
+  "title": "二版本 Review Workspace 回归",
+  "versions": [
+    {
+      "id": "before",
+      "label": "Before · 修改前",
+      "jump_label": "修改前",
+      "ref": "origin/master"
+    },
+    {
+      "id": "after",
+      "label": "After · 修改后",
+      "jump_label": "修改后",
+      "ref": "HEAD + workspace"
+    }
+  ],
+  "legend": {
+    "focus": "参考行 / 修复聚焦行",
+    "primary": "修改前 ↔ 修改后差异",
+    "secondary": "人工补充差异"
+  },
+  "files": [
+    {
+      "id": "feed-badge-two-way",
+      "filename": "FeedBadge.kt",
+      "path": "feed/FeedBadge.kt",
+      "display_path": "feed/FeedBadge.kt:4-5",
+      "group": "feed",
+      "status": {
+        "id": "lite-fix",
+        "label": "Lite 标记修复",
+        "tone": "success"
+      },
+      "relation": "Before ≠ After",
+      "reference": "参考行：4-5",
+      "conclusion": "修改后为 Lite 专有方法补充差异化标记。",
+      "action": "保留修复并核对注解依赖。",
+      "versions": {
+        "before": {
+          "source_path": "review_workspace_sources/FeedBadge.baseline.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [4],
+            "secondary": [],
+            "focus": [4]
+          }
+        },
+        "after": {
+          "source_path": "review_workspace_sources/FeedBadge.workspace.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [4, 5],
+            "secondary": [],
+            "focus": [4]
+          }
+        }
+      }
+    }
+  ]
+}

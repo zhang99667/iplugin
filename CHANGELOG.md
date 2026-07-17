@@ -1,3 +1,14 @@
+## [0.22.9] - 2026-07-16
+### Added
+- html-report: 新增可复用的多文件 2-3 版本 Review Workspace，支持文件筛选、同步滚动、只看差异、参考行跳转、全文复制、IDEA 打开和本地已审阅进度
+- html-report: 新增 `build_review_workspace.py`，按 JSON 规格读取源码快照、校验标记行号、生成逐行静态高亮，并对内嵌 JSON 做 raw-text 安全转义
+- html-report: 新增 Workspace CSS、离线 runtime、使用规范和回归 fixture，校验脚本同步检查组件结构、唯一 runtime、数据 schema、安全标签与响应式样式
+
+### Changed
+- html-report: 明确 Review Workspace 只用于多文件完整源码关系判断，Findings、测试缺口和真实 `.diff-card.diff-viewer` 仍是代码评审主线
+- html-report: skill 版本升级到 `0.5.0`
+- README / manifest: 同步多版本 Review Workspace 能力，插件版本升级到 `0.22.9`
+
 ## [0.22.8] - 2026-07-15
 ### Changed
 - nad-acx-pivot-table: 修正页面筛选字段与透视主体重叠的问题，按筛选字段数量下移 `location`，并补齐 `rowPageCount` / `colPageCount`

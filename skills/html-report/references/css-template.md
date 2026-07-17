@@ -11,11 +11,12 @@
 1. `references/css/base.css`：所有报告必选。提供页面、卡片、正式抬头、路径 chip、行内 `<code>`、基础响应式和打印兜底。
 2. `references/css/interactions.css`：默认加入。提供 `<details>` 折叠区和 toast 反馈。
 3. `references/css/code-diff.css`：报告包含多行代码、日志、SQL、XML、JSON、配置、shell、ASCII 图或真实 unified diff 时加入。它提供 `.code-wrap`、复制按钮、`tok-*`、`.ascii-diagram` 和 `.diff-card.diff-viewer`。
-4. `references/css/media.css`：报告展示截图、录屏、关键帧或证据图片时加入。
-5. `references/css/diagram.css`：报告内联 SVG 技术图，或使用 `.diagram-block` 承载宽架构图时加入。
-6. `references/css/toc.css`：长文档需要左侧目录并支持整体收起时加入。
-7. `references/css/tabs.css`：只有 2 到 3 个并列视角需要标签页时加入。
-8. `references/css/sortable-table.css`：5 行以上数据表需要点击表头排序时加入。
+4. `references/css/review-workspace.css`：代码评审需要多文件的 2 到 3 版本完整源码审阅时加入；必须同时加入 `code-diff.css`，并用 `scripts/build_review_workspace.py` 生成 HTML 片段和内联 runtime。
+5. `references/css/media.css`：报告展示截图、录屏、关键帧或证据图片时加入。
+6. `references/css/diagram.css`：报告内联 SVG 技术图，或使用 `.diagram-block` 承载宽架构图时加入。
+7. `references/css/toc.css`：长文档需要左侧目录并支持整体收起时加入。
+8. `references/css/tabs.css`：只有 2 到 3 个并列视角需要标签页时加入。
+9. `references/css/sortable-table.css`：5 行以上数据表需要点击表头排序时加入。
 
 选择组件时保持按需：不要因为组件存在就全部塞进报告。`base.css` 与 `interactions.css` 是默认组合；其他组件由内容决定。
 
@@ -55,6 +56,7 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
     {{ inline references/css/base.css }}
     {{ inline references/css/interactions.css }}
     {{ inline references/css/code-diff.css when report has code/log/diff/ascii }}
+    {{ inline references/css/review-workspace.css when report has multi-version Review Workspace }}
     {{ inline references/css/media.css when report has image/video evidence }}
     {{ inline references/css/diagram.css when report has SVG diagram block }}
     {{ inline references/css/toc.css when report has left TOC }}
@@ -109,6 +111,8 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
     </div>
   </details>
 
+  {{ insert output from build_review_workspace.py when full-source multi-version review is needed }}
+
   <h2>建议修复顺序</h2>
   <section class="summary">
     <ol>
@@ -119,6 +123,7 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 
 <script>
   {{ include copy button JS when code-diff.css is used }}
+  {{ Review Workspace runtime is already included by build_review_workspace.py; include it only once }}
   {{ include TOC toggle JS when toc.css is used }}
   {{ include sortable table JS when sortable-table.css is used }}
 </script>
@@ -126,7 +131,27 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 </html>
 ```
 
-## 4. 媒体证据结构
+## 4. Review Workspace 结构
+
+只有多文件、2 到 3 版本完整源码关系会影响评审判断时使用。先读取
+`references/review-workspace.md`，准备 JSON 规格和源码快照，再运行：
+
+```bash
+python3 skills/html-report/scripts/build_review_workspace.py workspace_spec.json \
+  -o workspace_fragment.html
+```
+
+把生成片段原样嵌入正文；它已包含一个 `data-review-workspace-runtime`。同一报告有第二个
+Workspace 时用 `--no-runtime`，保证整份 HTML 只内联一次 runtime。最终 `<style>` 必须同时
+包含 `code-diff.css` 和 `review-workspace.css`。
+
+三版本希望尽量同屏时，给无目录页面的 `<main>` 或长文档的 `.layout-with-toc` 增加
+`rw-layout-wide`；该类只由 `review-workspace.css` 扩宽，不影响普通报告。
+
+不要手工拼源码 JSON。源码中的 `</script>`、`<`、`>` 或 `&` 会破坏 raw-text script，
+构建脚本会统一完成安全转义、静态高亮和行号越界检查。
+
+## 5. 媒体证据结构
 
 当报告需要展示截图、录屏或关键帧时，加入 `references/css/media.css`。默认使用相对路径引用同目录证据资源，例如 `evidence_20260625/login_case.png`。小图可以按需使用 `data:image/...;base64,...` 内嵌，大图和 MP4 不建议 base64。
 
@@ -170,7 +195,7 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 </figure>
 ```
 
-## 5. 左侧目录结构
+## 6. 左侧目录结构
 
 长文档加入 `references/css/toc.css`。目录必须默认展开，读者点击按钮时切换 `.toc-collapsed`，收起/展开整个目录侧栏。不要把目录包进 `<details>`。
 
@@ -195,7 +220,7 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 </div>
 ```
 
-## 6. 标签页结构
+## 7. 标签页结构
 
 只有报告天然有 2 到 3 个并列视角时加入 `references/css/tabs.css`。一个视角不要用标签页。
 
@@ -212,9 +237,9 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 </div>
 ```
 
-## 7. 脚本片段
+## 8. 脚本片段
 
-### 7.1 复制按钮
+### 8.1 复制按钮
 
 仅当报告使用 `references/css/code-diff.css` 且存在 `.copy-btn` 时加入。
 
@@ -233,7 +258,7 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 </script>
 ```
 
-### 7.2 目录侧栏收起
+### 8.2 目录侧栏收起
 
 仅当报告使用 `references/css/toc.css` 时加入。
 
@@ -257,7 +282,7 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 </script>
 ```
 
-### 7.3 可排序表格
+### 8.3 可排序表格
 
 5 行以上数据表才加入 `references/css/sortable-table.css` 和这段 JS。3 到 4 行的迷你表不需要排序。
 
@@ -285,10 +310,11 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 </script>
 ```
 
-## 8. 完成前检查
+## 9. 完成前检查
 
 - 最终 HTML 只有内联 `<style>` / `<script>`，没有外部 CSS、JS 或 CDN。
 - 只内联内容实际需要的组件 CSS；不要把 `references/css/` 整包复制进所有报告。
 - 代码、日志、ASCII 图或 diff 出现时，必须内联 `references/css/code-diff.css` 并使用 `scripts/highlight_code.py` 生成片段。
+- Review Workspace 出现时，必须由 `build_review_workspace.py` 生成，内联 `review-workspace.css`，并保证整份报告只有一个 `data-review-workspace-runtime`。
 - 长文档目录必须使用 `references/css/toc.css` 的 `.layout-with-toc` / `.toc` / `.toc-toggle` 结构，默认展开，可整体收起。
 - 完成后运行 `python3 skills/html-report/scripts/check_html_report.py <html-file>`，失败则修正后重跑。

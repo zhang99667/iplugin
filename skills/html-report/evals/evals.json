@@ -1,6 +1,6 @@
 {
   "skill_name": "html-report",
-  "description": "html-report 的高频输出回归集，覆盖报告结构、证据链、diff viewer、媒体证据占位和评论模式。",
+  "description": "html-report 的高频输出回归集，覆盖报告结构、证据链、diff viewer、2-3 版本 Review Workspace、媒体证据占位和评论模式。",
   "evals": [
     {
       "id": 1,
@@ -101,6 +101,48 @@
         "新注入且尚未保存批注的评论版可以没有内嵌包；点击保存后必须生成唯一、安全转义的 AgentQuestionPack 节点。",
         "用户声明已完成批注时，Agent 使用 --require-review-pack 阻止缺包、坏包或多包文件进入回写流程。",
         "无批注发布版入口语义清楚，不保留评论 UI、内嵌批注或本地路径。"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "multi-version-review-workspace",
+      "prompt": "根据输入的 Workspace 规格和三份源码快照生成一份独立 HTML 代码评审报告。报告先给 Findings、行为风险和测试缺口，再加入可交互的多文件三版本 Review Workspace；Workspace 必须支持文件筛选、同步滚动、只看差异、参考行跳转、全文复制和已审阅进度。真实变更结论不能只藏在 Workspace 里，也不要引入 Monaco 或外部 CDN。",
+      "expected_output": "生成单文件 HTML 代码评审报告并通过 check_html_report.py。报告使用 build_review_workspace.py 生成安全的 Review Workspace，内联 code-diff.css、review-workspace.css 和唯一 runtime；Workspace 位于 Findings 之后，并保留普通正文中的风险、测试缺口和结论。",
+      "files": [
+        "evals/fixtures/review_workspace_spec.json",
+        "evals/fixtures/review_workspace_sources/CheckoutGate.baseline.kt",
+        "evals/fixtures/review_workspace_sources/CheckoutGate.master.kt",
+        "evals/fixtures/review_workspace_sources/CheckoutGate.workspace.kt",
+        "evals/fixtures/review_workspace_sources/FeedBadge.baseline.kt",
+        "evals/fixtures/review_workspace_sources/FeedBadge.master.kt",
+        "evals/fixtures/review_workspace_sources/FeedBadge.workspace.kt"
+      ],
+      "expectations": [
+        "Findings、行为风险和测试缺口排在 Review Workspace 之前，交互组件不替代评审主结论。",
+        "Workspace 由 skills/html-report/scripts/build_review_workspace.py 生成，不手工拼源码 JSON 或业务专用 JS。",
+        "最终 HTML 同时内联 code-diff.css 和 review-workspace.css，且整份报告只有一个 data-review-workspace-runtime。",
+        "Workspace 包含 2 到 3 个版本、文件筛选、同步滚动、只看差异、参考行跳转、全文复制和已审阅进度。",
+        "源码 JSON raw-text 安全转义，数据中的高亮 HTML 只包含 tok-* span，并通过 check_html_report.py 的 Workspace 校验。",
+        "不引入 Monaco、外部 CSS、外部 JS 或 CDN。"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "two-version-review-workspace",
+      "prompt": "根据输入的 Workspace 规格和修改前、修改后两份源码快照生成一份独立 HTML 代码评审报告。报告先给修复结论、风险和测试缺口，再加入两版本 Review Workspace；组件必须按两栏布局，并支持文件筛选、同步滚动、只看差异、参考行跳转、全文复制和已审阅进度。不要为了复用组件伪造第三个版本。",
+      "expected_output": "生成单文件 HTML 代码评审报告并通过 check_html_report.py。报告使用同一个 build_review_workspace.py 从两项 versions 自动生成二方 Workspace，不复制三方专用模板，也不引入外部依赖。",
+      "files": [
+        "evals/fixtures/review_workspace_two_way_spec.json",
+        "evals/fixtures/review_workspace_sources/FeedBadge.baseline.kt",
+        "evals/fixtures/review_workspace_sources/FeedBadge.workspace.kt"
+      ],
+      "expectations": [
+        "修复结论、风险和测试缺口排在 Review Workspace 之前，交互组件不替代评审主结论。",
+        "Workspace 由 skills/html-report/scripts/build_review_workspace.py 生成，顶层 versions 恰好包含两个版本。",
+        "组件根据 versions 数量自动使用两栏布局，不复制另一套二方 runtime，也不伪造无意义的第三个版本。",
+        "Workspace 支持文件筛选、同步滚动、只看差异、参考行跳转、全文复制和已审阅进度。",
+        "最终 HTML 内联 code-diff.css、review-workspace.css 和唯一 runtime，并通过 Workspace 安全校验。",
+        "不引入 Monaco、外部 CSS、外部 JS 或 CDN。"
       ]
     }
   ]

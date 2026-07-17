@@ -1,0 +1,121 @@
+{
+  "workspace_id": "html-report-workspace-eval",
+  "title": "多版本 Review Workspace 回归",
+  "versions": [
+    {
+      "id": "baseline",
+      "label": "B · 基线",
+      "jump_label": "Baseline",
+      "ref": "backup/ref"
+    },
+    {
+      "id": "master",
+      "label": "M · 当前 master",
+      "jump_label": "Master",
+      "ref": "origin/master"
+    },
+    {
+      "id": "workspace",
+      "label": "W · 修复后工作区",
+      "jump_label": "Workspace",
+      "ref": "HEAD + workspace"
+    }
+  ],
+  "legend": {
+    "focus": "参考行 / 修复聚焦行",
+    "primary": "Baseline ↔ Master 差异",
+    "secondary": "Master ↔ Workspace 差异"
+  },
+  "files": [
+    {
+      "id": "checkout-gate",
+      "filename": "CheckoutGate.kt",
+      "path": "checkout/CheckoutGate.kt",
+      "display_path": "checkout/CheckoutGate.kt:4",
+      "group": "checkout",
+      "status": {
+        "id": "behavior-change",
+        "label": "行为变化",
+        "tone": "warning"
+      },
+      "relation": "B ≠ M = W",
+      "reference": "参考行：4-5",
+      "conclusion": "master 新增登录态约束，工作区保持一致。",
+      "action": "重点回归未登录场景。",
+      "versions": {
+        "baseline": {
+          "source_path": "review_workspace_sources/CheckoutGate.baseline.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [4, 5],
+            "secondary": [],
+            "focus": [4]
+          }
+        },
+        "master": {
+          "source_path": "review_workspace_sources/CheckoutGate.master.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [4, 5],
+            "secondary": [],
+            "focus": [4]
+          }
+        },
+        "workspace": {
+          "source_path": "review_workspace_sources/CheckoutGate.workspace.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [4, 5],
+            "secondary": [],
+            "focus": [4]
+          }
+        }
+      }
+    },
+    {
+      "id": "feed-badge",
+      "filename": "FeedBadge.kt",
+      "path": "feed/FeedBadge.kt",
+      "display_path": "feed/FeedBadge.kt:4-5",
+      "group": "feed",
+      "status": {
+        "id": "lite-fix",
+        "label": "Lite 标记修复",
+        "tone": "success"
+      },
+      "relation": "B = M ≠ W",
+      "reference": "参考行：4-5",
+      "conclusion": "工作区为 Lite 专有方法补充差异化标记。",
+      "action": "保留修复并核对注解依赖。",
+      "versions": {
+        "baseline": {
+          "source_path": "review_workspace_sources/FeedBadge.baseline.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [],
+            "secondary": [4],
+            "focus": [4]
+          }
+        },
+        "master": {
+          "source_path": "review_workspace_sources/FeedBadge.master.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [],
+            "secondary": [4],
+            "focus": [4]
+          }
+        },
+        "workspace": {
+          "source_path": "review_workspace_sources/FeedBadge.workspace.kt",
+          "language": "kotlin",
+          "marks": {
+            "primary": [],
+            "secondary": [4, 5],
+            "focus": [4]
+          }
+        }
+      }
+    }
+  ]
+}

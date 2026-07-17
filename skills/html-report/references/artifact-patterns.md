@@ -135,11 +135,16 @@ HTML 表现建议：
 8. Open questions：只放会影响结论的问题，不把普通建议混进去。
 9. Sources：diff、文件路径、命令输出、日志、CR 链接或用户提供材料。
 
+可选增强：
+
+- 多版本 Review Workspace：只有评审涉及多个文件，且需要在 2 到 3 份完整源码之间判断整文件关系、参考行或差异化标记时加入。放在 Findings / 改动概览之后，真实补丁之前；按 `references/review-workspace.md` 用构建脚本生成。
+
 HTML 表现建议：
 
 - Findings 必须靠前，适合使用严重级别分组卡片或表格；状态文字不能只靠颜色。
 - 文件定位使用可点击路径和行号；不要把行号拆成单独不可跳转 badge。
 - 真实 unified diff 必须使用 `highlight_code.py --lang diff --diff-view` 生成聚焦 diff；不要展示整文件。
+- 用户明确要求完整多版本审阅，或聚焦 diff 无法表达整文件关系时，使用 Review Workspace；Workspace 不能替代 Findings 和标准 diff viewer。
 - 长 diff、长日志和重复证据默认折叠；每个问题正文只放能支撑判断的最小证据。
 - 如果没有发现问题，明确写“未发现阻塞问题”，并说明残余风险和未覆盖验证。
 
