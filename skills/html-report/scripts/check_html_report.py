@@ -689,9 +689,22 @@ def check_annotation_mode(
     if not require_review_pack:
         required_fragments['<span class="qa-mode-chip">评论模式</span>'] = "评论模式标签缺失或仍使用旧名称"
         required_fragments["保存评论结果到 HTML"] = "批注侧栏必须把 HTML 内嵌交接作为主要评论操作"
+        required_fragments["reconcileAnnotationTargets"] = "评论模式必须在加载和保存前迁移或识别失效的正文定位"
+        required_fragments["findAnnotationElementByText"] = "评论模式缺少按原文唯一匹配旧评论位置的回退逻辑"
+        required_fragments["reconciliation.unresolved.length"] = "评论模式保存前必须阻止无法定位的评论进入交接文件"
+        required_fragments["原文已变化，当前报告中无法安全定位"] = "评论卡片必须明确提示正文变化导致的定位失效"
     for fragment, message in required_fragments.items():
         if fragment not in annotation_scope:
             errors.append(message)
+
+    save_review_start = annotation_scope.find("async function saveReviewHtml()")
+    save_review_end = annotation_scope.find("// 发布版只保留正文", save_review_start)
+    if not require_review_pack and save_review_start >= 0 and save_review_end > save_review_start:
+        save_review_scope = annotation_scope[save_review_start:save_review_end]
+        reconcile_index = save_review_scope.find("reconcileAnnotationTargets()")
+        save_file_index = save_review_scope.find("await saveHtmlFile(")
+        if reconcile_index < 0 or save_file_index < 0 or reconcile_index > save_file_index:
+            errors.append("保存评论结果前必须先校验并迁移正文定位，不能先生成含失效 blockId 的 HTML")
 
     forbidden_fragments = {
         "qaComposerCancel": "批注输入浮层不要保留取消按钮；点击浮层外侧即关闭",
@@ -711,13 +724,17 @@ def check_annotation_mode(
             errors.append(message)
 
     compact_css = re.sub(r"\s+", " ", css)
-    for fragment, message in {
+    required_css = {
         ".qa-selection-popover": "评论模式缺少选区气泡样式",
         ".qa-composer": "评论模式缺少输入浮层样式",
         ".qa-sidebar": "评论模式缺少右侧栏样式",
         ".qa-highlight": "评论模式缺少选中文本高亮样式",
         ".qa-panel-open": "评论模式缺少右侧栏打开时的正文避让样式",
-    }.items():
+    }
+    if not require_review_pack:
+        required_css[".qa-card.location-missing"] = "评论模式缺少失效定位卡片的警示样式"
+        required_css[".qa-location-warning"] = "评论模式缺少失效定位提示样式"
+    for fragment, message in required_css.items():
         if fragment not in compact_css:
             errors.append(message)
 

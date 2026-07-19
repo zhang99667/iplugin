@@ -3,6 +3,7 @@
     (() => {
       const iconQuestion = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 0 1 4.4 1.35c0 1.65-2.2 1.85-2.2 3.35"></path><path d="M12 17h.01"></path></svg>';
       const iconNote = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+      const annotationTargetSelector = 'p, li, tr, table, pre, .panel, .mini, .check, .flow-svg, h2, h3, section';
       const embeddedReviewStartMarker = 'QA_' + 'EMBEDDED_REVIEW_START';
       const embeddedReviewEndMarker = 'QA_' + 'EMBEDDED_REVIEW_END';
       const injectedReportMeta = __QA_REPORT_META__;
@@ -57,8 +58,15 @@
         }
       });
 
+      // 同一路径的报告被重新生成后，localStorage 可能仍保存旧的顺序型 blockId。
+      // 先按原文做唯一匹配迁移；找不到或命中不唯一时保留评论，但禁止生成无法定位的交接文件。
+      const initialReconciliation = reconcileAnnotationTargets();
+      if (initialReconciliation.relocated.length) saveAnnotations();
       renderAnnotations();
       syncAnnotatedState();
+      if (initialReconciliation.unresolved.length) {
+        setTimeout(() => showToast('有 ' + initialReconciliation.unresolved.length + ' 条评论的原文已变化，请重新定位'), 0);
+      }
 
       launcher?.addEventListener('click', () => {
         if (!annotations.length && !hasPersistedReviewState()) {
@@ -395,6 +403,91 @@
         });
       }
 
+      function findAnnotationElementById(item) {
+        if (!item?.blockId) return null;
+        return main.querySelector('[data-block-id="' + cssEscape(item.blockId) + '"]');
+      }
+
+      // 只把旧定位迁移到唯一命中的当前正文节点；宁可提示用户重新确认，也不把评论猜到错误位置。
+      function findAnnotationElementByText(item, candidates) {
+        const pool = candidates || buildAnnotationCandidates();
+        const blockText = normalizeText(item?.blockText || '');
+        const selectedText = normalizeText(item?.selectedText || '');
+        const contextWindow = normalizeText(
+          String(item?.contextBefore || '').slice(-120)
+          + String(item?.selectedText || item?.blockText || '')
+          + String(item?.contextAfter || '').slice(0, 120)
+        );
+
+        const exactBlock = chooseUniqueAnnotationCandidate(pool, candidate => {
+          return Boolean(blockText) && candidate.text === blockText;
+        }, item);
+        if (exactBlock) return exactBlock;
+
+        if (contextWindow.length >= 12) {
+          const contextual = chooseUniqueAnnotationCandidate(pool, candidate => {
+            return candidate.text.includes(contextWindow);
+          }, item);
+          if (contextual) return contextual;
+        }
+
+        if (selectedText.length >= 12) {
+          return chooseUniqueAnnotationCandidate(pool, candidate => {
+            return candidate.text.includes(selectedText);
+          }, item);
+        }
+        return chooseUniqueAnnotationCandidate(pool, candidate => {
+          return Boolean(selectedText) && candidate.text === selectedText;
+        }, item);
+      }
+
+      function buildAnnotationCandidates() {
+        return Array.from(main.querySelectorAll(annotationTargetSelector))
+          .map(element => ({
+            element,
+            text: normalizeText(element.innerText || element.textContent || ''),
+            sectionTitle: normalizeText(nearestSectionTitle(element))
+          }))
+          .filter(candidate => candidate.text);
+      }
+
+      function chooseUniqueAnnotationCandidate(candidates, predicate, item) {
+        let matches = candidates.filter(predicate);
+        if (!matches.length) return null;
+
+        const expectedSection = normalizeText(item?.sectionTitle || '');
+        const sameSection = matches.filter(candidate => expectedSection && candidate.sectionTitle === expectedSection);
+        if (sameSection.length) matches = sameSection;
+
+        // 父级 section/panel 也会包含同一段文字；只保留没有更深命中节点的候选，避免迁移到过大的容器。
+        const deepestMatches = matches.filter(candidate => {
+          return !matches.some(other => candidate !== other && candidate.element.contains(other.element));
+        });
+        return deepestMatches.length === 1 ? deepestMatches[0].element : null;
+      }
+
+      function reconcileAnnotationTargets() {
+        const candidates = buildAnnotationCandidates();
+        const relocated = [];
+        const unresolved = [];
+        annotations.forEach(item => {
+          let element = findAnnotationElementById(item);
+          if (!element) element = findAnnotationElementByText(item, candidates);
+          if (!element) {
+            unresolved.push(item);
+            return;
+          }
+
+          const blockId = ensureBlockId(element);
+          if (item.blockId === blockId) return;
+          item.blockId = blockId;
+          item.sectionId = nearestSectionId(element);
+          item.sectionTitle = nearestSectionTitle(element);
+          relocated.push(item);
+        });
+        return { relocated, unresolved };
+      }
+
       function highlightTextInElement(root, text, annotationId) {
         const needle = String(text || '').trim();
         if (!needle || needle.length > 500) return;
@@ -430,22 +523,26 @@
           list.innerHTML = '<div class="qa-empty">还没有批注。选中文本后点击小气泡，或在正文中右键，对段落、表格、图表发起提问。</div>';
           return;
         }
-        list.innerHTML = annotations.map(item => `
-          <article class="qa-card ${item.kind === '批注' ? 'kind-note' : ''}" data-qa-id="${escapeAttr(item.id)}">
+        list.innerHTML = annotations.map(item => {
+          const locationMissing = !findAnnotationElementById(item);
+          return `
+          <article class="qa-card ${item.kind === '批注' ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''}" data-qa-id="${escapeAttr(item.id)}">
             <div class="qa-card-head">
               <span class="qa-kind">${escapeHtml(item.kind || '提问')}</span>
               <span class="qa-section">${escapeHtml(item.sectionTitle || '未命名章节')}</span>
             </div>
             <div class="qa-quote">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</div>
             <div class="qa-question">${escapeHtml(item.text || item.question || '')}</div>
+            ${locationMissing ? '<div class="qa-location-warning">原文已变化，当前报告中无法安全定位；请删除后在新位置重新添加。</div>' : ''}
             <div class="qa-card-actions">
-              <button class="qa-mini-btn" type="button" data-qa-card-action="locate">定位</button>
+              <button class="qa-mini-btn" type="button" data-qa-card-action="locate">${locationMissing ? '尝试定位' : '定位'}</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="edit">编辑</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="copy">复制此条</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="delete">删除</button>
             </div>
           </article>
-        `).join('');
+        `;
+        }).join('');
         list.querySelectorAll('[data-qa-card-action]').forEach(btn => {
           btn.addEventListener('click', event => {
             event.preventDefault();
@@ -504,8 +601,17 @@
       }
 
       function locateAnnotation(item) {
-        const el = main.querySelector('[data-block-id="' + cssEscape(item.blockId) + '"]');
-        if (!el) return;
+        const reconciliation = reconcileAnnotationTargets();
+        if (reconciliation.relocated.length) {
+          saveAnnotations();
+          syncAnnotatedState();
+          renderAnnotations();
+        }
+        const el = findAnnotationElementById(item);
+        if (!el) {
+          showToast('无法定位：报告内容已变化，请在新位置重新添加评论');
+          return;
+        }
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.classList.add('qa-focus-pulse');
         setTimeout(() => el.classList.remove('qa-focus-pulse'), 1300);
@@ -535,6 +641,17 @@
 
       // 把当前批注包直接写入 HTML，成功覆盖或另存后即可把该文件交给 Agent。
       async function saveReviewHtml() {
+        const reconciliation = reconcileAnnotationTargets();
+        if (reconciliation.relocated.length) {
+          saveAnnotations();
+          syncAnnotatedState();
+          renderAnnotations();
+        }
+        if (reconciliation.unresolved.length) {
+          setSidebarOpen(true);
+          showToast('有 ' + reconciliation.unresolved.length + ' 条评论无法定位，已停止保存');
+          return;
+        }
         const currentName = currentFileName();
         const result = await saveHtmlFile({
           suggestedName: currentName,

@@ -315,6 +315,11 @@
       box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
     }
     .qa-card.kind-note { border-left-color: #0f766e; }
+    .qa-card.location-missing {
+      border-color: #f59e0b;
+      border-left-color: #d97706;
+      background: #fffbeb;
+    }
     .qa-card-head {
       display: flex;
       align-items: center;
@@ -348,6 +353,16 @@
       white-space: pre-wrap;
     }
     .qa-question { margin: 8px 0; color: #111827; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+    .qa-location-warning {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
     .qa-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .qa-mini-btn {
       appearance: none;
