@@ -1,3 +1,17 @@
+## [0.22.11] - 2026-07-20
+### Removed
+- skills: 将零调用且仅适用于 Claude Code 的 `session-rename` 从活跃 `skills/` 移出，不再由 Claude Code / Codex 插件发现、注册或自动触发
+- README / manifest: 移除 `session-rename` 的活跃清单和关键词；`html2md` 继续保留为活跃 skill
+
+### Added
+- repository: 新增顶层 `deprecated-skills/` 历史归档目录，保留退役 skill 的完整目录内容，并用 frontmatter 记录退役版本与原因
+- validation: 新增退役 skill 隔离检查，校验归档元数据、README 归档表、活跃/退役重名、manifest 关键词泄漏及 Codex 扫描根
+- validation: 新增插件版本结构检查，要求第一位保持 `0`，第二位等于活跃与退役 skill 总数
+
+### Changed
+- repository: 重写 skill 目录规范和退役流程，明确 `skills/` 只承载当前启用能力，历史 CHANGELOG / 版本记录保持不变
+- manifest: 退役不改变累计新增 skill 数，按插件版本规则仅增加优化次数，版本升级到 `0.22.11`
+
 ## [0.22.10] - 2026-07-19
 ### Changed
 - html-report: 修复同一路径报告重新生成后旧评论仍从 `localStorage` 恢复、但顺序型 `blockId` 已失效，导致保存出的评论版无法定位正文的问题

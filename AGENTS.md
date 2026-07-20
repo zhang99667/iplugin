@@ -6,8 +6,9 @@
 
 - `.claude-plugin/plugin.json` — Claude Code 插件 manifest
 - `.codex-plugin/plugin.json` — Codex 插件 manifest
-- `skills/<name>/SKILL.md` — 技能定义，两边共用，目录名必须与 `SKILL.md` 中的 `name` 字段一致
+- `skills/<name>/SKILL.md` — 当前启用的技能定义，两边共用并由插件自动发现；目录名必须与 `SKILL.md` 中的 `name` 字段一致
 - `skills/<name>/references/` — 按需读取的长规则、示例和模板，用于 progressive disclosure，避免 `SKILL.md` 过长
+- `deprecated-skills/<name>/` — 已退役 skill 的只读历史归档，不参与插件发现、README 活跃清单或 manifest 能力声明
 - `commands/<name>.md` — 可选 slash command 入口；仅在需要非重复命令编排时创建，优先调用 `skills/` 中的通用能力，不承载大段重复逻辑
 - `versions/vX.Y.Z.md` — 每个版本的规划和决策记录
 - `scripts/` — 共享脚本（需要确定性执行的代码）
@@ -16,7 +17,7 @@
 
 ## 兼容原则
 
-- `skills/` 是唯一真源，不为 Claude Code 和 Codex 分别复制 skill
+- `skills/` 是当前启用 skill 的唯一真源，不为 Claude Code 和 Codex 分别复制 skill；`deprecated-skills/` 只保存退役快照
 - `CLAUDE.md` 与 `AGENTS.md` 是同源维护指南；修改其中一个时必须同步另一个，除非差异有明确平台原因并在文中说明
 - 插件级信息变更时，同时检查 `.claude-plugin/plugin.json` 和 `.codex-plugin/plugin.json`
 - 版本号、描述、关键词应尽量在两个 manifest 中保持一致
@@ -43,6 +44,17 @@
 6. 记录 `versions/vX.Y.Z.md`
 7. `git commit`
 
+## 退役 Skill
+
+低调用率只是退役信号，不是唯一依据；还要确认能力已被替代、平台不再适用，或用户明确决定停止维护。确认退役后：
+
+1. 使用 `git mv skills/<name> deprecated-skills/<name>` 移动整个目录，保留脚本、references 和历史实现
+2. 在归档 `SKILL.md` frontmatter 增加 `deprecated: true`、`deprecated_in` 和 `deprecated_reason`
+3. 更新 `deprecated-skills/README.md`，记录退役版本、原因和可替代方式
+4. 从 README 活跃 Skills 表、两个 manifest 的描述/关键词及 Codex 默认提示中移除该能力
+5. 不改写旧 CHANGELOG 和旧版本文档中的历史记录；恢复时按新增活跃能力重新评估版本并移回 `skills/`
+6. 退役属于既有 skill 集合维护，插件版本只升级第三位优化次数；第二位累计新增 skill 数不回退
+
 ## 添加 Command
 
 1. `mkdir -p commands`
@@ -55,8 +67,9 @@
 
 - 插件级版本同时维护在 `.claude-plugin/plugin.json` 和 `.codex-plugin/plugin.json` 中
 - 每个 skill 在各自 `SKILL.md` frontmatter 中有独立 `version`
-- 遵循 SemVer：Patch（指令优化、修复、改名 skill、文档/manifest/hooks/scripts 调整等非新增变更）、Minor（新增 skill）、Major（删除 skill 或 breaking change）
-- 第二位版本号只随新增 skill 递增，用于从插件版本粗略判断新增 skill 数；只要不是新增 skill，都升级第三位版本号
+- 插件版本使用 `0.<skill-count>.<iteration>`：第一位保持 `0`；第二位是累计新增 skill 的计数；第三位是当前 skill 数下的优化次数
+- 新增 skill 时第二位加一、第三位归零；指令优化、修复、改名、退役、文档、manifest、hooks、scripts 等非新增变更只增加第三位
+- 退役 skill 不回退第二位，也不因 breaking change 升级第一位；这样版本序列保持单调递增，并能从第二位看出累计新增过多少个 skill
 - 每次变更必须在 `versions/` 下记录对应的版本规划文档
 
 ## 版本规划文档
@@ -75,6 +88,7 @@
 - CHANGELOG.md 已更新
 - versions/vX.Y.Z.md 已写好（如果是新版本）
 - `skills/*/SKILL.md` 的 `name` 与目录名一致
+- `deprecated-skills/*/SKILL.md` 已声明退役元数据，且未出现在 README 活跃表、manifest 关键词或插件扫描目录中
 - 长规则和长示例优先放到 `skills/<name>/references/`，`SKILL.md` 只保留触发、导航和核心流程
 - 如存在 `commands/*.md`，只保留轻量编排逻辑，未复制大段 skill 正文，且不与同名 skill 重复注册
 - 每个本地 clone 需要手动执行一次 `git config core.hooksPath git-hooks` 才会启用 Git pre-push 检查；启用后 push 前会运行 `scripts/pre_push_version_check.py`，如果远端已有新提交或同版本记录，先 pull/rebase 并重选版本号

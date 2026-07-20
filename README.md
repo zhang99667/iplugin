@@ -13,7 +13,8 @@ iplugin/
 ├── .codex-plugin/
 │   └── plugin.json
 ├── skills/
-│   └── <name>/             # 每个 skill 目录包含 SKILL.md，可按需带 references/ 或 scripts/
+│   └── <name>/             # 当前启用 skill；包含 SKILL.md，可按需带 references/、scripts/ 或 assets/
+├── deprecated-skills/      # 已退役 skill 的历史快照，不参与插件发现和能力注册
 ├── hooks/                  # 全局横切 hooks，区分 Claude / Codex 配置
 ├── git-hooks/              # 可版本化 Git hooks，启用后在 push 前做版本防撞检查
 ├── scripts/                # 共享脚本和提交前校验
@@ -53,7 +54,14 @@ iplugin/
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |
 | `mgit` | 百度 MGIT 多仓状态、分支、仓库范围和中间态诊断；执行前预检 Ruby/gem/colored2 等启动依赖；支持结合 EasyBox/xbuild `overlay` / `local` 配置判断开发分支上车和 master 合入时的源码模式范围；多仓写操作需确认 | "整体看一下这套工程状态"、"根据这些改动更新 EasyBox overlay/local" |
 | `xbuild-open-source` | 反查 EasyBox/xbuild 模块映射；显式要求开源码或其他代码任务发现源码缺失时，自动最小补个人 local 配置、精确同步唯一目标仓并继续原任务 | "帮我打开这个 xbuild 仓库源码模式"、"带我读这段代码，缺源码就自动开" |
-| `session-rename` | 为 Claude Code 会话生成可检索标题 | "重命名当前会话" |
+
+## Deprecated Skills
+
+退役 skill 已移出插件扫描目录，仅保留在 [`deprecated-skills/`](./deprecated-skills/) 供历史追溯。目前归档：
+
+| 名称 | 退役版本 | 原因 |
+|------|---------|------|
+| `session-rename` | `0.22.11` | Codex 与 Claude telemetry 均无实际任务命中，且只适用于 Claude Code |
 
 ## Commands
 
@@ -67,7 +75,7 @@ iplugin/
 
 ## 安装
 
-下面是 Claude Code 的本地市场安装示例。Codex 侧复用同一份 `skills/`、`hooks/` 与 `.codex-plugin/plugin.json`。
+下面是 Claude Code 的本地市场安装示例。Codex 侧复用同一份活跃 `skills/`、`hooks/` 与 `.codex-plugin/plugin.json`；`deprecated-skills/` 不参与注册。
 
 1. 创建市场目录并软链接 git 仓库：
 
@@ -125,6 +133,8 @@ mkdir -p skills/new-skill-name
 
 只纳入**通用、可复用**的能力。一次性任务脚本、特定项目/文件的补丁式 skill 不适合放在这里。
 
+`skills/` 只放当前启用能力。确认不再维护的 skill 整体移动到 `deprecated-skills/<name>/`，补齐退役元数据和归档说明，并从 manifest 与活跃清单移除；不要把废弃目录继续留在 `skills/` 下。
+
 ## 提交前校验
 
 改动插件结构、manifest、skills、commands、README、CHANGELOG 或版本记录后，运行：
@@ -133,7 +143,7 @@ mkdir -p skills/new-skill-name
 python3 scripts/validate-plugin.py
 ```
 
-校验会检查 manifest JSON 合法性、两个 manifest 公共字段一致性、skill 目录名与 frontmatter name 一致性、README 与实际 skills 清单一致性、CHANGELOG 版本记录完整性，以及 command 引用的 skill 是否存在。
+校验会检查 manifest JSON 合法性、两个 manifest 公共字段一致性、活跃 skill 目录名与 frontmatter name 一致性、README 与实际 skills 清单一致性、废弃 skill 隔离和退役元数据、CHANGELOG 版本记录完整性，以及 command 引用的 skill 是否存在。
 
 ## Push 前版本防撞
 

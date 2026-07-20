@@ -3,6 +3,9 @@ name: session-rename
 version: 0.1.2
 tags: [claude-code, session, hooks, productivity]
 description: Claude Code 会话命名助手，仅当用户明确要求重命名当前会话、给当前对话起标题、自动命名 Claude Code 会话，或配置 UserPromptSubmit sessionTitle hook 时触发。不要因命名分支、PR、文件、项目或 Codex 对话触发。仅适用于 Claude Code 环境。
+deprecated: true
+deprecated_in: 0.22.11
+deprecated_reason: Codex 与 Claude telemetry 均无实际任务命中，且能力仅适用于 Claude Code。
 ---
 
 # Claude Code 会话命名助手

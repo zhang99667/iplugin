@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""校验 iPlugin 的 manifest、skills、commands 和版本记录。
+"""校验 iPlugin 的 manifest、活跃/退役 skills、commands 和版本记录。
 
 脚本保持只读，并且只依赖 Python 标准库，方便在全新 checkout 后直接运行。
 """
@@ -25,6 +25,8 @@ AGENTS_MD = ROOT / "AGENTS.md"
 README = ROOT / "README.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
 SKILLS_DIR = ROOT / "skills"
+DEPRECATED_SKILLS_DIR = ROOT / "deprecated-skills"
+DEPRECATED_SKILLS_README = DEPRECATED_SKILLS_DIR / "README.md"
 COMMANDS_DIR = ROOT / "commands"
 VERSIONS_DIR = ROOT / "versions"
 HOOKS_DIR = ROOT / "hooks"
@@ -79,6 +81,7 @@ HTML_REPORT_REVIEW_WORKSPACE_ASSETS = {
 # 两个平台 manifest 中必须保持一致的公共字段。
 PRIMARY_COMMON_FIELDS = ("name", "version", "description", "keywords")
 PLATFORM_SPECIFIC_FIELDS = {"commands", "hooks", "interface", "skills"}
+PLUGIN_VERSION_RE = re.compile(r"^([0-9]+)\.([0-9]+)\.([0-9]+)$")
 
 # 只有在 slash 用法附近出现这些语义时，才认为它是在声明 slash command。
 SLASH_COMMAND_CONTEXT = (
@@ -222,6 +225,14 @@ def skill_dirs() -> list[Path]:
     return sorted(path for path in SKILLS_DIR.iterdir() if path.is_dir())
 
 
+def deprecated_skill_dirs() -> list[Path]:
+    """只读取顶层退役目录，避免把其 references/scripts 误当成独立 skill。"""
+
+    if not DEPRECATED_SKILLS_DIR.is_dir():
+        return []
+    return sorted(path for path in DEPRECATED_SKILLS_DIR.iterdir() if path.is_dir())
+
+
 def command_files() -> set[str]:
     if not COMMANDS_DIR.is_dir():
         return set()
@@ -267,6 +278,45 @@ def check_manifest_common_fields(claude: dict[str, Any] | None, codex: dict[str,
             result.details.append(
                 f"Field {field_name!r} differs between manifests: "
                 f"claude={claude[field_name]!r}, codex={codex[field_name]!r}"
+            )
+
+    return result
+
+
+def check_plugin_version_rule(
+    claude: dict[str, Any] | None,
+    codex: dict[str, Any] | None,
+    active_skills: list[Path],
+    archived_skills: list[Path],
+) -> CheckResult:
+    """检查插件版本保持 0.<累计 skill 数>.<优化次数> 的仓库约定。"""
+
+    result = CheckResult("Plugin version follows skill-count rule")
+    expected_skill_count = len(active_skills) + len(archived_skills)
+
+    for manifest_path, manifest in ((CLAUDE_MANIFEST, claude), (CODEX_MANIFEST, codex)):
+        if manifest is None:
+            result.details.append(f"Skipped {rel(manifest_path)} because it could not be loaded")
+            continue
+
+        version = manifest.get("version")
+        if not isinstance(version, str):
+            result.details.append(f"{rel(manifest_path)} field 'version' must be a string")
+            continue
+
+        match = PLUGIN_VERSION_RE.fullmatch(version)
+        if not match:
+            result.details.append(f"{rel(manifest_path)} version must use 0.<skill-count>.<iteration>")
+            continue
+
+        major, skill_count, _ = (int(part) for part in match.groups())
+        if major != 0:
+            # 本仓库不使用标准 SemVer Major 表达退役或 breaking change，避免丢失 skill 计数语义。
+            result.details.append(f"{rel(manifest_path)} version major must remain 0, got {major}")
+        if skill_count != expected_skill_count:
+            # 退役目录保留历史 skill，因此活跃与退役目录之和就是累计新增数的确定性真源。
+            result.details.append(
+                f"{rel(manifest_path)} version skill count must be {expected_skill_count}, got {skill_count}"
             )
 
     return result
@@ -418,6 +468,38 @@ def extract_readme_skill_names() -> tuple[set[str], list[str]]:
     return names, []
 
 
+def extract_readme_deprecated_skill_names() -> tuple[set[str], list[str]]:
+    """从 README 的 Deprecated Skills 表格中提取已退役名称。"""
+
+    try:
+        text = read_text(README)
+    except FileNotFoundError:
+        return set(), [f"{rel(README)} does not exist"]
+
+    section_match = re.search(r"^## Deprecated Skills\s*$([\s\S]*?)(?=^## |\Z)", text, re.MULTILINE)
+    if not section_match:
+        return set(), [f"{rel(README)} is missing a '## Deprecated Skills' section"]
+
+    names = set(re.findall(r"^\|\s*`([^`]+)`\s*\|", section_match.group(1), re.MULTILINE))
+    if not names:
+        return names, [f"{rel(README)} Deprecated Skills section has no archive rows"]
+    return names, []
+
+
+def extract_archive_index_skill_names() -> tuple[set[str], list[str]]:
+    """读取归档目录自己的索引，保证退役原因不会只散落在根 README。"""
+
+    try:
+        text = read_text(DEPRECATED_SKILLS_README)
+    except FileNotFoundError:
+        return set(), [f"{rel(DEPRECATED_SKILLS_README)} does not exist"]
+
+    names = set(re.findall(r"^\|\s*`([^`]+)`\s*\|", text, re.MULTILINE))
+    if not names:
+        return names, [f"{rel(DEPRECATED_SKILLS_README)} has no archive rows"]
+    return names, []
+
+
 def check_readme_skills(skills: list[Path]) -> CheckResult:
     """检查 README Skills 表和实际 skills/ 目录是否互相覆盖。"""
 
@@ -437,10 +519,90 @@ def check_readme_skills(skills: list[Path]) -> CheckResult:
     return result
 
 
+def check_deprecated_skills(
+    active_skills: list[Path],
+    archived_skills: list[Path],
+    claude: dict[str, Any] | None,
+    codex: dict[str, Any] | None,
+) -> CheckResult:
+    """确保退役 skill 有自描述元数据，并与插件发现和当前能力声明隔离。"""
+
+    result = CheckResult("Deprecated skills are isolated")
+    if not DEPRECATED_SKILLS_DIR.is_dir():
+        result.details.append(f"{rel(DEPRECATED_SKILLS_DIR)}/ does not exist")
+        return result
+
+    active_names = {path.name for path in active_skills}
+    archived_names = {path.name for path in archived_skills}
+    overlap = sorted(active_names & archived_names)
+    if overlap:
+        result.details.append(f"Skills cannot be active and deprecated at once: {', '.join(overlap)}")
+
+    readme_active, active_errors = extract_readme_skill_names()
+    readme_archived, archived_errors = extract_readme_deprecated_skill_names()
+    archive_index, archive_index_errors = extract_archive_index_skill_names()
+    result.details.extend(active_errors)
+    result.details.extend(archived_errors)
+    result.details.extend(archive_index_errors)
+    leaked_active_rows = sorted(archived_names & readme_active)
+    if leaked_active_rows:
+        result.details.append(f"{rel(README)} active Skills table still lists: {', '.join(leaked_active_rows)}")
+    missing_archive_rows = sorted(archived_names - readme_archived)
+    extra_archive_rows = sorted(readme_archived - archived_names)
+    if missing_archive_rows:
+        result.details.append(f"{rel(README)} Deprecated Skills table is missing: {', '.join(missing_archive_rows)}")
+    if extra_archive_rows:
+        result.details.append(
+            f"{rel(README)} Deprecated Skills table lists missing directories: {', '.join(extra_archive_rows)}"
+        )
+    missing_index_rows = sorted(archived_names - archive_index)
+    extra_index_rows = sorted(archive_index - archived_names)
+    if missing_index_rows:
+        result.details.append(f"{rel(DEPRECATED_SKILLS_README)} is missing: {', '.join(missing_index_rows)}")
+    if extra_index_rows:
+        result.details.append(
+            f"{rel(DEPRECATED_SKILLS_README)} lists missing directories: {', '.join(extra_index_rows)}"
+        )
+
+    for skill_dir in archived_skills:
+        skill_file = skill_dir / "SKILL.md"
+        data, error = parse_frontmatter(skill_file)
+        if error:
+            result.details.append(error)
+            continue
+        if data.get("name") != skill_dir.name:
+            result.details.append(
+                f"{rel(skill_file)} frontmatter name must be {skill_dir.name!r}, got {data.get('name')!r}"
+            )
+        if str(data.get("deprecated", "")).lower() != "true":
+            result.details.append(f"{rel(skill_file)} must declare deprecated: true")
+        for required in ("deprecated_in", "deprecated_reason"):
+            if data.get(required) in (None, "", []):
+                result.details.append(f"{rel(skill_file)} is missing non-empty field {required!r}")
+
+    for manifest_path, manifest in ((CLAUDE_MANIFEST, claude), (CODEX_MANIFEST, codex)):
+        if manifest is None:
+            continue
+        keywords = manifest.get("keywords", [])
+        if isinstance(keywords, list):
+            leaked_keywords = sorted(archived_names & {item for item in keywords if isinstance(item, str)})
+            if leaked_keywords:
+                result.details.append(
+                    f"{rel(manifest_path)} keywords still register deprecated skills: {', '.join(leaked_keywords)}"
+                )
+
+    if codex is not None and codex.get("skills") != "./skills/":
+        # 扫描根必须只指向活跃目录；扩大到仓库根会让归档 skill 再次进入可发现范围。
+        result.details.append(f"{rel(CODEX_MANIFEST)} field 'skills' must be exactly './skills/'")
+
+    return result
+
+
 README_TREE_REQUIRED_TOP_LEVEL = {
     ".claude-plugin",
     ".codex-plugin",
     "skills",
+    "deprecated-skills",
     "versions",
     "scripts",
     "git-hooks",
@@ -867,16 +1029,19 @@ def main() -> int:
 
     json_result, claude_manifest, codex_manifest = check_json_manifests()
     skills = skill_dirs()
+    archived_skills = deprecated_skill_dirs()
     skill_names = {path.name for path in skills}
     frontmatter_result, _ = check_skills_frontmatter(skills)
 
     results = [
         json_result,
         check_manifest_common_fields(claude_manifest, codex_manifest),
+        check_plugin_version_rule(claude_manifest, codex_manifest, skills, archived_skills),
         check_hooks_configs(codex_manifest),
         frontmatter_result,
         check_readme_directory_tree(),
         check_readme_skills(skills),
+        check_deprecated_skills(skills, archived_skills, claude_manifest, codex_manifest),
         check_manifest_keywords(claude_manifest, codex_manifest, skills),
         check_changelog_versions(),
         check_commands(skill_names),
