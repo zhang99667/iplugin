@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.5.1
+version: 0.5.2
 tags:
   - report
   - html
@@ -18,8 +18,8 @@ description: 生成独立 HTML 报告文件，支持图片/视频证据预览、
 
 SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读取：
 
-- `references/content-rules.md`：HTML vs Markdown 决策、文档类型、正式抬头、输出要求、写作规范、完成前检查。
-- `references/artifact-patterns.md`：按报告类型选择结构模板。当前覆盖技术方案、技术调研、问题排查/修复方案、代码评审、验收报告、选型对比、项目总结七个高频场景，其他场景先按通用报告规则处理。
+- `references/content-rules.md`：HTML vs Markdown 决策、文档类型、内容编排、正式抬头、输出要求、写作规范、完成前检查。
+- `references/artifact-patterns.md`：按报告类型检查必要内容覆盖。当前覆盖技术方案、技术调研、问题排查/修复方案、代码评审、验收报告、选型对比、项目总结七个高频场景；它是覆盖清单，不是固定章节模板。
 - `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、超长路径省略展示、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 组件装配规则、HTML 骨架和少量 JS 片段。只有开始写 HTML 文件时再读取；它会按内容路由到 `references/css/*.css`。
 - `references/css/*.css`：组件化 CSS 源文件。`base.css` 与 `interactions.css` 是默认组合；`code-diff.css`、`media.css`、`diagram.css`、`toc.css`、`tabs.css`、`sortable-table.css` 按内容需要读取并内联进最终 HTML。
@@ -33,7 +33,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `scripts/build_review_workspace.py`：按 JSON 规格读取 2 到 3 份源码快照，生成安全静态高亮并输出可内联 Workspace 片段；不要手工拼含源码的 JSON `<script>`。
 - `scripts/inject_annotation_mode.py`：当需要评论模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线评论 UI、评论结果内嵌交接、Markdown 兜底和无批注发布版导出能力；不要手写批注 JS。
 - `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
-- `evals/evals.json`：html-report 的回归用例清单。只有评估或维护 skill 质量时读取，不参与普通报告生成；当前覆盖代码评审、问题排查、技术方案、聚焦 diff、多版本 Review Workspace、Android mock 验收和评论模式。
+- `evals/evals.json`：html-report 的回归用例清单。只有评估或维护 skill 质量时读取，不参与普通报告生成；当前覆盖代码评审、问题排查、技术方案、聚焦 diff、多版本 Review Workspace、Android mock 验收、评论模式和既有知识文档结构保真。
 
 ## 触发边界
 
@@ -59,8 +59,8 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
    - 用户说已在 HTML 里完成批注、要求按批注更新：先读取 `references/annotation-mode.md` 并用 `--require-review-pack` 校验目标 HTML；通过后解析 `QA_EMBEDDED_REVIEW_START/END` 与 `#qaEmbeddedReviewData`，逐条处理 `annotations`。详细边界以该 reference 为准。
    - 明确要求终端输出或不用 HTML：直接输出 Markdown。
    - 模糊请求：内容简单用 Markdown；内容明显是复杂交付物时自动生成 HTML；无法判断时先确认。
-2. 决定要生成 HTML 后，读取 `references/content-rules.md`，判断正式技术/业务文档、分析报告或普通对话转 HTML。
-3. 如果报告属于技术方案、技术调研、问题排查/修复方案、代码评审、验收报告、选型对比或项目总结，读取 `references/artifact-patterns.md`，选择对应结构。
+2. 决定要生成 HTML 后，读取 `references/content-rules.md`，判断文档类型、目标读者和阅读任务，先拟一条适合材料的叙事主线与提纲。转换已有文档时优先保留已经清晰的宏观结构。
+3. 如果报告属于技术方案、技术调研、问题排查/修复方案、代码评审、验收报告、选型对比或项目总结，读取 `references/artifact-patterns.md`，用对应清单检查必要内容是否齐全；不要逐项复制为章节，可以改名、排序、合并或省略不适用项。
 4. 读取 `references/visual-rules.md`，选择必要的视觉结构和交互。保持克制，不为装饰添加复杂交互。
 5. 报告需要复杂技术架构图、流程图、状态图或模块关系图时，读取 `../svg-tech-diagram/SKILL.md` 及其相关 references，生成可内联 SVG；该图必须先渲染 PNG 并完成自审，再嵌入 HTML。
 6. 代码评审需要多文件、2 到 3 版本完整源码审阅，或用户明确要求 Workspace / 审阅台时，读取 `references/review-workspace.md`，准备源码快照和 JSON 规格，再用 `scripts/build_review_workspace.py` 生成组件；Workspace 放在 Findings / 改动概览之后，不能替代真实 unified diff。
@@ -91,7 +91,8 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - HTML 的价值是可视化表达力，不是花哨交互。
 - Review Workspace 服务于跨文件、跨版本审阅；Findings、真实 patch 和测试结论仍然是代码评审报告的主线。
 - 评论交接的默认载体仍是同一个 HTML 文件；`localStorage` 只负责编辑期暂存，不能作为 Agent 看不到的唯一数据源。
-- 首屏给结论，详情和证据往下排。
+- 先保证内容完整和阅读主线清晰，再选择页面组件；不要让模板反过来决定文章结构。
+- 首屏要让读者知道文档解决什么问题、该如何阅读。决策、评审、排查和验收类优先给结论；教程、前序知识和概念讲解可先给阅读地图，不强插重复的 TL;DR。
 - 颜色、卡片、表格、目录、折叠都服务于阅读和定位。
 - 代码块必须先转义再高亮，使用 `scripts/highlight_code.py` 生成静态 HTML；如果脚本语言参数不匹配，先换用受支持语言或修正脚本，不要降级成交付未高亮代码块。
 - 支持语言和常见别名以 `python3 skills/html-report/scripts/highlight_code.py --list-langs` 输出为准；不要在 references 或校验脚本里维护第二份完整语言清单。
