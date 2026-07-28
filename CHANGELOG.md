@@ -1,3 +1,10 @@
+## [0.22.13] - 2026-07-28
+### Changed
+- html-report: 普通表格收敛到 `base.css` 的 `.table-wrap` 组件，默认提供完整 1px 网格线、表头样式和窄屏横向滚动，不再依赖报告临时补边框
+- html-report: `highlight_code.py --lang diff --diff-view` 自动按 Git 或标准 unified 文件头拆分多文件 patch，为每个文件输出独立且带文件名的 Diff 卡片
+- html-report: 校验器新增普通表格容器、完整网格线、Diff 文件标题和单卡片多文件混装门禁，并增加 7 项组件级回归测试与专门 eval
+- html-report: skill 版本升级到 `0.5.3`，插件版本升级到 `0.22.13`
+
 ## [0.22.12] - 2026-07-27
 ### Changed
 - html-report: 将七类报告的固定章节模板改为内容覆盖清单，先按读者任务和材料依赖自主设计叙事主线，再检查必要内容，允许章节改名、排序、合并和省略不适用项

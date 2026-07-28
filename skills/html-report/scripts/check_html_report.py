@@ -20,6 +20,8 @@ from urllib.parse import unquote, urlparse
 
 CODE_WRAP_RE = re.compile(r'<div\b[^>]*class=["\'][^"\']*\bcode-wrap\b[^"\']*["\'][^>]*>.*?</div>', re.DOTALL)
 DIFF_VIEWER_RE = re.compile(r'<section\b[^>]*class=["\'][^"\']*\bdiff-viewer\b[^"\']*["\'][^>]*>.*?</section>', re.DOTALL)
+CSS_RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}", re.DOTALL)
+DIFF_META_ROW_RE = re.compile(r'<tr\b[^>]*class=["\'][^"\']*\bdiff-meta\b[^"\']*["\'][^>]*>.*?</tr>', re.DOTALL)
 LANG_RE = re.compile(r'\blanguage-([a-zA-Z0-9_-]+)\b')
 TOKEN_SPAN_RE = re.compile(r'<span\b[^>]*\bclass=["\'][^"\']*\b(tok-[a-zA-Z0-9_-]+)\b[^"\']*["\'][^>]*>.*?</span>', re.DOTALL)
 INLINE_STYLE_RE = re.compile(r'<span\b[^>]*\bstyle=["\'][^"\']+["\']', re.DOTALL)
@@ -137,6 +139,7 @@ class ReportParser(HTMLParser):
         self.raw_inline_code_samples: list[str] = []
         self.has_diff_viewer = False
         self.has_non_viewer_diff_card = False
+        self.regular_table_lines: list[int] = []
         self.media_items: list[MediaItem] = []
         self.media_resources: list[MediaResource] = []
         self.figures: list[FigureState] = []
@@ -172,6 +175,12 @@ class ReportParser(HTMLParser):
             self.figcaption_depth += 1
 
         line, _ = self.getpos()
+        if tag == "table" and "diff-table" not in classes:
+            self.regular_table_lines.append(line)
+            inside_table_wrap = any("table-wrap" in frame.classes for frame in self.stack)
+            if not inside_table_wrap:
+                self.errors.append(f"第 {line} 行普通表格未包在 .table-wrap 中，窄屏滚动和统一网格线无法保证")
+
         if tag in {"img", "video"}:
             media = MediaItem(
                 tag=tag,
@@ -300,6 +309,19 @@ def has_class(fragment: str, class_name: str) -> bool:
     return bool(re.search(rf'\bclass=["\'][^"\']*\b{re.escape(class_name)}\b[^"\']*["\']', fragment))
 
 
+def css_rule_has(css: str, selector_fragments: tuple[str, ...], declaration_fragments: tuple[str, ...]) -> bool:
+    """检查同一条 CSS 规则同时包含指定选择器和声明，避免跨规则误判。"""
+
+    for selectors, body in CSS_RULE_RE.findall(css):
+        compact_selectors = re.sub(r"\s+", " ", selectors)
+        compact_body = re.sub(r"\s+", " ", body)
+        if all(fragment in compact_selectors for fragment in selector_fragments) and all(
+            fragment in compact_body for fragment in declaration_fragments
+        ):
+            return True
+    return False
+
+
 def looks_like_unified_diff(text: str) -> bool:
     return bool(RAW_UNIFIED_DIFF_RE.search(text) or ("diff --git " in text and HUNK_MARKER_RE.search(text)))
 
@@ -349,6 +371,7 @@ def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
             "diff-card": "必须同时使用 .diff-card 和 .diff-viewer，避免退化成普通代码块外壳",
             "diff-header": "缺少 .diff-header，无法保持标准 diff 标题区",
             "change-chip": "缺少 .change-chip，无法稳定展示“代码差异”标识",
+            "diff-file": "缺少 .diff-file，无法标明当前卡片对应的文件",
             "diff-scroll": "缺少 .diff-scroll，宽 diff 在窄屏下可能撑破正文",
             "diff-table": "缺少 .diff-table，old/new 行号和代码列无法稳定对齐",
             "diff-gutter": "缺少 .diff-gutter，无法展示左侧 +/- 变更轨道",
@@ -366,10 +389,18 @@ def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
         if "统一 diff · old/new 行号" not in fragment_text(block):
             errors.append(f"第 {index} 个 diff viewer 标题区缺少“统一 diff · old/new 行号”说明")
 
+        meta_texts = [fragment_text(row) for row in DIFF_META_ROW_RE.findall(block)]
+        git_file_count = sum(text.startswith("diff --git ") for text in meta_texts)
+        fallback_file_count = sum(text.startswith("--- ") for text in meta_texts)
+        file_count = git_file_count or fallback_file_count
+        if file_count > 1:
+            errors.append(f"第 {index} 个 diff viewer 混入 {file_count} 个文件；必须由 highlight_code.py 自动拆成每文件一个卡片")
+
     compact_css = re.sub(r"\s+", " ", css)
     required_diff_css = {
         ".diff-card": "diff viewer 缺少 .diff-card 基础卡片样式",
         ".diff-header": "diff viewer 缺少 .diff-header 标题区样式",
+        ".diff-file": "diff viewer 缺少 .diff-file 文件名样式",
         ".diff-scroll": "diff viewer 缺少 .diff-scroll 横向滚动容器样式",
         ".diff-viewer .diff-table": "diff viewer 缺少固定表格样式",
         ".diff-viewer .diff-gutter": "diff viewer 缺少紧凑 +/- 轨道样式",
@@ -391,6 +422,26 @@ def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
         if fragment not in compact_css:
             errors.append(message)
 
+    return errors
+
+
+def check_table_support(parser: ReportParser, css: str) -> list[str]:
+    """普通表格必须复用基础组件，保证完整网格线和窄屏滚动。"""
+
+    if not parser.regular_table_lines:
+        return []
+
+    errors: list[str] = []
+    if not css_rule_has(css, (".table-wrap",), ("overflow-x: auto",)):
+        errors.append("报告包含普通表格，但 .table-wrap 缺少 overflow-x: auto 横向滚动保护")
+    if not css_rule_has(css, (".table-wrap table:not(.diff-table)",), ("border-collapse: collapse",)):
+        errors.append("报告包含普通表格，但基础表格规则缺少 border-collapse: collapse")
+    if not css_rule_has(
+        css,
+        (".table-wrap table:not(.diff-table) th", ".table-wrap table:not(.diff-table) td"),
+        ("border: 1px solid",),
+    ):
+        errors.append("报告包含普通表格，但 th/td 缺少完整 1px 网格线；不能只设置 border-bottom")
     return errors
 
 
@@ -974,6 +1025,7 @@ def validate_with_warnings(path: Path, require_review_pack: bool = False) -> tup
     warnings: list[str] = []
     errors.extend(check_document_chrome(parser))
     css = "\n".join(parser.style_chunks)
+    errors.extend(check_table_support(parser, css))
     errors.extend(check_code_wrap_blocks(html, css))
     errors.extend(check_diff_viewer_blocks(html, css))
     errors.extend(check_raw_unified_diff_outside_viewer(html))
@@ -1001,7 +1053,7 @@ def validate(path: Path) -> list[str]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="校验 html-report 单文件 HTML 的代码块、Review Workspace、外部依赖和已使用的媒体资源。"
+        description="校验 html-report 单文件 HTML 的表格、代码/diff、Review Workspace、外部依赖和已使用的媒体资源。"
     )
     parser.add_argument("html", help="待检查的 HTML 文件路径。")
     parser.add_argument(

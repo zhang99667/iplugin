@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.5.2
+version: 0.5.3
 tags:
   - report
   - html
@@ -22,18 +22,18 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `references/artifact-patterns.md`：按报告类型检查必要内容覆盖。当前覆盖技术方案、技术调研、问题排查/修复方案、代码评审、验收报告、选型对比、项目总结七个高频场景；它是覆盖清单，不是固定章节模板。
 - `references/visual-rules.md`：视觉原则、变更标识、文件定位链接、超长路径省略展示、目录导航、ASCII/代码块、交互组件、场景速查。
 - `references/css-template.md`：CSS 组件装配规则、HTML 骨架和少量 JS 片段。只有开始写 HTML 文件时再读取；它会按内容路由到 `references/css/*.css`。
-- `references/css/*.css`：组件化 CSS 源文件。`base.css` 与 `interactions.css` 是默认组合；`code-diff.css`、`media.css`、`diagram.css`、`toc.css`、`tabs.css`、`sortable-table.css` 按内容需要读取并内联进最终 HTML。
+- `references/css/*.css`：组件化 CSS 源文件。`base.css` 与 `interactions.css` 是默认组合；`base.css` 已内置普通表格的完整网格线与滚动容器，`code-diff.css`、`media.css`、`diagram.css`、`toc.css`、`tabs.css`、`sortable-table.css` 按内容需要读取并内联进最终 HTML。
 - `references/review-workspace.md`：代码评审需要多个文件的 2 到 3 份完整源码并排审阅，或用户要求复用“三方 Review Workspace / 审阅台”时读取；它定义适用边界、JSON 规格、构建流程和与真实 diff 的分工。
 - `references/css/review-workspace.css`：Review Workspace 的文件导航、多版本源码窗格、响应式和打印样式；使用时必须同时内联 `code-diff.css`。
 - `assets/review-workspace/workspace.js`：Review Workspace 离线交互 runtime；通常由 `build_review_workspace.py` 自动内联，不要手写或业务化复制。
 - `references/annotation-mode.md`：当用户要求离线评论模式（兼容旧称“审核模式”）、把评论结果写回 HTML、按内嵌批注更新报告或导出无批注发布版时读取。
 - `assets/annotation-mode/`：评论模式的 CSS、HTML 容器和 JS 资产。普通生成报告时不要读取；维护评论 UI 或发布版剥离逻辑时再修改这些文件，最终仍由 `inject_annotation_mode.py` 内联成单文件 HTML。
 - `../svg-tech-diagram/SKILL.md`：当报告需要复杂技术架构图、流程图、状态图或模块关系图时读取；由它负责 SVG 图的信息结构、绘制、PNG 渲染自审和可内联交付。
-- `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、Objective-C / Swift / C-family 等语言片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`。
+- `scripts/highlight_code.py`：代码片段 HTML 转义和基础高亮脚本。报告包含代码、SQL、XML、JSON、配置片段、Objective-C / Swift / C-family 等语言片段、shell 命令或 diff 时必须用它生成可嵌入的 `.code-wrap` 片段；默认使用零依赖 `builtin` 引擎，复杂代码可用 `--engine auto` 尝试本机 Pygments 静态预渲染，不能静默安装依赖；展示 unified diff 修改点时使用 `--diff-view`，多文件 patch 会自动输出每文件一个 `.diff-card`。
 - `scripts/build_review_workspace.py`：按 JSON 规格读取 2 到 3 份源码快照，生成安全静态高亮并输出可内联 Workspace 片段；不要手工拼含源码的 JSON `<script>`。
 - `scripts/inject_annotation_mode.py`：当需要评论模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线评论 UI、评论结果内嵌交接、Markdown 兜底和无批注发布版导出能力；不要手写批注 JS。
-- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、稳定 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
-- `evals/evals.json`：html-report 的回归用例清单。只有评估或维护 skill 质量时读取，不参与普通报告生成；当前覆盖代码评审、问题排查、技术方案、聚焦 diff、多版本 Review Workspace、Android mock 验收、评论模式和既有知识文档结构保真。
+- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、普通表格滚动容器与完整网格线、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、每文件独立 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
+- `evals/evals.json`：html-report 的回归用例清单。只有评估或维护 skill 质量时读取，不参与普通报告生成；当前覆盖代码评审、问题排查、技术方案、聚焦 diff、多版本 Review Workspace、Android mock 验收、评论模式、既有知识文档结构保真和基础组件稳定性。
 
 ## 触发边界
 
@@ -64,8 +64,8 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 4. 读取 `references/visual-rules.md`，选择必要的视觉结构和交互。保持克制，不为装饰添加复杂交互。
 5. 报告需要复杂技术架构图、流程图、状态图或模块关系图时，读取 `../svg-tech-diagram/SKILL.md` 及其相关 references，生成可内联 SVG；该图必须先渲染 PNG 并完成自审，再嵌入 HTML。
 6. 代码评审需要多文件、2 到 3 版本完整源码审阅，或用户明确要求 Workspace / 审阅台时，读取 `references/review-workspace.md`，准备源码快照和 JSON 规格，再用 `scripts/build_review_workspace.py` 生成组件；Workspace 放在 Findings / 改动概览之后，不能替代真实 unified diff。
-7. 报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时，先用 `scripts/highlight_code.py` 生成高亮 HTML 片段，再嵌入报告；不要手写裸 `<pre><code>`。最终 `<style>` 必须内联 `references/css/code-diff.css`。
-8. 写 HTML 文件前读取 `references/css-template.md`，按组件清单读取需要的 `references/css/*.css` 并内联到单文件 HTML；长文档目录必须默认展开，并能点击按钮收起/展开整个目录侧栏。
+7. 报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时，先用 `scripts/highlight_code.py` 生成高亮 HTML 片段，再嵌入报告；不要手写裸 `<pre><code>`。最终 `<style>` 必须内联 `references/css/code-diff.css`。多文件 unified diff 直接把完整 patch 交给 `--diff-view`，由脚本自动拆成每文件一张卡片，不要把脚本输出重新合并。
+8. 写 HTML 文件前读取 `references/css-template.md`，按组件清单读取需要的 `references/css/*.css` 并内联到单文件 HTML；所有普通表格使用 `.table-wrap > table` 结构并复用 `base.css` 的完整网格线，`.diff-table` 不套普通表格规则；长文档目录必须默认展开，并能点击按钮收起/展开整个目录侧栏。
 9. 如果用户要求离线评论模式（包括旧称“审核模式”）或希望把 HTML 中的意见交给 Agent，先运行基础校验，再读取 `references/annotation-mode.md`，执行 `python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>` 注入评论模式。评论完成后由页面的 `保存评论结果到 HTML` 把结构化批注直接内嵌回单文件。
    - 如果用户说已经在 HTML 中完成批注并要求更新，先执行 `check_html_report.py <html-file> --require-review-pack`；缺包、坏包或多包时停止修改并请用户重新保存正确评论版，不能静默当作零批注。
 10. 完成前运行 `python3 skills/html-report/scripts/check_html_report.py <html-file>`；若失败，修正 HTML 后重跑直到通过。
@@ -85,6 +85,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 报告内容必须来自用户内容或可靠上下文，不编造仓库、负责人、日期、卡片号、上线计划或收益数据。
 - 代码高亮、长文档目录、响应式和打印样式的细节按 `references/visual-rules.md`、`references/css-template.md` 和对应 `references/css/*.css` 执行；最终必须通过 `scripts/check_html_report.py`。
 - 多版本 Review Workspace 只在完整源码关系确实影响判断时加入，限制为 2 到 3 个版本；数据必须由 `build_review_workspace.py` 做行号校验、静态高亮和 raw-text 安全转义。
+- 普通表格必须放进 `.table-wrap`，表头和单元格显示完整 1px 网格线；只画横向底线不算合格。Diff viewer 自带 `.diff-table` 专用样式，不继承普通表格网格线。
 
 ## 核心原则
 
@@ -98,7 +99,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 支持语言和常见别名以 `python3 skills/html-report/scripts/highlight_code.py --list-langs` 输出为准；不要在 references 或校验脚本里维护第二份完整语言清单。
 - 使用 `tok-*` class 的 builtin 高亮时，最终 HTML 的 `<style>` 必须包含 `references/css/code-diff.css` 里的 `.tok-*` 样式；缺少 token CSS 会导致代码实际无高亮。
 - Markdown 来源中的反引号行内代码必须渲染成 `<code>...</code>`，例如 `` `d` `` 或 `` `support_full_screen` `` 不能作为原始反引号文本留在 HTML 正文里。
-- 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，并原样嵌入输出片段，不要手写 diff 表格、不要拆成普通 `<pre>`、不要把 diff 降级成 `language-diff` 或 `language-text` 代码块。
+- 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，并原样嵌入输出片段，不要手写 diff 表格、不要拆成普通 `<pre>`、不要把 diff 降级成 `language-diff` 或 `language-text` 代码块。输入包含多个文件时，脚本必须输出每文件一个带 `.diff-file` 标题的卡片。
 - 宽表格、代码块、ASCII 图和长路径必须在窄屏/分屏下可横向滚动或换行，不允许把正文撑出视口。
 - 超长文件定位链接的展示文本可以用 `...` 省略中间目录，但必须保留仓库/模块语义、完整文件名和行号，实际 `href` 跳转与 `title` 仍保留完整定位。
 - 如果用户指定其他视觉风格，以用户的新要求为准。

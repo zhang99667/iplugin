@@ -24,18 +24,18 @@
       border-radius: 8px;
       padding: 20px;
     }
-    .table-scroll {
+    .table-wrap {
       overflow-x: auto;
       margin-top: 16px;
     }
-    table {
+    .table-wrap table:not(.diff-table) {
       width: 100%;
       min-width: 560px;
       border-collapse: collapse;
       background: #ffffff;
     }
-    th,
-    td {
+    .table-wrap table:not(.diff-table) th,
+    .table-wrap table:not(.diff-table) td {
       border: 1px solid #d8e0ea;
       padding: 10px 12px;
       text-align: left;
@@ -75,7 +75,7 @@
     </section>
     <section>
       <h2>验证范围</h2>
-      <div class="table-scroll">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>

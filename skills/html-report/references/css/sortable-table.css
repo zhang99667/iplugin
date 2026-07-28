@@ -1,5 +1,5 @@
-/* 可排序表格 CSS：5 行以上的数据表才内联，短表格保持普通静态表格。 */
-.tbl-wrap {
+/* 可排序表格 CSS：5 行以上的数据表才内联，基础网格线继续复用 base.css。 */
+.table-wrap {
   overflow-x: auto;
   margin: 12px 0;
 }

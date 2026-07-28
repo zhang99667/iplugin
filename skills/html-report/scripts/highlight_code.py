@@ -1119,6 +1119,8 @@ def highlight_diff(source: str) -> str:
 
 
 HUNK_RE = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+DIFF_FILE_HEADER_RE = re.compile(r"(?m)^diff --git ")
+UNIFIED_FILE_PAIR_RE = re.compile(r"(?m)^--- [^\n]+\n\+\+\+ [^\n]+")
 
 
 def highlight_diff_code(code: str, lang: str) -> str:
@@ -1158,8 +1160,44 @@ def render_diff_note(row_class: str, code: str) -> str:
     )
 
 
-def render_diff_viewer(source: str) -> str:
-    """把 unified diff 渲染成类似代码评审工具的静态 HTML 视图。"""
+def split_unified_diff_files(source: str) -> list[str]:
+    """按 Git 或标准 unified 文件头拆分 patch，保证每个文件拥有独立 diff 卡片。"""
+
+    starts = [match.start() for match in DIFF_FILE_HEADER_RE.finditer(source)]
+    if not starts:
+        # 非 Git 工具常只输出连续的 ---/+++ 文件头，同样需要按文件拆卡片。
+        starts = [match.start() for match in UNIFIED_FILE_PAIR_RE.finditer(source)]
+    if len(starts) <= 1:
+        return [source]
+
+    # git diff 可能带少量前导说明；它属于第一份文件，不能在拆分时静默丢弃。
+    starts[0] = 0
+    return [source[start:end].rstrip("\n") for start, end in zip(starts, starts[1:] + [len(source)])]
+
+
+def diff_display_path(source: str) -> str:
+    """提取 diff 的新文件路径，用于卡片标题和快速定位。"""
+
+    candidates: list[str] = []
+    for prefix in ("+++ ", "--- "):
+        candidates.extend(line[len(prefix) :] for line in source.splitlines() if line.startswith(prefix))
+        for candidate in candidates:
+            path = candidate.split("\t", 1)[0].strip().strip('"')
+            if path not in {"/dev/null", "dev/null"}:
+                return path[2:] if path.startswith(("a/", "b/")) else path
+        candidates.clear()
+
+    header = next((line for line in source.splitlines() if line.startswith("diff --git ")), "")
+    if header:
+        parts = header.split()
+        if len(parts) >= 4:
+            path = parts[3].strip('"')
+            return path[2:] if path.startswith("b/") else path
+    return "未识别文件"
+
+
+def render_diff_viewer_block(source: str) -> str:
+    """把单个文件的 unified diff 渲染成静态 HTML 卡片。"""
 
     rows: list[str] = []
     old_line: int | None = None
@@ -1217,10 +1255,13 @@ def render_diff_viewer(source: str) -> str:
     if not rows:
         rows.append(render_diff_note("diff-meta", ""))
 
+    display_path = diff_display_path(source)
+
     return (
         '<section class="diff-card diff-viewer">\n'
         '  <div class="diff-header">\n'
         '    <span class="change-chip change-mod">代码差异</span>\n'
+        f'    <span class="diff-file" title="{html.escape(display_path, quote=True)}">{html.escape(display_path)}</span>\n'
         '    <span class="muted">统一 diff · old/new 行号</span>\n'
         "  </div>\n"
         '  <div class="diff-scroll">\n'
@@ -1233,6 +1274,12 @@ def render_diff_viewer(source: str) -> str:
         "  </div>\n"
         "</section>"
     )
+
+
+def render_diff_viewer(source: str) -> str:
+    """渲染 unified diff；多文件 patch 自动输出每文件一个独立卡片。"""
+
+    return "\n\n".join(render_diff_viewer_block(block) for block in split_unified_diff_files(source))
 
 
 XML_TOKEN_RE = re.compile(r"<!--[\s\S]*?-->|<[^>]+>")

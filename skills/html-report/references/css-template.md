@@ -8,7 +8,7 @@
 
 默认内联顺序：
 
-1. `references/css/base.css`：所有报告必选。提供页面、卡片、正式抬头、路径 chip、行内 `<code>`、基础响应式和打印兜底。
+1. `references/css/base.css`：所有报告必选。提供页面、卡片、正式抬头、路径 chip、行内 `<code>`、普通表格完整网格线、基础响应式和打印兜底。
 2. `references/css/interactions.css`：默认加入。提供 `<details>` 折叠区和 toast 反馈。
 3. `references/css/code-diff.css`：报告包含多行代码、日志、SQL、XML、JSON、配置、shell、ASCII 图或真实 unified diff 时加入。它提供 `.code-wrap`、复制按钮、`tok-*`、`.ascii-diagram` 和 `.diff-card.diff-viewer`。
 4. `references/css/review-workspace.css`：代码评审需要多文件的 2 到 3 版本完整源码审阅时加入；必须同时加入 `code-diff.css`，并用 `scripts/build_review_workspace.py` 生成 HTML 片段和内联 runtime。
@@ -16,9 +16,24 @@
 6. `references/css/diagram.css`：报告内联 SVG 技术图，或使用 `.diagram-block` 承载宽架构图时加入。
 7. `references/css/toc.css`：长文档需要左侧目录并支持整体收起时加入。
 8. `references/css/tabs.css`：只有 2 到 3 个并列视角需要标签页时加入。
-9. `references/css/sortable-table.css`：5 行以上数据表需要点击表头排序时加入。
+9. `references/css/sortable-table.css`：5 行以上数据表需要点击表头排序时加入；只增加排序交互，网格线仍来自 `base.css`。
 
 选择组件时保持按需：不要因为组件存在就全部塞进报告。`base.css` 与 `interactions.css` 是默认组合；其他组件由内容决定。
+
+### 普通表格硬契约
+
+所有非 diff 的普通表格都使用同一结构，禁止为单张表临时手写另一套边框：
+
+```html
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>项目</th><th>结论</th></tr></thead>
+    <tbody><tr><td>示例</td><td>通过</td></tr></tbody>
+  </table>
+</div>
+```
+
+`base.css` 会给 `th` / `td` 提供完整 1px 网格线，并给 `.table-wrap` 提供窄屏横向滚动。只设置 `border-bottom`、使用其他 wrapper 名称或把普通表格裸放在正文中都会被 `check_html_report.py` 拒绝。`.diff-table` 使用 `code-diff.css` 的专用样式，不套普通表格网格线。
 
 ## 2. 代码与 diff 组件规则
 
@@ -35,7 +50,7 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 python3 skills/html-report/scripts/highlight_code.py --list-langs
 ```
 
-脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用 `tok-*` class 做基础语法高亮。真实 unified diff 必须使用 `--diff-view` 输出 `.diff-card.diff-viewer`，把脚本输出的 `<section class="diff-card diff-viewer">...</section>` 原样嵌入正文，不要再包成 `.code-wrap`。
+脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用 `tok-*` class 做基础语法高亮。真实 unified diff 必须使用 `--diff-view` 输出 `.diff-card.diff-viewer`，把脚本输出的 `<section class="diff-card diff-viewer">...</section>` 原样嵌入正文，不要再包成 `.code-wrap`。完整 patch 含多个 Git 或标准 unified 文件头时，脚本会自动输出多张卡片，并用 `.diff-file` 标注各自文件；不要预先拼接组件，也不要事后把多个文件塞回同一张卡片。
 
 支持语言和常见别名以 `--list-langs` 的 JSON 输出为准。新增语言时先更新 `highlight_code.py` 的语言注册表，再由校验脚本和文档读取同一份结果，避免多处旧清单残留。
 

@@ -1,6 +1,6 @@
 {
   "skill_name": "html-report",
-  "description": "html-report 的高频输出回归集，覆盖内容完整性、结构保真、证据链、diff viewer、2-3 版本 Review Workspace、媒体证据占位和评论模式。",
+  "description": "html-report 的高频输出回归集，覆盖内容完整性、结构保真、证据链、稳定表格、每文件独立 diff viewer、2-3 版本 Review Workspace、媒体证据占位和评论模式。",
   "evals": [
     {
       "id": 1,
@@ -15,7 +15,7 @@
         "输出是可直接打开的 .html 文件，且通过 python3 skills/html-report/scripts/check_html_report.py <html-file>。",
         "Findings 按 P0/P1/P2 或等价严重级别排序，并且排在改动概览之前。",
         "每条主要发现包含文件定位、问题、影响、证据和建议修复。",
-        "unified diff 使用 highlight_code.py --lang diff --diff-view 生成的 .diff-card.diff-viewer，不出现 raw diff 或 language-diff 代码块。",
+        "unified diff 使用 highlight_code.py --lang diff --diff-view 生成的 .diff-card.diff-viewer，不出现 raw diff 或 language-diff 代码块；输入中的两个文件各自使用一张带 .diff-file 标题的卡片。",
         "报告包含测试缺口或回归建议，不把缺失测试描述成已验证。"
       ]
     },
@@ -46,7 +46,7 @@
       ],
       "expectations": [
         "报告能识别主题、范围和可靠元信息，并覆盖背景、方案、接口与数据结构、模块改动、影响面、风险与验证；允许按材料改名、排序或合并章节。",
-        "接口字段、状态或配置契约使用表格或代码块呈现，且不混入未提供字段。",
+        "接口字段、状态或配置契约使用表格或代码块呈现，且不混入未提供字段；普通表格位于 .table-wrap 中并显示完整网格线。",
         "输入包含真实代码或配置改动时提供文件定位和聚焦 diff；只有建议代码时明确标成拟修改，不伪造真实 diff。",
         "模块改动和影响面有清晰对应关系。",
         "验证与回滚策略覆盖正常路径、异常路径和兼容场景。",
@@ -78,7 +78,7 @@
         "evals/fixtures/android_mock_acceptance_cases.md"
       ],
       "expectations": [
-        "报告包含总体结论、验收范围、环境前置条件、case 矩阵、逐 case 证据和待补充项。",
+        "报告包含总体结论、验收范围、环境前置条件、case 矩阵、逐 case 证据和待补充项；case 矩阵位于 .table-wrap 中并显示完整网格线。",
         "截图/录屏缺失时使用文字占位或待补证据卡，不引用不存在的图片或视频文件。",
         "case 结果不只靠颜色表达，必须有明确文本状态。",
         "mockserver 命中、adb 验证或接口证据在矩阵或证据区中可追溯。",
@@ -161,6 +161,23 @@
         "生命周期清理、窗口缺口、只补历史前序和不改变充足窗口四项关键事实均有明确说明。",
         "概念伪代码由 highlight_code.py 生成 .code-wrap，明确是概念方案而不伪装成真实 unified diff。",
         "文件定位、未确认项或来源放在自然相关位置，内容完整性没有因保留原结构而下降。",
+        "输出通过 check_html_report.py，保持单文件、响应式、打印和离线约束。"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "component-stability-table-and-multi-file-diff",
+      "prompt": "基于输入的 review context 和两文件 unified diff 生成 HTML 评审报告。Findings 矩阵和验证矩阵使用普通表格，真实 diff 使用标准 viewer；每个源文件必须单独一张 Diff 卡片，不要把两个文件放进同一块。",
+      "expected_output": "生成单文件 HTML 报告并通过 check_html_report.py。普通表格使用统一完整网格线和横向滚动容器，两文件 patch 由 highlight_code.py 自动拆成两张带文件名的 Diff 卡片。",
+      "files": [
+        "evals/fixtures/code_review_context.md",
+        "evals/fixtures/code_review_patch.diff"
+      ],
+      "expectations": [
+        "所有普通表格都包在 .table-wrap 中，th/td 使用完整 1px 网格线，不能只有 border-bottom。",
+        "完整两文件 patch 一次交给 highlight_code.py --lang diff --diff-view，不手工拆写或拼装 diff 表格。",
+        "最终 HTML 恰有两张 .diff-card.diff-viewer，分别标注 FeedDetailViewModel.kt 和 FeedBridge.m。",
+        "任一 diff viewer 都只包含一个文件头，不把多个文件混入同一卡片。",
         "输出通过 check_html_report.py，保持单文件、响应式、打印和离线约束。"
       ]
     }
