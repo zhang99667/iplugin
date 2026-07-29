@@ -35,11 +35,13 @@ HTML_REPORT_ANNOTATION_ASSETS = {
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.css": (
         "QA_ANNOTATION_CSS_START",
         "QA_ANNOTATION_CSS_END",
+        ".qa-shortcut-hint",
     ),
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.html": (
         "QA_ANNOTATION_HTML_START",
         "QA_ANNOTATION_HTML_END",
         'id="qaSaveReviewHtml"',
+        '<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>',
     ),
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.js": (
         "QA_ANNOTATION_SCRIPT_START",

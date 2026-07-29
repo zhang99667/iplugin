@@ -1,3 +1,8 @@
+## [0.22.15] - 2026-07-29
+### Changed
+- html-report: 批注输入浮层的提交按钮新增可见 `Ctrl/⌘ + Enter` 快捷键标识，并保留 `aria-keyshortcuts` 与原有键盘提交行为
+- html-report: 校验器和 eval 新增快捷键提示可见性门禁；skill 版本从 `0.6.0` 升级到 `0.6.1`，插件升级到 `0.22.15`
+
 ## [0.22.14] - 2026-07-29
 ### Added
 - html-report: 新增统一组件注册表和 `assemble_report.py`，自动检测页面组件、递归解析依赖并幂等内联 CSS/JS

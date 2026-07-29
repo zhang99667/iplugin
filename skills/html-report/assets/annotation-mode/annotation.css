@@ -195,6 +195,23 @@
       font-weight: 800;
     }
     .qa-small-btn { min-height: 32px; padding: 6px 12px; }
+    .qa-composer .qa-small-btn.primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .qa-shortcut-hint {
+      padding: 2px 5px;
+      border: 1px solid rgba(255, 255, 255, .34);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, .14);
+      color: rgba(255, 255, 255, .88);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
     .qa-primary-btn,
     .qa-secondary-btn,
     .qa-danger-btn { min-height: 34px; padding: 7px 10px; }

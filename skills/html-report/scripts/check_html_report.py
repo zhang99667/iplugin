@@ -1023,7 +1023,7 @@ def check_annotation_mode(
         "cachedSelectionTarget": "评论模式必须缓存选区，避免点击气泡后选区丢失",
         "syncAnnotatedState": "评论模式必须在保存、删除、清空后同步正文高亮和边框状态",
         "removeAllRanges": "评论模式删除批注后必须清理浏览器选区，避免正文残留选中态",
-        ">提交<": "批注输入浮层只保留一个“提交”按钮",
+        'id="qaComposerSave"': "批注输入浮层缺少唯一提交按钮",
         'aria-keyshortcuts="Meta+Enter Control+Enter"': "批注输入浮层必须声明 ⌘/Ctrl + Enter 提交快捷键",
         "composerText?.addEventListener('keydown'": "批注输入框缺少局部键盘快捷键监听",
         "isComposerSubmitShortcut": "批注输入浮层缺少快捷键提交判断",
@@ -1033,6 +1033,8 @@ def check_annotation_mode(
     # 接收上一版本已保存的评论包时允许旧 UI 文案；处理完成并重新注入后，普通校验会强制升级新名称。
     if not require_review_pack:
         required_fragments['<span class="qa-mode-chip">评论模式</span>'] = "评论模式标签缺失或仍使用旧名称"
+        required_fragments['<span class="qa-submit-label">提交</span>'] = "批注输入浮层只保留一个“提交”按钮"
+        required_fragments['<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>'] = "批注提交按钮必须显示 Ctrl/⌘ + Enter 快捷键提示"
         required_fragments["保存评论结果到 HTML"] = "批注侧栏必须把 HTML 内嵌交接作为主要评论操作"
         required_fragments["reconcileAnnotationTargets"] = "评论模式必须在加载和保存前迁移或识别失效的正文定位"
         required_fragments["findAnnotationElementByText"] = "评论模式缺少按原文唯一匹配旧评论位置的回退逻辑"
@@ -1077,6 +1079,7 @@ def check_annotation_mode(
         ".qa-panel-open": "评论模式缺少右侧栏打开时的正文避让样式",
     }
     if not require_review_pack:
+        required_css[".qa-shortcut-hint"] = "批注提交按钮缺少可见快捷键提示样式"
         required_css[".qa-card.location-missing"] = "评论模式缺少失效定位卡片的警示样式"
         required_css[".qa-location-warning"] = "评论模式缺少失效定位提示样式"
     for fragment, message in required_css.items():

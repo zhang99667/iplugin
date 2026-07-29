@@ -30,6 +30,10 @@ def load_module(name: str, path: Path):
 highlight_code = load_module("html_report_highlight_code_test", SKILL_DIR / "scripts" / "highlight_code.py")
 check_html_report = load_module("html_report_check_test", SKILL_DIR / "scripts" / "check_html_report.py")
 assemble_report = load_module("html_report_assemble_test", SKILL_DIR / "scripts" / "assemble_report.py")
+inject_annotation_mode = load_module(
+    "html_report_annotation_test",
+    SKILL_DIR / "scripts" / "inject_annotation_mode.py",
+)
 sys.modules["highlight_code"] = highlight_code
 sys.modules["assemble_report"] = assemble_report
 build_review_workspace = load_module(
@@ -39,6 +43,19 @@ build_review_workspace = load_module(
 
 
 class ReportComponentTest(unittest.TestCase):
+    def test_annotation_submit_button_exposes_keyboard_shortcut(self) -> None:
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-shortcut-report.html"),
+        )
+
+        self.assertIn('<span class="qa-submit-label">提交</span>', annotated)
+        self.assertIn('<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>', annotated)
+        self.assertIn('aria-keyshortcuts="Meta+Enter Control+Enter"', annotated)
+        self.assertEqual([], self.validate_html(annotated))
+
     def test_multi_file_diff_is_split_into_independent_cards(self) -> None:
         source = (SKILL_DIR / "evals" / "fixtures" / "code_review_patch.diff").read_text(encoding="utf-8")
 
