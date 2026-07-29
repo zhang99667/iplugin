@@ -122,6 +122,33 @@ class ReportComponentTest(unittest.TestCase):
 
         self.assertEqual([], self.validate_html(html))
 
+    def test_base_tag_has_default_contrast_and_print_fallback(self) -> None:
+        css = self.component_css("base")
+        html = self.report_html(css, '<p><span class="tag">推荐方案</span> 使用已曝光内容</p>')
+
+        self.assertTrue(check_html_report.css_rule_has(css, (".tag",), ("background: #475569", "color: #ffffff")))
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".tag",),
+                ("background: #f3f4f6", "color: #111827", "border: 1px solid #d1d5db"),
+            )
+        )
+        self.assertEqual([], self.validate_html(html))
+
+    def test_tag_without_default_background_is_rejected(self) -> None:
+        css = """
+        * { box-sizing: border-box; }
+        .tag { color: #ffffff; }
+        @media (max-width: 720px) { body { margin: 0; } }
+        @media print { body { color: #000000; } }
+        """
+        html = self.report_html(css, '<p><span class="tag">推荐方案</span> 使用已曝光内容</p>')
+
+        errors = self.validate_html(html)
+
+        self.assertTrue(any("默认规则未同时设置 background 和 color" in error for error in errors))
+
     def test_table_without_wrapper_rounded_frame_or_full_grid_is_rejected(self) -> None:
         css = """
         * { box-sizing: border-box; }

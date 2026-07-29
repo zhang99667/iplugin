@@ -741,6 +741,17 @@ def check_table_support(parser: ReportParser, css: str) -> list[str]:
     return errors
 
 
+def check_tag_support(html: str, css: str) -> list[str]:
+    """状态标签必须自带前景与背景兜底，避免漏写变体类时出现白底白字。"""
+
+    if not has_class(html, "tag"):
+        return []
+
+    if not css_rule_has(css, (".tag",), ("background:", "color:")):
+        return ["报告使用 .tag 标签，但默认规则未同时设置 background 和 color；漏写 p0/p1/p2 时文字可能不可见"]
+    return []
+
+
 def check_raw_unified_diff_outside_viewer(html: str) -> list[str]:
     without_diff_viewers = DIFF_VIEWER_RE.sub("", html)
     if looks_like_unified_diff(fragment_text(without_diff_viewers)):
@@ -1349,6 +1360,7 @@ def validate_with_warnings(path: Path, require_review_pack: bool = False) -> tup
     errors.extend(check_behavior_component_markup(html))
     errors.extend(check_file_location_links(html))
     errors.extend(check_table_support(parser, css))
+    errors.extend(check_tag_support(html, css))
     errors.extend(check_code_wrap_blocks(html, css))
     errors.extend(check_diff_viewer_blocks(html, css))
     errors.extend(check_raw_unified_diff_outside_viewer(html))
