@@ -1,3 +1,10 @@
+## [0.22.20] - 2026-07-29
+### Added
+- html-report: 新增隔离 Eval Runner，支持独立任务 Agent 与 grader 自动执行、确定性 HTML 校验、逐项证据评分和多轮通过率汇总
+
+### Changed
+- html-report: 评测任务完成后才生成 grader rubric，并用输入、skill 快照和提交物哈希阻止 expectations 泄露与跨轮污染；skill 版本从 `0.6.5` 升级到 `0.7.0`，插件升级到 `0.22.20`
+
 ## [0.22.19] - 2026-07-29
 ### Changed
 - html-report: 评论卡片的提问/注释徽标禁止 flex 收缩和换行，长章节标题承担换行，避免窄卡片中两个字被挤成竖排
