@@ -89,7 +89,7 @@
       "id": 6,
       "name": "annotation-mode-publish-validation",
       "prompt": "请把输入的普通 HTML 报告升级为离线评论版：先运行 check_html_report.py 校验原始 HTML，通过后使用 inject_annotation_mode.py 注入评论模式，再重新运行 check_html_report.py。输出评论版 HTML 路径，并说明保存评论结果到 HTML 和导出无批注版入口是否存在；说明新注入但尚未保存批注的文件不应伪造评论包，用户保存后 Agent 应如何用 --require-review-pack 验证交接。不要手写评论 JS。",
-      "expected_output": "生成或更新评论版 HTML，并通过注入前和注入后的校验。评论版包含批注侧栏、选中文本提问、带可见 Ctrl/⌘ + Enter 快捷键标识的提交按钮、把 AgentQuestionPack 内嵌回 HTML 的保存能力、Markdown 兜底和导出无批注版入口；能区分新注入评论版与已保存含包评论版。",
+      "expected_output": "生成或更新评论版 HTML，并通过注入前和注入后的校验。评论版的选区气泡只有一个注释入口，输入浮层包含带可见 Ctrl/⌘ + Enter 快捷键标识的提交按钮；页面保留批注侧栏、把 AgentQuestionPack 内嵌回 HTML 的保存能力、Markdown 兜底和导出无批注版入口，并能区分新注入评论版与已保存含包评论版。",
       "files": [
         "evals/fixtures/annotation_source_report.html",
         "evals/fixtures/annotation_review_notes.md"
@@ -97,6 +97,7 @@
       "expectations": [
         "执行记录或报告说明中体现原始 HTML 先通过 check_html_report.py。",
         "评论模式由 skills/html-report/scripts/inject_annotation_mode.py 注入，而不是手写评论脚本。",
+        "选中文本后的轻量气泡只保留一个注释按钮，不并列展示提问和批注类型选择。",
         "批注输入浮层的提交按钮内显示 Ctrl/⌘ + Enter 快捷键标识，并保留 aria-keyshortcuts。",
         "注入后再次通过 check_html_report.py。",
         "评论版包含保存评论结果到 HTML、Markdown 兜底、导出无批注版和编辑已有批注能力，不再提供独立下载 JSON 入口。",

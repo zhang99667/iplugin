@@ -148,11 +148,11 @@
         const selectionTarget = preferCachedSelection ? (cachedSelectionTarget || buildTargetFromSelection()) : buildTargetFromSelection();
         if (action === 'ask-selection' || action === 'note-selection') {
           const target = selectionTarget || buildTargetFromElement(lastContextTarget);
-          openComposer(target, action === 'ask-selection' ? '提问' : '批注');
+          openComposer(target, action === 'ask-selection' ? '提问' : '注释');
           return;
         }
         if (action === 'ask-block' || action === 'note-block') {
-          openComposer(buildTargetFromElement(lastContextTarget), action === 'ask-block' ? '提问' : '批注');
+          openComposer(buildTargetFromElement(lastContextTarget), action === 'ask-block' ? '提问' : '注释');
           return;
         }
         if (action === 'ask-section') {
@@ -166,10 +166,10 @@
         draftKind = kind || '提问';
         editingAnnotationId = options.editingId || null;
         const titlePrefix = editingAnnotationId ? '编辑' : '';
-        composerTitle.innerHTML = (draftKind === '批注' ? iconNote : iconQuestion) + '<span>' + titlePrefix + draftKind + '</span>';
+        composerTitle.innerHTML = (isNoteKind(draftKind) ? iconNote : iconQuestion) + '<span>' + titlePrefix + draftKind + '</span>';
         composerExcerpt.textContent = truncate(target.selectedText || target.blockText || '', 84);
         composerText.value = options.initialText || '';
-        composerText.placeholder = draftKind === '批注' ? '写下这段内容需要注意或修改的地方' : '写下你想让 Agent 回答的问题';
+        composerText.placeholder = isNoteKind(draftKind) ? '写下这段内容需要注意或修改的地方' : '写下你想让 Agent 回答的问题';
         positionComposer(target);
         composer.classList.add('show');
         setTimeout(() => composerText.focus(), 0);
@@ -526,7 +526,7 @@
         list.innerHTML = annotations.map(item => {
           const locationMissing = !findAnnotationElementById(item);
           return `
-          <article class="qa-card ${item.kind === '批注' ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''}" data-qa-id="${escapeAttr(item.id)}">
+          <article class="qa-card ${isNoteKind(item.kind) ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''}" data-qa-id="${escapeAttr(item.id)}">
             <div class="qa-card-head">
               <span class="qa-kind">${escapeHtml(item.kind || '提问')}</span>
               <span class="qa-section">${escapeHtml(item.sectionTitle || '未命名章节')}</span>
@@ -842,14 +842,14 @@
             if (item.contextAfter) lines.push('- 后文：' + item.contextAfter);
           }
           lines.push('');
-          lines.push((item.kind === '批注' ? '我的批注：' : '我的问题：'));
+          lines.push((isNoteKind(item.kind) ? '我的注释：' : '我的问题：'));
           lines.push('');
           lines.push(item.text || item.question || '');
           lines.push('');
           lines.push('请 Agent 处理：');
           lines.push('');
-          lines.push(item.kind === '批注'
-            ? '请结合原文和上下文判断这条批注是否合理，并给出报告修改建议。'
+          lines.push(isNoteKind(item.kind)
+            ? '请结合原文和上下文判断这条注释是否合理，并给出报告修改建议。'
             : '请结合原文、上下文和报告结论解释这个问题。如果原报告存在表达不清、逻辑跳跃、证据不足或结论错误，请指出并给出修改建议。');
           lines.push('');
         });
@@ -899,8 +899,13 @@
           ''
         ];
         quoteMarkdown(selected).forEach(line => lines.push(line));
-        lines.push('', kind === '批注' ? '我的批注：' : '我的问题：', '', item.text || item.question || '', '', '请结合上下文处理。');
+        lines.push('', isNoteKind(kind) ? '我的注释：' : '我的问题：', '', item.text || item.question || '', '', '请结合上下文处理。');
         return lines.join('\n');
+      }
+
+      function isNoteKind(kind) {
+        // 兼容旧评论包中的“批注”，新建内容统一使用更简洁的“注释”。
+        return kind === '注释' || kind === '批注';
       }
 
       function quoteMarkdown(text) {

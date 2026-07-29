@@ -54,6 +54,12 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn('<span class="qa-submit-label">提交</span>', annotated)
         self.assertIn('<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>', annotated)
         self.assertIn('aria-keyshortcuts="Meta+Enter Control+Enter"', annotated)
+        popover_start = annotated.index('id="qaSelectionPopover"')
+        popover_end = annotated.index("</div>", popover_start)
+        popover = annotated[popover_start:popover_end]
+        self.assertEqual(1, popover.count("<button"))
+        self.assertIn('data-qa-action="note-selection"', popover)
+        self.assertIn("注释", popover)
         self.assertEqual([], self.validate_html(annotated))
 
     def test_multi_file_diff_is_split_into_independent_cards(self) -> None:

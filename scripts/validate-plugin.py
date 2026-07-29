@@ -41,6 +41,7 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "QA_ANNOTATION_HTML_START",
         "QA_ANNOTATION_HTML_END",
         'id="qaSaveReviewHtml"',
+        'data-qa-action="note-selection" title="添加注释"',
         '<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>',
     ),
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.js": (

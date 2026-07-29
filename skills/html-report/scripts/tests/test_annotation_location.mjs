@@ -37,6 +37,12 @@ const buildResolver = new Function(
   + "; return { findAnnotationElementByText };",
 );
 const { findAnnotationElementByText } = buildResolver();
+const buildKindMatcher = new Function(extractFunction("isNoteKind") + "; return { isNoteKind };");
+const { isNoteKind } = buildKindMatcher();
+
+assert.equal(isNoteKind("注释"), true, "新建内容应按注释类型展示");
+assert.equal(isNoteKind("批注"), true, "旧评论包的批注类型必须继续兼容");
+assert.equal(isNoteKind("提问"), false, "显式提问仍保留独立类型");
 
 
 /** 构造最小 DOM 包含关系，验证父级大容器不会抢占更精确的正文节点。 */
@@ -104,4 +110,4 @@ assert.equal(
   "章节信息可以把重复文本收敛到唯一候选",
 );
 
-console.log("PASS annotation location resolver");
+console.log("PASS annotation runtime helpers");

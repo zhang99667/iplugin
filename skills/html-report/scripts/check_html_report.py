@@ -1044,6 +1044,21 @@ def check_annotation_mode(
         if fragment not in annotation_scope:
             errors.append(message)
 
+    if not require_review_pack:
+        popover_match = re.search(
+            r'<div\b[^>]*\bid=["\']qaSelectionPopover["\'][^>]*>(.*?)</div>',
+            annotation_scope,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if not popover_match:
+            errors.append("评论模式缺少选中文本气泡")
+        else:
+            popover_html = popover_match.group(1)
+            if len(re.findall(r"<button\b", popover_html, re.IGNORECASE)) != 1:
+                errors.append("选中文本气泡必须只保留一个“注释”按钮")
+            if 'data-qa-action="note-selection"' not in popover_html or not re.search(r">\s*注释\s*</button>", popover_html):
+                errors.append("选中文本气泡唯一操作必须是“注释”")
+
     save_review_start = annotation_scope.find("async function saveReviewHtml()")
     save_review_end = annotation_scope.find("// 发布版只保留正文", save_review_start)
     if not require_review_pack and save_review_start >= 0 and save_review_end > save_review_start:
