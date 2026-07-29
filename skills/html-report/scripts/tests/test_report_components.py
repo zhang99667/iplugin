@@ -122,7 +122,7 @@ class ReportComponentTest(unittest.TestCase):
 
         self.assertEqual([], self.validate_html(html))
 
-    def test_table_without_wrapper_or_full_grid_is_rejected(self) -> None:
+    def test_table_without_wrapper_rounded_frame_or_full_grid_is_rejected(self) -> None:
         css = """
         * { box-sizing: border-box; }
         .table-wrap { overflow-x: auto; }
@@ -137,6 +137,7 @@ class ReportComponentTest(unittest.TestCase):
         errors = self.validate_html(html)
 
         self.assertTrue(any("未包在 .table-wrap" in error for error in errors))
+        self.assertTrue(any("缺少统一圆角外框" in error for error in errors))
         self.assertTrue(any("缺少完整 1px 网格线" in error for error in errors))
 
     def test_assembler_detects_components_and_is_idempotent(self) -> None:

@@ -1,7 +1,8 @@
-/* 普通表格 CSS：提供完整网格线、宽表滚动、隔行底色和打印边框。 */
+/* 普通表格 CSS：由统一外框提供圆角裁切、宽表滚动、完整网格线和打印边框。 */
 .table-wrap {
   max-width: 100%;
   margin: 14px 0;
+  border-radius: 12px;
   overflow-x: auto;
 }
 .table-wrap table:not(.diff-table) {

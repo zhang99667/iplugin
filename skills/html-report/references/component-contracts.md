@@ -36,8 +36,8 @@
 
 ## 3. 普通表格
 
-普通表格必须使用统一 wrapper。`table` 组件负责完整 1px 网格线和窄屏滚动，排序行为不再
-维护第二套表格外观。
+普通表格必须使用统一 wrapper。`table` 组件由 `.table-wrap` 负责小圆角外框裁切和窄屏滚动，
+单元格继续显示完整 1px 网格线；排序行为不再维护第二套表格外观。
 
 ```html
 <div class="table-wrap">
@@ -48,6 +48,7 @@
 </div>
 ```
 
+`.table-wrap` 是唯一外层视觉边界，不额外添加 wrapper 边框，避免与单元格外沿形成双线。
 `.diff-table` 属于 `diff-viewer`，不套普通表格规则。
 
 ## 4. IDE 文件定位

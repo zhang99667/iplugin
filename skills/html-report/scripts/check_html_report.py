@@ -720,7 +720,7 @@ def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
 
 
 def check_table_support(parser: ReportParser, css: str) -> list[str]:
-    """普通表格必须复用基础组件，保证完整网格线和窄屏滚动。"""
+    """普通表格必须复用基础组件，保证圆角外框、完整网格线和窄屏滚动。"""
 
     if not parser.regular_table_lines:
         return []
@@ -728,6 +728,8 @@ def check_table_support(parser: ReportParser, css: str) -> list[str]:
     errors: list[str] = []
     if not css_rule_has(css, (".table-wrap",), ("overflow-x: auto",)):
         errors.append("报告包含普通表格，但 .table-wrap 缺少 overflow-x: auto 横向滚动保护")
+    if not css_rule_has(css, (".table-wrap",), ("border-radius:",)):
+        errors.append("报告包含普通表格，但 .table-wrap 缺少统一圆角外框")
     if not css_rule_has(css, (".table-wrap table:not(.diff-table)",), ("border-collapse: collapse",)):
         errors.append("报告包含普通表格，但基础表格规则缺少 border-collapse: collapse")
     if not css_rule_has(

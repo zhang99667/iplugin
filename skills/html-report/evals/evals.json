@@ -46,7 +46,7 @@
       ],
       "expectations": [
         "报告能识别主题、范围和可靠元信息，并覆盖背景、方案、接口与数据结构、模块改动、影响面、风险与验证；允许按材料改名、排序或合并章节。",
-        "接口字段、状态或配置契约使用表格或代码块呈现，且不混入未提供字段；普通表格位于 .table-wrap 中并显示完整网格线。",
+        "接口字段、状态或配置契约使用表格或代码块呈现，且不混入未提供字段；普通表格位于 .table-wrap 中，显示统一圆角外框和完整网格线。",
         "输入包含真实代码或配置改动时提供文件定位和聚焦 diff；只有建议代码时明确标成拟修改，不伪造真实 diff。",
         "模块改动和影响面有清晰对应关系。",
         "验证与回滚策略覆盖正常路径、异常路径和兼容场景。",
@@ -78,7 +78,7 @@
         "evals/fixtures/android_mock_acceptance_cases.md"
       ],
       "expectations": [
-        "报告包含总体结论、验收范围、环境前置条件、case 矩阵、逐 case 证据和待补充项；case 矩阵位于 .table-wrap 中并显示完整网格线。",
+        "报告包含总体结论、验收范围、环境前置条件、case 矩阵、逐 case 证据和待补充项；case 矩阵位于 .table-wrap 中并显示统一圆角外框和完整网格线。",
         "截图/录屏缺失时使用文字占位或待补证据卡，不引用不存在的图片或视频文件。",
         "case 结果不只靠颜色表达，必须有明确文本状态。",
         "mockserver 命中、adb 验证或接口证据在矩阵或证据区中可追溯。",
@@ -170,13 +170,13 @@
       "id": 10,
       "name": "component-stability-table-and-multi-file-diff",
       "prompt": "基于输入的 review context 和两文件 unified diff 生成 HTML 评审报告。Findings 矩阵和验证矩阵使用普通表格，真实 diff 使用标准 viewer；每个源文件必须单独一张 Diff 卡片，不要把两个文件放进同一块。",
-      "expected_output": "生成单文件 HTML 报告并通过 check_html_report.py。普通表格使用统一完整网格线和横向滚动容器，两文件 patch 由 highlight_code.py 自动拆成两张带文件名的 Diff 卡片，最终由 assemble_report.py 自动装配 table、code-block 和 diff-viewer。",
+      "expected_output": "生成单文件 HTML 报告并通过 check_html_report.py。普通表格使用统一圆角外框、完整网格线和横向滚动容器，两文件 patch 由 highlight_code.py 自动拆成两张带文件名的 Diff 卡片，最终由 assemble_report.py 自动装配 table、code-block 和 diff-viewer。",
       "files": [
         "evals/fixtures/code_review_context.md",
         "evals/fixtures/code_review_patch.diff"
       ],
       "expectations": [
-        "所有普通表格都包在 .table-wrap 中，th/td 使用完整 1px 网格线，不能只有 border-bottom。",
+        "所有普通表格都包在带统一圆角裁切的 .table-wrap 中，th/td 使用完整 1px 网格线，不能只有 border-bottom。",
         "完整两文件 patch 一次交给 highlight_code.py --lang diff --diff-view，不手工拆写或拼装 diff 表格。",
         "最终 HTML 恰有两张 .diff-card.diff-viewer，分别标注 FeedDetailViewModel.kt 和 FeedBridge.m。",
         "任一 diff viewer 都只包含一个文件头，不把多个文件混入同一卡片。",
