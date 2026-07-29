@@ -378,13 +378,32 @@ main.rw-layout-wide {
 }
 
 @media (max-width: 620px) {
+  .review-workspace .rw-toolbar {
+    align-items: stretch;
+    padding: 10px 8px;
+  }
   .review-workspace .rw-overview-top { display: block; }
   .review-workspace .rw-reference {
     margin-top: 8px;
     text-align: left;
   }
-  .review-workspace .rw-toolbar > * { flex: 1 1 auto; }
-  .review-workspace .rw-search { flex-basis: 100%; }
+  .review-workspace .rw-toolbar > * {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    max-width: 100%;
+  }
+  .review-workspace .rw-search {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .review-workspace .rw-toolbar-spacer { display: none; }
+  .review-workspace .rw-progress {
+    flex-basis: 100%;
+    text-align: center;
+  }
+  .review-workspace .rw-overview { padding: 12px 8px; }
+  .review-workspace .rw-path { flex: 1 1 100%; }
 }
 
 @media print {

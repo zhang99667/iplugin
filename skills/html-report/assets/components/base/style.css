@@ -1,4 +1,4 @@
-/* 基础 CSS：所有 html-report 都应内联这一段，提供页面、卡片、路径 chip、行内 code、响应式和打印兜底。 */
+/* 基础 CSS：所有 html-report 都应内联，提供页面、卡片、路径 chip、行内 code、响应式和打印兜底。 */
 :root {
   --bg: #f6f8fb;
   --card: #ffffff;
@@ -64,29 +64,6 @@ p { margin: 8px 0; }
 .p0 { background: var(--p0); }
 .p1 { background: var(--p1); }
 .p2 { background: var(--p2); }
-.path {
-  display: inline-block;
-  background: #eef2ff;
-  color: #3730a3;
-  border-radius: 8px;
-  padding: 2px 8px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  max-width: 100%;
-  box-sizing: border-box;
-  word-break: normal;
-  overflow-wrap: anywhere;
-  text-decoration: none;
-}
-a.path.file-link {
-  cursor: pointer;
-  transition: background .15s, color .15s, box-shadow .15s;
-}
-a.path.file-link:hover {
-  background: #e0e7ff;
-  color: #312e81;
-  box-shadow: inset 0 0 0 1px rgba(67, 56, 202, .18);
-}
 .muted { color: var(--muted); }
 .doc-header {
   margin-bottom: 18px;
@@ -142,31 +119,6 @@ code {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
-.table-wrap {
-  max-width: 100%;
-  margin: 14px 0;
-  overflow-x: auto;
-}
-.table-wrap table:not(.diff-table) {
-  width: 100%;
-  min-width: 640px;
-  border-collapse: collapse;
-  background: #ffffff;
-  font-size: 14px;
-}
-.table-wrap table:not(.diff-table) th,
-.table-wrap table:not(.diff-table) td {
-  padding: 9px 10px;
-  border: 1px solid var(--border);
-  text-align: left;
-  vertical-align: top;
-}
-.table-wrap table:not(.diff-table) th {
-  background: #f1f5f9;
-  color: #111827;
-  font-weight: 700;
-}
-.table-wrap table:not(.diff-table) tbody tr:nth-child(even) td { background: #f8fafc; }
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -188,7 +140,7 @@ code {
   h2 { font-size: 19px; }
   .summary, .issue { padding: 14px 14px; border-radius: 12px; }
   .doc-header { padding: 22px 18px; border-radius: 14px; }
-  .doc-header h1 { font-size: 23px; }
+  .doc-header h1 { font-size: 21px; }
   .doc-chip { font-size: 12px; }
   .grid { grid-template-columns: 1fr; }
 }
@@ -211,8 +163,6 @@ code {
     color: #111827;
     border: 1px solid #d1d5db;
   }
-  .table-wrap table:not(.diff-table) th,
-  .table-wrap table:not(.diff-table) td { border-color: #9ca3af; }
   .toc { position: static; max-height: none; }
   .toast { display: none !important; }
   a { color: #111827; text-decoration: underline; }

@@ -101,13 +101,13 @@ HTML 相比 Markdown 的核心优势不是“能加 JS 交互”，而是可视�
 
 - 默认把媒体资源放在 HTML 同目录的证据文件夹，例如 `evidence_20260625/xxx.png`、`evidence_20260625/xxx.mp4`，HTML 中使用相对路径引用。
 - 小图可按需用 `data:image/...;base64,...` 内嵌；大图、长图和视频不要 base64，避免 HTML 膨胀和打开变慢。
-- 图片使用 `<img>` 预览，并提供能说明证据内容的 `alt`。
+- 图片使用 `<img>` 预览，并提供能说明证据内容的 `alt`；媒体证据图片外层使用原图链接和 `data-image-lightbox`，支持点击放大。
 - 视频使用 `<video controls preload="metadata">`，保留可播放预览；视频资源用 `<source src="evidence_20260625/xxx.mp4" type="video/mp4">` 或 `video src`。
 - 视频证据建议同时放关键帧截图和原文件链接，例如 `<a class="media-link" href="evidence_20260625/xxx.mp4">打开原始录屏</a>`。
 - 媒体卡片建议使用 `.media-evidence`，并通过标题、说明、对应 case、证据结论帮助读者快速扫读。它们是推荐结构，不是所有媒体块的硬性失败条件。
 - 媒体仍要遵守响应式底线：图片和视频 `max-width: 100%; height: auto;`，外层可横向滚动，移动端不能把正文撑出视口。
 
-推荐结构见 `references/css-template.md` 的“媒体证据结构”，样式来自 `references/css/media.css`。完成前运行 `check_html_report.py`；脚本会在媒体实际出现时检查本地相对路径、图片 `alt`、视频 `controls` 和响应式保护，并对缺少标题/说明/case/结论的媒体证据卡给出 warning。
+推荐结构见 `references/component-contracts.md` 的“图片与灯箱”，样式和 runtime 由统一装配器加入。完成前运行 `check_html_report.py`；脚本会在媒体实际出现时检查本地相对路径、原图灯箱链接、图片 `alt`、视频 `controls` 和响应式保护，并对缺少标题/说明/case/结论的媒体证据卡给出 warning。
 
 ## 响应式、打印与可访问性
 
@@ -135,33 +135,20 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 
 当报告里出现源码文件位置、`rg` 搜索结果、代码评审问题定位或堆栈归因时，文件路径应该既能被人读懂，也能一键跳转到 IDE。
 
-- **结构先于样式**：源码定位必须先在 HTML 结构里表达正确，CSS 只负责视觉样式。不要指望 CSS 把拆散的路径和行号“拼成”一个定位；生成 HTML 时就必须产出单个可点击定位元素。
-- 位置文本统一展示为单个 chip：`{displayPath}:{line}`、`{displayPath}:{start}-{end}` 或 `{displayPath}:{line}:{column}`；`line` 和 `column` 使用 1-based 数字。已有行号范围时必须展示完整范围，例如 `.../NadWrappedBrowserView.java:106-111`，不要写成 `...java:106` 后再另起一个 `106-111`。
-- `displayPath` 优先使用仓库相对路径或从工作区根目录开始的短路径，便于阅读，例如 `browser-android/searchbox-lite/repos/business/ad_business/.../FlowVideoLandscapeHelper.kt:43-50`；如果无法可靠缩短，再展示绝对路径。
-- 当路径过长导致 chip 挤占正文或换行难读时，展示文本可以用 `...` 省略中间目录，例如 `lib-ad-feed/.../UnitedSchemeADDispatcher.java:1350-1351`。省略只能发生在中间目录，不能省略仓库/模块线索、文件名、行号或行号范围；同名文件可能混淆时，保留更多父级目录。完整路径和完整定位放入 `title`，不要为了视觉省略破坏跳转信息。
-- 对没有行号的长文件路径，也不要直接放完整 `<code>baiduapp-android/client/repos/business/lib_ad/lib-ad-feed/src/main/java/com/baidu/searchbox/feed/ad/scheme/UnitedSchemeAdDispatcher.java</code>`。优先生成单个 `.path` chip，例如 `<span class="path" title="baiduapp-android/client/repos/business/lib_ad/lib-ad-feed/src/main/java/com/baidu/searchbox/feed/ad/scheme/UnitedSchemeAdDispatcher.java">baiduapp-android/client/repos/business/lib_ad/lib-ad-feed/.../UnitedSchemeAdDispatcher.java</span>`；如果上下文指向方法，展示文本保留方法名，例如 `lib-ad-feed/.../UnitedSchemeAdDispatcher.java#makePhoneCall`。不要在路径中间硬换行。
-- 有绝对路径时，文件位置必须渲染成 IDEA 协议链接：`idea://open?file={encodedAbsolutePath}&line={startLine}&column={column}`。行号范围用起始行作为跳转行，展示文本保留完整范围。HTML 属性里的 `&` 写成 `&amp;`，路径参数做 URL 编码，展示文本可按上一条规则缩短，但 `href` 和 `title` 必须保留完整可跳转定位。
-- 必须使用同一个 `<a class="path file-link">` 同时承载路径和行号/行号范围。禁止把源码定位拆成 `<span class="path">...</span>` + `<span class="line">...</span>` 或“路径链接 + 单独行号 chip”；这种写法不能表达完整定位，也容易丢失跳转能力。
+- **结构先于样式**：源码定位必须在一个元素里同时表达文件和行范围，不把路径与行号拆成两个 chip。
+- 可见标签默认只显示 `文件名:起始行-结束行`，例如 `FlowVideoHelper.kt:1050-1070`。单行定位显示 `FlowVideoHelper.kt:1050`。
+- 同页有同名文件、确实需要消歧时最多增加一级父目录，例如 `flowvideo/FlowVideoHelper.kt:1050-1070`；不要显示完整仓库路径，也不要用多级 `...` 路径撑宽正文。
+- 完整绝对路径和完整行范围放入 `title`。`href` 使用 `idea://open?file={encodedAbsolutePath}&line={startLine}`，范围跳到起始行；HTML 属性里的 `&` 写成 `&amp;`。
+- 可见标签、`title` 和 `href` 的文件与起始行必须一致。路径包含空格、`#`、`?`、`&` 或非 ASCII 字符时，对 `file=` 参数做 URL 编码。
+- 只能拿到相对路径时使用不可点击的 `.path` 文本并保留必要定位，不编造不可用的 IDEA 链接。
 
 ```html
-<a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82&amp;column=7">/abs/path/File.java:82:7</a>
+<a class="file-location file-link"
+   href="idea://open?file=/repo/business/flowvideo/FlowVideoHelper.kt&amp;line=1050"
+   title="/repo/business/flowvideo/FlowVideoHelper.kt:1050-1070">FlowVideoHelper.kt:1050-1070</a>
 ```
 
-如果只有行号，链接和展示文本写成：
-
-```html
-<a class="path file-link" href="idea://open?file=/abs/path/File.java&amp;line=82">/abs/path/File.java:82</a>
-```
-
-如果是行号范围，链接跳到起始行，展示保留范围：
-
-```html
-<a class="path file-link" href="idea://open?file=/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt&amp;line=43" title="/Users/markz/code/baidu/browser-android/searchbox-lite/repos/business/ad_business/flowvideo/src/main/java/com/baidu/searchbox/video/feedflow/ad/position/FlowVideoLandscapeHelper.kt:43-50">browser-android/searchbox-lite/.../FlowVideoLandscapeHelper.kt:43-50</a>
-```
-
-如果路径包含空格、`#`、`?`、`&` 或中文等非 ASCII 字符，`href` 里的 `file=` 参数必须做 URL 编码；展示文本保持人类可读，必要时按上方省略规则缩短。
-
-如果只能拿到仓库相对路径且无法可靠还原绝对路径，可以先按 `{path}:{line}:{column}` 展示为 `.path` chip，但不要编造不可用的 `idea://open` 链接。
+完整结构和校验规则见 `references/component-contracts.md` 的“IDE 文件定位”。
 
 ## 代码变更标识
 
@@ -224,7 +211,7 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 - 只有完整源码关系影响判断时才加入；普通单文件或小 patch 使用聚焦 diff。
 - 限制为 2 到 3 个版本。版本更多时先选取最有决策价值的基线、当前和目标版本。
 - 使用 `build_review_workspace.py` 生成安全 JSON 和静态高亮，不手写源码 `innerHTML`。
-- 最终同时内联 `code-diff.css` 和 `review-workspace.css`，并通过 `check_html_report.py`。
+- 最终用 `assemble_report.py` 自动加入 `code-block` 和 `review-workspace` 依赖，并通过 `check_html_report.py`。
 
 ## 长文档目录导航
 
@@ -264,13 +251,13 @@ python3 skills/html-report/scripts/highlight_code.py --list-langs
 
 - 优先用 `<span class="tok-key">`、`tok-str`、`tok-num`、`tok-cmt`、`tok-fn`、`tok-var` 等 class 标出关键字、字符串、数字、注释、函数名和变量名。
 - 不需要完整编译级语法分析，但至少要让读者一眼区分注释、字符串、关键逻辑和普通标识符。
-- 差异代码不要手工改成普通代码块；只有在脚本路径、临时文件和语言参数都修复后仍无法运行时，才按 `.diff-card.diff-viewer` 的结构手工补齐固定样式。手工补齐时必须包含 `.diff-header`、`.diff-scroll`、`.diff-table`、`.diff-gutter`、`.diff-old-num`、`.diff-new-num`、`.diff-code`、`.diff-hunk` 和 `.diff-add` / `.diff-del`，并内联 `references/css/code-diff.css` 中完整 diff viewer CSS。
+- 差异代码不要手工改成普通代码块；只有在脚本路径、临时文件和语言参数都修复后仍无法运行时，才按 `.diff-card.diff-viewer` 的结构手工补齐固定结构。手工补齐时必须包含 `.diff-header`、`.diff-scroll`、`.diff-table`、`.diff-gutter`、`.diff-old-num`、`.diff-new-num`、`.diff-code`、`.diff-hunk` 和 `.diff-add` / `.diff-del`，再由装配器加入完整 `diff-viewer` 样式。
 - 短代码块只高亮确定的核心 token；如果不确定，保持转义后的纯文本更好。
 - 代码内容必须先转义 HTML，再包高亮 span，避免 `<`、`>`、`&` 破坏页面。
 - 多行代码块必须放在 `.code-wrap` 容器中，使用 `<pre><code class="language-xxx">...</code></pre>`，右上角提供复制按钮。
 - 完成前运行 `scripts/check_html_report.py`。支持高亮的语言应包含至少一种 `tok-*` token 或 Pygments inline style；使用 `tok-*` 时还必须有对应 CSS 定义；`text`、日志和纯文本只要求已转义并包在 `.code-wrap` 中。
 
-ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让浏览器自动换行破坏结构。ASCII 图使用专用浅色容器，例如 `<pre class="ascii-diagram">...</pre>`，并内联 `references/css/code-diff.css`，确保包含等宽字体、`white-space: pre`、`overflow-x: auto`、合适行高和横向滚动。
+ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让浏览器自动换行破坏结构。ASCII 图使用专用浅色容器，例如 `<pre class="ascii-diagram">...</pre>`，由装配器加入 `code-block` 组件，确保包含等宽字体、`white-space: pre`、`overflow-x: auto`、合适行高和横向滚动。
 
 ## 可用交互
 
@@ -282,7 +269,7 @@ ASCII/树状架构图必须保持原始换行、缩进和连接符，不要让�
 视情况使用：
 
 - 左侧目录：当报告较长、章节超过 5 个或需要频繁跨章节查阅时使用；默认展开，可点击按钮整体收起/展开侧栏。
-- 标签页：当报告天然有 2 到 3 个并列视角时用，如“问题/修复/验证”“方案 A/B/C”。用纯 CSS 实现，不引入 JS。
+- 标签页：当报告天然有 2 到 3 个并列视角时用，如“问题/修复/验证”“方案 A/B/C”。使用可访问 runtime 增强，禁用 JS 时按顺序展示所有面板。
 - 可排序表格：5 行以上数据表才加表头点击排序。3 到 4 行的迷你表不需要。
 - Review Workspace：多文件、2 到 3 版本完整源码关系需要交互审阅时使用；普通代码评审继续使用 Findings + 聚焦 diff。
 - 离线评论模式：当用户需要在 HTML 内选中文本提问/批注，或需要把评论结果交给 Agent 时使用；先生成普通 HTML，再运行 `scripts/inject_annotation_mode.py` 注入，不要手写评论 JS。

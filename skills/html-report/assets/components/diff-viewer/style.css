@@ -1,93 +1,14 @@
-/* 代码与 diff CSS：含多行代码、日志、ASCII 图或真实 unified diff 时内联这一段。 */
-pre {
-  max-width: 100%;
-  margin: 10px 0 14px;
-  padding: 14px 16px;
-  overflow: auto;
-  background: var(--code-bg);
-  color: var(--code);
-  border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.5;
-  tab-size: 4;
-}
-pre code {
-  background: transparent;
-  color: inherit;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  font-size: inherit;
-  white-space: pre;
-  overflow-wrap: normal;
-  word-break: normal;
-}
-.ascii-diagram {
-  background: #f8fafc;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.55;
-  white-space: pre;
-  overflow-x: auto;
-}
-.code-wrap {
-  position: relative;
-  max-width: 100%;
-  min-width: 0;
-}
-.code-wrap pre {
-  padding-top: 38px;
-  overflow-x: auto;
-}
-.copy-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 4px 10px;
-  font-size: 12px;
-  background: rgba(255, 255, 255, .10);
-  color: #8fa59c;
-  border: 1px solid rgba(143, 165, 156, .22);
-  border-radius: 6px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity .15s;
-}
-.code-wrap:hover .copy-btn,
-.code-wrap:focus-within .copy-btn { opacity: 1; }
-.copy-btn.copied { color: #83b986; border-color: #83b986; }
-.tok-key { color: #d955a2; font-weight: 700; }
-.tok-str { color: #83b986; }
-.tok-num { color: #d7c96f; }
-.tok-cmt { color: #5f947d; font-style: italic; }
-.tok-fn { color: #6fa0ff; }
-.tok-var { color: #8f79bd; }
-.tok-type { color: #d2d66f; font-weight: 700; }
-.tok-add {
-  color: #83b986;
-  background: rgba(90, 137, 75, .18);
-  display: inline-block;
-  width: 100%;
-}
-.tok-del {
-  color: #d955a2;
-  background: rgba(139, 66, 86, .20);
-  display: inline-block;
-  width: 100%;
-}
+/* Diff Viewer CSS：负责文件标题、old/new 行号、变更轨道和增删状态。 */
 .change-chip {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
   padding: 2px 8px;
+  border: 1px solid transparent;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
   line-height: 1.2;
-  border: 1px solid transparent;
 }
 .change-add { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
 .change-del { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
@@ -193,18 +114,18 @@ pre code {
   font-weight: 700;
 }
 .diff-mark-add, ins {
+  padding: 0 2px;
+  border-radius: 3px;
   background: #bbf7d0;
   color: #14532d;
   text-decoration: none;
-  border-radius: 3px;
-  padding: 0 2px;
 }
 .diff-mark-del, del {
+  padding: 0 2px;
+  border-radius: 3px;
   background: #fecaca;
   color: #7f1d1d;
   text-decoration: line-through;
-  border-radius: 3px;
-  padding: 0 2px;
 }
 .change-block {
   margin: 12px 0;
@@ -217,18 +138,3 @@ pre code {
 .change-block.add { border-left-color: #22c55e; background: #f0fdf4; }
 .change-block.del { border-left-color: #ef4444; background: #fef2f2; }
 .change-block.mod { border-left-color: #f59e0b; background: #fffbeb; }
-
-@media (hover: none) {
-  .copy-btn { opacity: 1; }
-}
-
-@media print {
-  .copy-btn { display: none !important; }
-  pre, .ascii-diagram {
-    white-space: pre-wrap;
-    overflow: visible;
-    color: #111827;
-    background: #f9fafb;
-    border: 1px solid #d1d5db;
-  }
-}

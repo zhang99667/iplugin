@@ -1,0 +1,94 @@
+/* 代码块 CSS：提供多行代码、日志、ASCII 图、复制按钮和静态 token 高亮。 */
+pre {
+  max-width: 100%;
+  margin: 10px 0 14px;
+  padding: 14px 16px;
+  overflow: auto;
+  background: var(--code-bg);
+  color: var(--code);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 4;
+}
+pre code {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: inherit;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.ascii-diagram {
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+}
+.code-wrap {
+  position: relative;
+  max-width: 100%;
+  min-width: 0;
+}
+.code-wrap pre {
+  padding-top: 38px;
+  overflow-x: auto;
+}
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, .10);
+  color: #8fa59c;
+  border: 1px solid rgba(143, 165, 156, .22);
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.code-wrap:hover .copy-btn,
+.code-wrap:focus-within .copy-btn { opacity: 1; }
+.copy-btn.copied { color: #83b986; border-color: #83b986; }
+.tok-key { color: #d955a2; font-weight: 700; }
+.tok-str { color: #83b986; }
+.tok-num { color: #d7c96f; }
+.tok-cmt { color: #5f947d; font-style: italic; }
+.tok-fn { color: #6fa0ff; }
+.tok-var { color: #8f79bd; }
+.tok-type { color: #d2d66f; font-weight: 700; }
+.tok-add {
+  color: #83b986;
+  background: rgba(90, 137, 75, .18);
+  display: inline-block;
+  width: 100%;
+}
+.tok-del {
+  color: #d955a2;
+  background: rgba(139, 66, 86, .20);
+  display: inline-block;
+  width: 100%;
+}
+@media (hover: none) {
+  .copy-btn { opacity: 1; }
+}
+
+@media print {
+  .copy-btn { display: none !important; }
+  pre, .ascii-diagram {
+    white-space: pre-wrap;
+    overflow: visible;
+    color: #111827;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+  }
+}

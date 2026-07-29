@@ -1,335 +1,113 @@
-# HTML 报告 CSS 组件装配
+# HTML 报告组件装配
 
-本文件只维护生成 HTML 时的装配规则、脚本片段和骨架。CSS 源码按组件拆在 `references/css/` 下，生成最终报告时必须把需要的 CSS 内容复制进同一个 `<style>`，不要在交付 HTML 里使用 `<link>`、CDN 或外部 CSS 文件。
+本文件只定义从语义 HTML 到离线单文件报告的装配流程。组件结构和依赖见
+`references/component-contracts.md`，真实 CSS/JS 资产由
+`assets/components/registry.json` 统一登记；不要手工复制资产或在文档里维护第二份 runtime。
 
----
+## 1. 生成顺序
 
-## 1. CSS 组件清单
+1. 先写语义化 HTML 正文，不手写组件 `<style>` 或 `<script>`。
+2. 代码、日志和 diff 先用 `scripts/highlight_code.py` 生成片段。
+3. 多版本完整源码审阅先用 `scripts/build_review_workspace.py` 生成片段。
+4. 运行统一装配器，让它根据稳定 class/attribute 自动识别组件、展开依赖并内联资产：
 
-默认内联顺序：
+   ```bash
+   python3 skills/html-report/scripts/assemble_report.py report_source.html \
+     -o report.html
+   ```
 
-1. `references/css/base.css`：所有报告必选。提供页面、卡片、正式抬头、路径 chip、行内 `<code>`、普通表格完整网格线、基础响应式和打印兜底。
-2. `references/css/interactions.css`：默认加入。提供 `<details>` 折叠区和 toast 反馈。
-3. `references/css/code-diff.css`：报告包含多行代码、日志、SQL、XML、JSON、配置、shell、ASCII 图或真实 unified diff 时加入。它提供 `.code-wrap`、复制按钮、`tok-*`、`.ascii-diagram` 和 `.diff-card.diff-viewer`。
-4. `references/css/review-workspace.css`：代码评审需要多文件的 2 到 3 版本完整源码审阅时加入；必须同时加入 `code-diff.css`，并用 `scripts/build_review_workspace.py` 生成 HTML 片段和内联 runtime。
-5. `references/css/media.css`：报告展示截图、录屏、关键帧或证据图片时加入。
-6. `references/css/diagram.css`：报告内联 SVG 技术图，或使用 `.diagram-block` 承载宽架构图时加入。
-7. `references/css/toc.css`：长文档需要左侧目录并支持整体收起时加入。
-8. `references/css/tabs.css`：只有 2 到 3 个并列视角需要标签页时加入。
-9. `references/css/sortable-table.css`：5 行以上数据表需要点击表头排序时加入；只增加排序交互，网格线仍来自 `base.css`。
+5. 只有页面结构无法触发自动检测、但确实需要某个组件时才显式声明：
 
-选择组件时保持按需：不要因为组件存在就全部塞进报告。`base.css` 与 `interactions.css` 是默认组合；其他组件由内容决定。
+   ```bash
+   python3 skills/html-report/scripts/assemble_report.py report_source.html \
+     --component diagram \
+     -o report.html
+   ```
 
-### 普通表格硬契约
+6. 完成后运行：
 
-所有非 diff 的普通表格都使用同一结构，禁止为单张表临时手写另一套边框：
+   ```bash
+   python3 skills/html-report/scripts/check_html_report.py report.html
+   ```
 
-```html
-<div class="table-wrap">
-  <table>
-    <thead><tr><th>项目</th><th>结论</th></tr></thead>
-    <tbody><tr><td>示例</td><td>通过</td></tr></tbody>
-  </table>
-</div>
-```
+装配器默认加入 `base` 和 `interactions`，其余组件按内容加载。重复运行会替换自己管理的
+CSS/JS 块并保持结果幂等。最终 HTML 仍只有内联 `<style>` / `<script>`，不依赖 CDN 或外部文件。
 
-`base.css` 会给 `th` / `td` 提供完整 1px 网格线，并给 `.table-wrap` 提供窄屏横向滚动。只设置 `border-bottom`、使用其他 wrapper 名称或把普通表格裸放在正文中都会被 `check_html_report.py` 拒绝。`.diff-table` 使用 `code-diff.css` 的专用样式，不套普通表格网格线。
+## 2. 语义骨架
 
-## 2. 代码与 diff 组件规则
-
-多行代码、日志和真实 diff 的 HTML 片段必须由 `scripts/highlight_code.py` 生成：
-
-```bash
-python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
-python3 skills/html-report/scripts/highlight_code.py --lang objc view_controller.m
-python3 skills/html-report/scripts/highlight_code.py --lang swift view_model.swift
-python3 skills/html-report/scripts/highlight_code.py --lang sql query.sql
-python3 skills/html-report/scripts/highlight_code.py --lang json payload.json
-python3 skills/html-report/scripts/highlight_code.py --engine auto --lang kotlin snippet.kt
-python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
-python3 skills/html-report/scripts/highlight_code.py --list-langs
-```
-
-脚本默认输出可直接嵌入正文的 `.code-wrap` 片段，并使用 `tok-*` class 做基础语法高亮。真实 unified diff 必须使用 `--diff-view` 输出 `.diff-card.diff-viewer`，把脚本输出的 `<section class="diff-card diff-viewer">...</section>` 原样嵌入正文，不要再包成 `.code-wrap`。完整 patch 含多个 Git 或标准 unified 文件头时，脚本会自动输出多张卡片，并用 `.diff-file` 标注各自文件；不要预先拼接组件，也不要事后把多个文件塞回同一张卡片。
-
-支持语言和常见别名以 `--list-langs` 的 JSON 输出为准。新增语言时先更新 `highlight_code.py` 的语言注册表，再由校验脚本和文档读取同一份结果，避免多处旧清单残留。
-
-如果使用 `tok-*` class，最终 `<style>` 必须包含 `references/css/code-diff.css`；缺失时 `check_html_report.py` 会报 token CSS 或 diff viewer CSS 错误。
-
-## 3. HTML 骨架
-
-正式技术/业务文档或分析报告需要在 `<main>` 最前面加入 `.doc-header`。普通对话转 HTML 可以省略 `.doc-header`，直接使用 `<h1>` 和整理时间。
+正式技术、业务或分析报告在正文最前面使用 `.doc-header`。普通对话转 HTML 可以直接从
+`<h1>` 开始。
 
 ```html
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>报告标题</title>
-  <style>
-    {{ inline references/css/base.css }}
-    {{ inline references/css/interactions.css }}
-    {{ inline references/css/code-diff.css when report has code/log/diff/ascii }}
-    {{ inline references/css/review-workspace.css when report has multi-version Review Workspace }}
-    {{ inline references/css/media.css when report has image/video evidence }}
-    {{ inline references/css/diagram.css when report has SVG diagram block }}
-    {{ inline references/css/toc.css when report has left TOC }}
-    {{ inline references/css/tabs.css when report has tabs }}
-    {{ inline references/css/sortable-table.css when report has sortable table }}
-  </style>
 </head>
 <body>
-
-<div id="toast" class="toast">已复制到剪贴板</div>
-
 <main>
   <header class="doc-header">
     <h1>文档标题</h1>
-    <p class="doc-subtitle">一句话说明文档主题、交付目的或核心结论。</p>
+    <p class="doc-subtitle">一句话说明主题、目的或核心结论。</p>
     <div class="doc-meta">
       <span class="doc-chip">文档类型</span>
-      <span class="doc-chip">任务号</span>
       <span class="doc-chip">仓库/分支</span>
-      <span class="doc-chip">负责人</span>
       <span class="doc-chip">更新时间</span>
     </div>
   </header>
 
-  <p class="muted">整理时间：YYYY-MM-DD。行号基于当前本地源码定位，若行号有偏移以文件路径和代码上下文为准。</p>
-
   <section class="summary">
     <h2>最终结论</h2>
-    <p>用 1-2 段概括根因、结论或整体风险。</p>
-    <div class="grid">
-      <div class="mini"><span class="tag p0">P0</span> <b>问题标题</b><br/>一句话说明影响。</div>
-    </div>
+    <p>用一到两段概括结论和风险。</p>
   </section>
 
-  <h2>问题 1：问题标题</h2>
-  <section class="issue">
-    <h3><span class="tag p0">P0</span> 问题说明</h3>
-    <div class="meta">
-      <a class="path file-link" href="idea://open?file=/absolute/or/repo/path/File.kt&amp;line=123" title="/absolute/or/repo/path/File.kt:123-145">repo/path/File.kt:123-145</a>
-    </div>
-    <p><b>问题：</b>说明当前代码行为。</p>
-    <p><b>影响：</b>说明业务、稳定性或性能影响。</p>
-    <p><b>当前代码：</b></p>
-    {{ insert output from highlight_code.py }}
-    <p><b>修复方案：</b>说明最小、安全的改法。</p>
-  </section>
-
-  <details>
-    <summary>相关日志（点击展开）</summary>
-    <div class="details-body">
-      {{ insert output from highlight_code.py --lang text log.txt }}
-    </div>
-  </details>
-
-  {{ insert output from build_review_workspace.py when full-source multi-version review is needed }}
-
-  <h2>建议修复顺序</h2>
-  <section class="summary">
-    <ol>
-      <li><b>P0 先修：</b>...</li>
-    </ol>
-  </section>
+  <!-- 按内容插入 table、file-location、code-block、diff-viewer、media 等语义结构。 -->
 </main>
-
-<script>
-  {{ include copy button JS when code-diff.css is used }}
-  {{ Review Workspace runtime is already included by build_review_workspace.py; include it only once }}
-  {{ include TOC toggle JS when toc.css is used }}
-  {{ include sortable table JS when sortable-table.css is used }}
-</script>
 </body>
 </html>
 ```
 
-## 4. Review Workspace 结构
+不要编造任务号、负责人、仓库、分支或时间。没有可靠信息时省略相应 chip。
 
-只有多文件、2 到 3 版本完整源码关系会影响评审判断时使用。先读取
-`references/review-workspace.md`，准备 JSON 规格和源码快照，再运行：
+## 3. 自动检测与显式组件
+
+装配器只根据注册表中的稳定 class/attribute 检测，不扫描正文关键词。例如：
+
+- `.table-wrap` 触发 `table`。
+- `.file-location` 触发 `file-location`。
+- `.code-wrap` 触发 `code-block`。
+- `.diff-viewer` 触发 `diff-viewer`，并自动带入 `code-block`。
+- `.media-evidence` 触发 `media`；`.image-lightbox-trigger[data-image-lightbox]` 触发 `image-lightbox`。
+- `.layout-with-toc` 触发 `toc`。
+- `.report-tabs[data-tabs]` 触发 `tabs`。
+- `table.sortable` 触发 `sortable-table`，并自动带入 `table`。
+- `.review-workspace` 触发 `review-workspace`。
+
+查看当前注册表：
 
 ```bash
-python3 skills/html-report/scripts/build_review_workspace.py workspace_spec.json \
-  -o workspace_fragment.html
+python3 skills/html-report/scripts/assemble_report.py --list-components
 ```
 
-把生成片段原样嵌入正文；它已包含一个 `data-review-workspace-runtime`。同一报告有第二个
-Workspace 时用 `--no-runtime`，保证整份 HTML 只内联一次 runtime。最终 `<style>` 必须同时
-包含 `code-diff.css` 和 `review-workspace.css`。
+`data-html-report-components` 和 `data-html-report-runtime` 是装配产物，不要手写。需要新增或
+修改组件时按 `references/component-contracts.md` 的维护门禁同时更新注册表、资产和测试。
 
-三版本希望尽量同屏时，给无目录页面的 `<main>` 或长文档的 `.layout-with-toc` 增加
-`rw-layout-wide`；该类只由 `review-workspace.css` 扩宽，不影响普通报告。
+## 4. 复合模块顺序
 
-不要手工拼源码 JSON。源码中的 `</script>`、`<`、`>` 或 `&` 会破坏 raw-text script，
-构建脚本会统一完成安全转义、静态高亮和行号越界检查。
+Review Workspace 由自己的构建脚本输出正文结构、数据和唯一 runtime；统一装配器只补它的
+依赖样式。多个 Workspace 时，第一个保留 runtime，后续使用 `--no-runtime`。
 
-## 5. 媒体证据结构
+评论模式是报告完成后的后处理模块。先装配并通过基础校验，再运行
+`scripts/inject_annotation_mode.py`；不要把评论模式拆成普通内容组件，也不要把它的资产登记到
+页面组件注册表。
 
-当报告需要展示截图、录屏或关键帧时，加入 `references/css/media.css`。默认使用相对路径引用同目录证据资源，例如 `evidence_20260625/login_case.png`。小图可以按需使用 `data:image/...;base64,...` 内嵌，大图和 MP4 不建议 base64。
+## 5. 完成前检查
 
-```html
-<figure class="media-evidence" data-case="case-01" data-conclusion="修复后按钮不再遮挡正文">
-  <div class="media-frame">
-    <img src="evidence_20260625/case_01_after.png" alt="case-01 修复后按钮不再遮挡正文的截图">
-  </div>
-  <figcaption class="media-caption">
-    <span class="media-caption-title">case-01 修复后截图</span>
-    <span>说明：按钮、正文和底部操作区在窄屏下保持单列布局。</span>
-    <span class="media-meta">
-      <span>case: case-01</span>
-      <span>结论: 通过</span>
-    </span>
-  </figcaption>
-</figure>
-```
-
-录屏保留可播放预览和原文件链接；同时建议放一张关键帧截图，让读者不播放也能理解证据内容：
-
-```html
-<figure class="media-evidence" data-case="case-02" data-conclusion="录屏显示横竖屏切换无布局溢出">
-  <div class="media-frame">
-    <img src="evidence_20260625/case_02_keyframe.png" alt="case-02 录屏关键帧截图">
-  </div>
-  <div class="media-frame">
-    <video controls preload="metadata" poster="evidence_20260625/case_02_keyframe.png">
-      <source src="evidence_20260625/case_02_recording.mp4" type="video/mp4">
-    </video>
-  </div>
-  <figcaption class="media-caption">
-    <span class="media-caption-title">case-02 横竖屏切换录屏</span>
-    <span>说明：关键帧用于快速扫读，视频用于复核完整操作过程。</span>
-    <span class="media-meta">
-      <span>case: case-02</span>
-      <span>结论: 无横向撑破</span>
-      <a class="media-link" href="evidence_20260625/case_02_recording.mp4">打开原始录屏</a>
-    </span>
-  </figcaption>
-</figure>
-```
-
-## 6. 左侧目录结构
-
-长文档加入 `references/css/toc.css`。目录必须默认展开，读者点击按钮时切换 `.toc-collapsed`，收起/展开整个目录侧栏。不要把目录包进 `<details>`。
-
-```html
-<div class="layout-with-toc">
-  <aside class="toc" aria-label="目录">
-    <div class="toc-header">
-      <p class="toc-title">目录</p>
-      <button class="toc-toggle" type="button" aria-label="收起目录" aria-expanded="true" title="收起目录">
-        <span class="toc-toggle-icon" aria-hidden="true">‹</span>
-      </button>
-    </div>
-    <a href="#summary">最终结论</a>
-    <a href="#issue-1">问题 1：问题标题</a>
-    <a href="#fix-order">建议修复顺序</a>
-  </aside>
-  <main>
-    <section id="summary" class="summary">...</section>
-    <h2 id="issue-1">问题 1：问题标题</h2>
-    <h2 id="fix-order">建议修复顺序</h2>
-  </main>
-</div>
-```
-
-## 7. 标签页结构
-
-只有报告天然有 2 到 3 个并列视角时加入 `references/css/tabs.css`。一个视角不要用标签页。
-
-```html
-<input type="radio" name="tab" class="tab-radio" id="tab1" checked />
-<input type="radio" name="tab" class="tab-radio" id="tab2" />
-<div class="tabs">
-  <label for="tab1" class="tab-label">问题清单</label>
-  <label for="tab2" class="tab-label">修复方案</label>
-</div>
-<div class="tab-content">
-  <div class="tab-panel" id="panel1">...</div>
-  <div class="tab-panel" id="panel2">...</div>
-</div>
-```
-
-## 8. 脚本片段
-
-### 8.1 复制按钮
-
-仅当报告使用 `references/css/code-diff.css` 且存在 `.copy-btn` 时加入。
-
-```html
-<script>
-  document.querySelectorAll('.copy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const code = btn.closest('.code-wrap').querySelector('pre').innerText;
-      navigator.clipboard.writeText(code).then(() => {
-        btn.textContent = '已复制';
-        btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
-      });
-    });
-  });
-</script>
-```
-
-### 8.2 目录侧栏收起
-
-仅当报告使用 `references/css/toc.css` 时加入。
-
-```html
-<script>
-  document.querySelectorAll('.layout-with-toc').forEach(layout => {
-    const btn = layout.querySelector('.toc-toggle');
-    if (!btn) return;
-    const icon = btn.querySelector('.toc-toggle-icon');
-    const setCollapsed = collapsed => {
-      layout.classList.toggle('toc-collapsed', collapsed);
-      btn.setAttribute('aria-expanded', String(!collapsed));
-      btn.setAttribute('aria-label', collapsed ? '展开目录' : '收起目录');
-      btn.title = collapsed ? '展开目录' : '收起目录';
-      if (icon) icon.textContent = collapsed ? '›' : '‹';
-    };
-    btn.addEventListener('click', () => {
-      setCollapsed(!layout.classList.contains('toc-collapsed'));
-    });
-  });
-</script>
-```
-
-### 8.3 可排序表格
-
-5 行以上数据表才加入 `references/css/sortable-table.css` 和这段 JS。3 到 4 行的迷你表不需要排序。
-
-```html
-<script>
-  document.querySelectorAll('.sortable th').forEach((th, colIdx) => {
-    th.addEventListener('click', () => {
-      const table = th.closest('table');
-      const tbody = table.querySelector('tbody');
-      const rows = [...tbody.querySelectorAll('tr')];
-      const asc = th.dataset.sort !== 'asc';
-      table.querySelectorAll('th').forEach(h => { delete h.dataset.sort; });
-      th.dataset.sort = asc ? 'asc' : 'desc';
-      rows.sort((a, b) => {
-        const va = a.children[colIdx].innerText.trim();
-        const vb = b.children[colIdx].innerText.trim();
-        const na = parseFloat(va), nb = parseFloat(vb);
-        if (!isNaN(na) && !isNaN(nb)) return asc ? na - nb : nb - na;
-        return asc ? va.localeCompare(vb) : vb.localeCompare(va);
-      });
-      th.querySelector('.sort-arrow').textContent = asc ? ' ▲' : ' ▼';
-      rows.forEach(r => tbody.appendChild(r));
-    });
-  });
-</script>
-```
-
-## 9. 完成前检查
-
-- 最终 HTML 只有内联 `<style>` / `<script>`，没有外部 CSS、JS 或 CDN。
-- 只内联内容实际需要的组件 CSS；不要把 `references/css/` 整包复制进所有报告。
-- 代码、日志、ASCII 图或 diff 出现时，必须内联 `references/css/code-diff.css` 并使用 `scripts/highlight_code.py` 生成片段。
-- Review Workspace 出现时，必须由 `build_review_workspace.py` 生成，内联 `review-workspace.css`，并保证整份报告只有一个 `data-review-workspace-runtime`。
-- 长文档目录必须使用 `references/css/toc.css` 的 `.layout-with-toc` / `.toc` / `.toc-toggle` 结构，默认展开，可整体收起。
-- 完成后运行 `python3 skills/html-report/scripts/check_html_report.py <html-file>`，失败则修正后重跑。
+- 普通表格使用 `.table-wrap > table`，所有 `th` / `td` 都有完整 1px 网格线。
+- IDE 跳转使用 `.file-location.file-link`，短标签只显示文件名和行范围。
+- 媒体证据图片包在原图链接中并启用 `data-image-lightbox`。
+- 代码和真实 diff 由 `highlight_code.py` 生成，不手写高亮 token 或 diff 表格。
+- Tabs、TOC、排序、灯箱在无 JS 时仍保留可读内容或原生链接回退。
+- 最终运行 `check_html_report.py`；失败后修正并重跑。

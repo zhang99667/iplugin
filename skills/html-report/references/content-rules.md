@@ -82,7 +82,7 @@
 - 多行代码如果使用 `tok-*` class 做 builtin 高亮，页面 `<style>` 必须包含对应 `.tok-*` CSS；如果使用 Pygments inline style，则不需要额外 token CSS。
 - 只要报告涉及代码新增、删除或修改，不能只贴“当前代码”和“修复后代码”。必须明确标出每处变更类型：新增、删除、修改、上下文。
 - 修复方案包含代码时，优先展示聚焦 diff；如果用 before/after，也必须在标题或行内标出“修改前/修改后”，并用颜色或标记突出实际变化。
-- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，并在最终 `<style>` 内联 `references/css/code-diff.css`。支持语言和常见别名以 `python3 skills/html-report/scripts/highlight_code.py --list-langs` 输出为准；默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；Pygments 缺失时不要自动安装，除非用户明确要求；真实 unified diff 必须使用 `--lang diff --diff-view`，不要用普通 `language-diff` 或 `language-text` 代码块，也不要把脚本输出的 diff viewer 结构拆散。
+- 多行代码、SQL、XML、JSON、配置片段和 diff 遵循 `references/visual-rules.md` 的代码块规则：用 `scripts/highlight_code.py` 生成，再由 `scripts/assemble_report.py` 自动加入 `code-block` / `diff-viewer` 资产。支持语言和常见别名以 `python3 skills/html-report/scripts/highlight_code.py --list-langs` 输出为准；默认使用 `--engine builtin`，正式报告或复杂语言片段可用 `--engine auto` 尝试本机 Pygments 增强预渲染；Pygments 缺失时不要自动安装，除非用户明确要求；真实 unified diff 必须使用 `--lang diff --diff-view`，不要用普通 `language-diff` 或 `language-text` 代码块，也不要把脚本输出的 diff viewer 结构拆散。
 - 如果代码片段是建议方案而不是已经存在的 git diff，标题写成“建议变更”或“拟修改”，不要伪装成已经发生的提交 diff。
 - 行号可能不准确时，说明基于当前本地源码。
 - 有绝对路径优先绝对路径，没有则用仓库相对路径。

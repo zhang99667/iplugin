@@ -109,7 +109,7 @@
       "id": 7,
       "name": "multi-version-review-workspace",
       "prompt": "根据输入的 Workspace 规格和三份源码快照生成一份独立 HTML 代码评审报告。报告先给 Findings、行为风险和测试缺口，再加入可交互的多文件三版本 Review Workspace；Workspace 必须支持文件筛选、同步滚动、只看差异、参考行跳转、全文复制和已审阅进度。真实变更结论不能只藏在 Workspace 里，也不要引入 Monaco 或外部 CDN。",
-      "expected_output": "生成单文件 HTML 代码评审报告并通过 check_html_report.py。报告使用 build_review_workspace.py 生成安全的 Review Workspace，内联 code-diff.css、review-workspace.css 和唯一 runtime；Workspace 位于 Findings 之后，并保留普通正文中的风险、测试缺口和结论。",
+      "expected_output": "生成单文件 HTML 代码评审报告并通过 check_html_report.py。报告使用 build_review_workspace.py 生成安全的 Review Workspace 和唯一 Workspace runtime，再由 assemble_report.py 装配 code-block、file-location、review-workspace 组件依赖；Workspace 位于 Findings 之后，并保留普通正文中的风险、测试缺口和结论。",
       "files": [
         "evals/fixtures/review_workspace_spec.json",
         "evals/fixtures/review_workspace_sources/CheckoutGate.baseline.kt",
@@ -122,7 +122,7 @@
       "expectations": [
         "Findings、行为风险和测试缺口排在 Review Workspace 之前，交互组件不替代评审主结论。",
         "Workspace 由 skills/html-report/scripts/build_review_workspace.py 生成，不手工拼源码 JSON 或业务专用 JS。",
-        "最终 HTML 同时内联 code-diff.css 和 review-workspace.css，且整份报告只有一个 data-review-workspace-runtime。",
+        "build_review_workspace.py 只内联一个 data-review-workspace-runtime；assemble_report.py 声明并内联 code-block、file-location 和 review-workspace 组件依赖。",
         "Workspace 包含 2 到 3 个版本、文件筛选、同步滚动、只看差异、参考行跳转、全文复制和已审阅进度。",
         "源码 JSON raw-text 安全转义，数据中的高亮 HTML 只包含 tok-* span，并通过 check_html_report.py 的 Workspace 校验。",
         "不引入 Monaco、外部 CSS、外部 JS 或 CDN。"
@@ -143,7 +143,7 @@
         "Workspace 由 skills/html-report/scripts/build_review_workspace.py 生成，顶层 versions 恰好包含两个版本。",
         "组件根据 versions 数量自动使用两栏布局，不复制另一套二方 runtime，也不伪造无意义的第三个版本。",
         "Workspace 支持文件筛选、同步滚动、只看差异、参考行跳转、全文复制和已审阅进度。",
-        "最终 HTML 内联 code-diff.css、review-workspace.css 和唯一 runtime，并通过 Workspace 安全校验。",
+        "build_review_workspace.py 只内联一个 Workspace runtime，assemble_report.py 内联其组件依赖，最终 HTML 通过 Workspace 安全校验。",
         "不引入 Monaco、外部 CSS、外部 JS 或 CDN。"
       ]
     },
@@ -168,7 +168,7 @@
       "id": 10,
       "name": "component-stability-table-and-multi-file-diff",
       "prompt": "基于输入的 review context 和两文件 unified diff 生成 HTML 评审报告。Findings 矩阵和验证矩阵使用普通表格，真实 diff 使用标准 viewer；每个源文件必须单独一张 Diff 卡片，不要把两个文件放进同一块。",
-      "expected_output": "生成单文件 HTML 报告并通过 check_html_report.py。普通表格使用统一完整网格线和横向滚动容器，两文件 patch 由 highlight_code.py 自动拆成两张带文件名的 Diff 卡片。",
+      "expected_output": "生成单文件 HTML 报告并通过 check_html_report.py。普通表格使用统一完整网格线和横向滚动容器，两文件 patch 由 highlight_code.py 自动拆成两张带文件名的 Diff 卡片，最终由 assemble_report.py 自动装配 table、code-block 和 diff-viewer。",
       "files": [
         "evals/fixtures/code_review_context.md",
         "evals/fixtures/code_review_patch.diff"
@@ -178,6 +178,7 @@
         "完整两文件 patch 一次交给 highlight_code.py --lang diff --diff-view，不手工拆写或拼装 diff 表格。",
         "最终 HTML 恰有两张 .diff-card.diff-viewer，分别标注 FeedDetailViewModel.kt 和 FeedBridge.m。",
         "任一 diff viewer 都只包含一个文件头，不把多个文件混入同一卡片。",
+        "语义正文不手贴组件 CSS/JS；最终 HTML 的 data-html-report-components 声明包含 table、code-block 和 diff-viewer。",
         "输出通过 check_html_report.py，保持单文件、响应式、打印和离线约束。"
       ]
     }

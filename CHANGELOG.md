@@ -1,3 +1,15 @@
+## [0.22.14] - 2026-07-29
+### Added
+- html-report: 新增统一组件注册表和 `assemble_report.py`，自动检测页面组件、递归解析依赖并幂等内联 CSS/JS
+- html-report: 新增 `file-location` 短标签 IDE 跳转与 `image-lightbox` 图片点击放大组件，完整路径保留在链接和悬停信息中
+- docs: 新增 HTML Report 组件化架构设计，记录分层、外部案例、迁移策略、版本规则和扩展门槛
+
+### Changed
+- html-report: 将 CSS/JS 从 `references/css/` 迁入 `assets/components/`，拆分 base、table、code-block、diff-viewer、media、目录、Tabs、排序等可组合组件
+- html-report: Review Workspace standalone 预览接入统一装配器，静态与 runtime IDE 定位统一使用短标签和完整目标
+- html-report: 校验器新增组件声明、依赖、runtime 完整性、Tabs/排序结构、灯箱和 IDE 定位一致性门禁，组件回归扩展到 23 项
+- html-report: skill 版本从 `0.5.3` 升级到 `0.6.0`；未新增 skill，插件按累计数量规则升级到 `0.22.14`
+
 ## [0.22.13] - 2026-07-28
 ### Changed
 - html-report: 普通表格收敛到 `base.css` 的 `.table-wrap` 组件，默认提供完整 1px 网格线、表头样式和窄屏横向滚动，不再依赖报告临时补边框

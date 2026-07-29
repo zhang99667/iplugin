@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""回归 html-report 中最容易发生视觉漂移的表格和多文件 diff 组件。"""
+"""回归 html-report 的组件装配、表格、Diff、导航和媒体交互契约。"""
 
 from __future__ import annotations
 
@@ -29,6 +29,13 @@ def load_module(name: str, path: Path):
 
 highlight_code = load_module("html_report_highlight_code_test", SKILL_DIR / "scripts" / "highlight_code.py")
 check_html_report = load_module("html_report_check_test", SKILL_DIR / "scripts" / "check_html_report.py")
+assemble_report = load_module("html_report_assemble_test", SKILL_DIR / "scripts" / "assemble_report.py")
+sys.modules["highlight_code"] = highlight_code
+sys.modules["assemble_report"] = assemble_report
+build_review_workspace = load_module(
+    "html_report_workspace_test",
+    SKILL_DIR / "scripts" / "build_review_workspace.py",
+)
 
 
 class ReportComponentTest(unittest.TestCase):
@@ -72,20 +79,14 @@ class ReportComponentTest(unittest.TestCase):
 
     def test_generated_multi_file_diff_passes_full_validation(self) -> None:
         source = (SKILL_DIR / "evals" / "fixtures" / "code_review_patch.diff").read_text(encoding="utf-8")
-        css = "\n".join(
-            (SKILL_DIR / "references" / "css" / name).read_text(encoding="utf-8")
-            for name in ("base.css", "code-diff.css")
-        )
+        css = self.component_css("base", "code-block", "diff-viewer")
         html = self.report_html(css, highlight_code.render_diff_viewer(source))
 
         self.assertEqual([], self.validate_html(html))
 
     def test_validator_rejects_multi_file_diff_in_one_card(self) -> None:
         source = (SKILL_DIR / "evals" / "fixtures" / "code_review_patch.diff").read_text(encoding="utf-8")
-        css = "\n".join(
-            (SKILL_DIR / "references" / "css" / name).read_text(encoding="utf-8")
-            for name in ("base.css", "code-diff.css")
-        )
+        css = self.component_css("base", "code-block", "diff-viewer")
         html = self.report_html(css, highlight_code.render_diff_viewer_block(source))
 
         errors = self.validate_html(html)
@@ -93,7 +94,7 @@ class ReportComponentTest(unittest.TestCase):
         self.assertTrue(any("必须由 highlight_code.py 自动拆成每文件一个卡片" in error for error in errors))
 
     def test_base_table_component_passes_validation(self) -> None:
-        css = (SKILL_DIR / "references" / "css" / "base.css").read_text(encoding="utf-8")
+        css = self.component_css("base", "table")
         html = self.report_html(css, '<div class="table-wrap"><table><tr><th>项目</th></tr><tr><td>通过</td></tr></table></div>')
 
         self.assertEqual([], self.validate_html(html))
@@ -114,6 +115,272 @@ class ReportComponentTest(unittest.TestCase):
 
         self.assertTrue(any("未包在 .table-wrap" in error for error in errors))
         self.assertTrue(any("缺少完整 1px 网格线" in error for error in errors))
+
+    def test_assembler_detects_components_and_is_idempotent(self) -> None:
+        body = (
+            '<div class="table-wrap"><table><tr><th>项目</th></tr><tr><td>通过</td></tr></table></div>'
+            + highlight_code.render_diff_viewer(
+                (SKILL_DIR / "evals" / "fixtures" / "focused_diff_patch.diff").read_text(encoding="utf-8")
+            )
+        )
+        source = self.report_html("", body)
+
+        first, components = assemble_report.assemble_html(source)
+        second, second_components = assemble_report.assemble_html(first)
+
+        self.assertEqual(first, second)
+        self.assertEqual(components, second_components)
+        self.assertEqual(
+            ["base", "interactions", "table", "code-block", "diff-viewer"],
+            components,
+        )
+        self.assertEqual(1, first.count('data-html-report-runtime="code-block"'))
+        self.assertEqual([], self.validate_html(first))
+
+    def test_registry_resolves_every_component_asset(self) -> None:
+        registry = assemble_report.load_registry()
+        component_names = list(registry["components"])
+
+        resolved = assemble_report.resolve_components(component_names, registry)
+        styles, scripts = assemble_report.collect_assets(resolved, registry)
+
+        self.assertEqual(set(component_names), set(resolved))
+        self.assertTrue(styles)
+        self.assertTrue(scripts)
+
+    def test_validator_rejects_truncated_component_runtime(self) -> None:
+        body = '<div class="code-wrap"><button class="copy-btn" type="button">复制</button><pre><code class="language-text">plain</code></pre></div>'
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+        broken = assembled.replace("HTML_REPORT_CODE_BLOCK_RUNTIME_END", "HTML_REPORT_CODE_BLOCK_RUNTIME_BROKEN", 1)
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("缺少完整性标记 HTML_REPORT_CODE_BLOCK_RUNTIME_END" in error for error in errors))
+
+    def test_media_lightbox_is_auto_assembled_and_passes_validation(self) -> None:
+        body = """
+<figure class="media-evidence" data-case="case-01" data-conclusion="图片可复核">
+  <div class="media-frame">
+    <a class="image-lightbox-trigger" data-image-lightbox href="data:image/png;base64,AA==">
+      <img src="data:image/png;base64,AA==" alt="case-01 结果截图">
+    </a>
+  </div>
+  <figcaption>case-01 结果截图</figcaption>
+</figure>
+"""
+        assembled, components = assemble_report.assemble_html(self.report_html("", body))
+
+        self.assertIn("media", components)
+        self.assertIn("image-lightbox", components)
+        self.assertEqual(1, assembled.count('data-html-report-runtime="image-lightbox"'))
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_media_evidence_without_lightbox_is_rejected(self) -> None:
+        body = """
+<figure class="media-evidence" data-case="case-01" data-conclusion="图片可复核">
+  <div class="media-frame"><img src="data:image/png;base64,AA==" alt="case-01 结果截图"></div>
+  <figcaption>case-01 结果截图</figcaption>
+</figure>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("必须包在 a.image-lightbox-trigger" in error for error in errors))
+
+    def test_file_location_keeps_short_label_and_full_target(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="idea://open?file=/repo/business/flowvideo/FlowVideoHelper.kt&amp;line=1050"
+   title="/repo/business/flowvideo/FlowVideoHelper.kt:1050-1070">FlowVideoHelper.kt:1050-1070</a>
+"""
+        assembled, components = assemble_report.assemble_html(self.report_html("", body))
+
+        self.assertIn("file-location", components)
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_file_location_rejects_visible_full_path(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="idea://open?file=/repo/business/flowvideo/FlowVideoHelper.kt&amp;line=1050"
+   title="/repo/business/flowvideo/FlowVideoHelper.kt:1050-1070">repo/business/flowvideo/FlowVideoHelper.kt:1050-1070</a>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("同名时最多增加一级父目录" in error for error in errors))
+
+    def test_file_location_rejects_mismatched_target(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="idea://open?file=/repo/business/flowvideo/Other.kt&amp;line=1050"
+   title="/repo/business/flowvideo/FlowVideoHelper.kt:1050-1070">FlowVideoHelper.kt:1050-1070</a>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("href 与 title 的完整路径不一致" in error for error in errors))
+
+    def test_file_location_accepts_encoded_absolute_path_with_spaces(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="idea://open?file=/repo/My%20File.kt&amp;line=10"
+   title="/repo/My File.kt:10">My File.kt:10</a>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_file_location_rejects_relative_ide_target(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="idea://open?file=repo/Foo.kt&amp;line=10"
+   title="repo/Foo.kt:10">Foo.kt:10</a>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("href 必须使用绝对路径" in error for error in errors))
+        self.assertTrue(any("title 必须保留完整路径" in error for error in errors))
+
+    def test_review_workspace_rejects_relative_absolute_path(self) -> None:
+        spec = {
+            "workspace_id": "relative-path-eval",
+            "versions": [{"id": "before", "label": "Before"}, {"id": "after", "label": "After"}],
+            "files": [
+                {
+                    "id": "foo",
+                    "filename": "Foo.kt",
+                    "absolute_path": "repo/Foo.kt",
+                    "versions": {
+                        "before": {"source": "class Foo", "language": "kotlin"},
+                        "after": {"source": "class Foo", "language": "kotlin"},
+                    },
+                }
+            ],
+        }
+
+        with self.assertRaisesRegex(build_review_workspace.SpecError, "absolute_path 必须是绝对路径"):
+            build_review_workspace.build_config(spec, Path("workspace.json"))
+
+    def test_review_workspace_uses_short_ide_location_label(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "FlowVideoHelper.kt"
+            source_path.write_text("class FlowVideoHelper\nfun bind() = Unit\n", encoding="utf-8")
+            spec_path = temp_path / "workspace.json"
+            spec = {
+                "workspace_id": "file-location-eval",
+                "versions": [
+                    {"id": "before", "label": "Before"},
+                    {"id": "after", "label": "After"},
+                ],
+                "files": [
+                    {
+                        "id": "flow-video-helper",
+                        "filename": "FlowVideoHelper.kt",
+                        "path": "flowvideo/FlowVideoHelper.kt",
+                        "display_path": "FlowVideoHelper.kt:2",
+                        "absolute_path": "/repo/business/flowvideo/FlowVideoHelper.kt",
+                        "idea_line": 2,
+                        "versions": {
+                            "before": {"source_path": str(source_path), "language": "kotlin", "marks": {"focus": [2]}},
+                            "after": {"source_path": str(source_path), "language": "kotlin", "marks": {"focus": [2]}},
+                        },
+                    }
+                ],
+            }
+
+            config = build_review_workspace.build_config(spec, spec_path)
+            fragment = build_review_workspace.render_fragment(config)
+            assembled, components = assemble_report.assemble_html(self.report_html("", fragment))
+
+        self.assertIn("file-location", components)
+        self.assertIn(">FlowVideoHelper.kt:2</a>", assembled)
+        self.assertIn('title="/repo/business/flowvideo/FlowVideoHelper.kt:2"', assembled)
+        self.assertNotIn(">/repo/business/flowvideo/FlowVideoHelper.kt:2</a>", assembled)
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_sortable_table_uses_semantic_button_and_runtime(self) -> None:
+        body = """
+<div class="table-wrap">
+  <table class="sortable"><thead><tr><th><button class="sort-button" type="button" data-sort-type="number">数量<span class="sort-arrow" aria-hidden="true"></span></button></th></tr></thead>
+  <tbody><tr><td>2</td></tr><tr><td>1</td></tr></tbody></table>
+</div>
+"""
+        assembled, components = assemble_report.assemble_html(self.report_html("", body))
+
+        self.assertIn("sortable-table", components)
+        self.assertEqual(1, assembled.count('data-html-report-runtime="sortable-table"'))
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_tabs_keep_accessible_structure_and_runtime(self) -> None:
+        body = """
+<section class="report-tabs" data-tabs>
+  <div class="tabs" role="tablist" aria-label="报告视图">
+    <button id="tab-a" class="tab-label" type="button" role="tab" aria-selected="true" aria-controls="panel-a">问题清单</button>
+    <button id="tab-b" class="tab-label" type="button" role="tab" aria-selected="false" aria-controls="panel-b">修复方案</button>
+  </div>
+  <div class="tab-content">
+    <section id="panel-a" class="tab-panel" role="tabpanel" aria-labelledby="tab-a">问题</section>
+    <section id="panel-b" class="tab-panel" role="tabpanel" aria-labelledby="tab-b">方案</section>
+  </div>
+</section>
+"""
+        assembled, components = assemble_report.assemble_html(self.report_html("", body))
+
+        self.assertIn("tabs", components)
+        self.assertEqual(1, assembled.count('data-html-report-runtime="tabs"'))
+        self.assertNotIn("CSS.escape(", assembled)
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_tabs_validate_each_instance_and_aria_relationship(self) -> None:
+        valid = """
+<section class="report-tabs" data-tabs>
+  <div role="tablist"><button id="tab-good" role="tab" aria-controls="panel-good">正确</button></div>
+  <section id="panel-good" role="tabpanel" aria-labelledby="tab-good">内容</section>
+</section>
+"""
+        broken = """
+<section class="report-tabs" data-tabs>
+  <div role="tablist"><button id="tab-bad" role="tab" aria-controls="missing-panel">错误</button></div>
+  <section id="panel-bad" role="tabpanel" aria-labelledby="missing-tab">内容</section>
+</section>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", valid + broken))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("第 2 个标签页" in error and "aria-controls 未指向" in error for error in errors))
+        self.assertTrue(any("第 2 个标签页" in error and "aria-labelledby 未指向" in error for error in errors))
+
+    def test_toc_is_auto_assembled_with_runtime(self) -> None:
+        body = """
+<div class="layout-with-toc">
+  <nav class="toc" aria-label="目录">
+    <div class="toc-header"><p class="toc-title">目录</p><button class="toc-toggle" type="button" aria-expanded="true" aria-label="收起目录" title="收起目录"><span class="toc-toggle-icon" aria-hidden="true">‹</span></button></div>
+    <a href="#summary">摘要</a>
+  </nav>
+  <main><section id="summary"><h2>摘要</h2><p>正文</p></section></main>
+</div>
+"""
+        assembled, components = assemble_report.assemble_html(self.report_html("", body))
+
+        self.assertIn("toc", components)
+        self.assertEqual(1, assembled.count('data-html-report-runtime="toc"'))
+        self.assertEqual([], self.validate_html(assembled))
+
+    @staticmethod
+    def component_css(*components: str) -> str:
+        """读取组件拆分后的真实 CSS，避免测试维护旧路径或复制样式。"""
+
+        return "\n".join(
+            (SKILL_DIR / "assets" / "components" / name / "style.css").read_text(encoding="utf-8")
+            for name in components
+        )
 
     @staticmethod
     def report_html(css: str, body: str) -> str:

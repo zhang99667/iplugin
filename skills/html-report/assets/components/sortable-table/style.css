@@ -1,0 +1,29 @@
+/* 可排序表格 CSS：只增强 .sortable，基础网格线由 table 组件提供。 */
+.sortable .sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.sortable .sort-button:hover { color: var(--accent); }
+.sortable .sort-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.sortable .sort-arrow {
+  display: inline-block;
+  min-width: 1.1em;
+  font-size: 10px;
+  color: var(--muted);
+}
+.sortable th[aria-sort="ascending"] .sort-arrow,
+.sortable th[aria-sort="descending"] .sort-arrow { color: var(--accent); }

@@ -16,17 +16,12 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+from assemble_report import assemble_html
 from highlight_code import highlight, normalize_lang
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_PATH = SKILL_ROOT / "assets" / "review-workspace" / "workspace.js"
-CSS_PATHS = (
-    SKILL_ROOT / "references" / "css" / "base.css",
-    SKILL_ROOT / "references" / "css" / "interactions.css",
-    SKILL_ROOT / "references" / "css" / "code-diff.css",
-    SKILL_ROOT / "references" / "css" / "review-workspace.css",
-)
 ID_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 MARK_NAMES = ("primary", "secondary", "focus", "context")
 STATUS_TONES = {"neutral", "info", "success", "warning", "danger"}
@@ -215,6 +210,11 @@ def build_file(
             details.append("多出 " + "、".join(extra))
         raise SpecError(f"{label}.versions 与顶层 versions 不一致：" + "；".join(details))
 
+    absolute_path = optional_text(raw.get("absolute_path"))
+    # idea:// 必须拿到可直接定位的绝对路径；相对路径只能作为普通文本展示。
+    if absolute_path and not Path(absolute_path).is_absolute():
+        raise SpecError(f"{label}.absolute_path 必须是绝对路径")
+
     built_versions = {
         version["id"]: build_source(
             require_object(raw_versions[version["id"]], f"{label}.versions.{version['id']}"),
@@ -225,7 +225,6 @@ def build_file(
         for version in versions
     }
 
-    absolute_path = optional_text(raw.get("absolute_path"))
     focus_line = raw.get("idea_line")
     if focus_line is not None and (not isinstance(focus_line, int) or isinstance(focus_line, bool) or focus_line < 1):
         raise SpecError(f"{label}.idea_line 必须是正整数")
@@ -233,11 +232,19 @@ def build_file(
         focus_line = first_focus_line(raw_versions, version_ids)
 
     path_text = optional_text(raw.get("path"), filename)
+    explicit_display_path = optional_text(raw.get("display_path"))
+    display_path = explicit_display_path or (f"{filename}:{focus_line}" if focus_line else filename)
+    line_suffix = re.search(r":\d+(?:-\d+)?$", display_path)
+    location_title = absolute_path or path_text
+    if line_suffix and not re.search(r":\d+(?:-\d+)?$", location_title):
+        location_title += line_suffix.group(0)
     return {
         "id": file_id,
         "filename": filename,
         "path": path_text,
-        "displayPath": optional_text(raw.get("display_path"), path_text),
+        "displayPath": display_path,
+        "_displayPathExplicit": bool(explicit_display_path),
+        "locationTitle": location_title,
         "absolutePath": absolute_path,
         "ideaHref": build_idea_href(absolute_path, focus_line),
         "group": optional_text(raw.get("group"), optional_text(raw.get("repo"))),
@@ -265,6 +272,22 @@ def build_config(spec: dict[str, Any], spec_path: Path) -> dict[str, Any]:
             raise SpecError(f"files id 重复：{item['id']}")
         seen_files.add(item["id"])
         files.append(item)
+
+    # 默认只展示文件名；同页文件名冲突时补一级父目录，仍避免完整仓库路径撑宽布局。
+    filename_counts: dict[str, int] = {}
+    for item in files:
+        filename_counts[item["filename"]] = filename_counts.get(item["filename"], 0) + 1
+    for item in files:
+        if filename_counts[item["filename"]] > 1 and not item["_displayPathExplicit"]:
+            source_path = item["absolutePath"] or item["path"]
+            parent_name = Path(source_path).parent.name
+            if parent_name:
+                item["displayPath"] = item["displayPath"].replace(
+                    item["filename"],
+                    f"{parent_name}/{item['filename']}",
+                    1,
+                )
+        item.pop("_displayPathExplicit")
 
     legend_raw = require_object(spec.get("legend", {}), "legend")
     return {
@@ -326,6 +349,7 @@ def render_static_mount(config: dict[str, Any]) -> str:
     status = current["status"]
     path_tag = "a" if current["ideaHref"] else "span"
     href = f' href="{html.escape(current["ideaHref"], quote=True)}"' if current["ideaHref"] else ""
+    path_classes = "file-location file-link path rw-path" if "&line=" in current["ideaHref"] else "path rw-path"
     nav_items = []
     for index, file in enumerate(config["files"]):
         file_status = file["status"]
@@ -374,7 +398,7 @@ def render_static_mount(config: dict[str, Any]) -> str:
         '<div class="rw-overview">'
         '<div class="rw-overview-top"><div>'
         f'<h3>{html.escape(current["filename"])}</h3><div class="rw-meta">'
-        f'<{path_tag} class="path rw-path"{href} title="{html.escape(current["absolutePath"] or current["path"], quote=True)}">'
+        f'<{path_tag} class="{path_classes}"{href} title="{html.escape(current["locationTitle"], quote=True)}">'
         f'{html.escape(current["displayPath"])}</{path_tag}>'
         f'<span class="rw-status rw-tone-{html.escape(status["tone"], quote=True)}">{html.escape(status["label"])}</span>'
         f'<span class="rw-relation">{html.escape(current["relation"])}</span>'
@@ -416,23 +440,21 @@ def render_fragment(config: dict[str, Any], include_runtime: bool = True) -> str
 
 
 def render_standalone(config: dict[str, Any]) -> str:
-    """生成仅用于组件预览和回归检查的完整 HTML。"""
+    """生成仅用于组件预览和回归检查的完整 HTML。
 
-    css = "\n".join(path.read_text(encoding="utf-8").rstrip() for path in CSS_PATHS)
+    预览页也走正式组件装配器，防止 Workspace 维护第二套 CSS 依赖清单。
+    """
+
     title = html.escape(config["title"])
     fragment = render_fragment(config, include_runtime=True)
-    return f"""<!doctype html>
+    source = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title}</title>
-  <style>
-{css}
-  </style>
 </head>
 <body>
-<div class="toast" aria-live="polite"></div>
 <main class="rw-layout-wide">
   <header class="doc-header">
     <h1>{title}</h1>
@@ -444,6 +466,8 @@ def render_standalone(config: dict[str, Any]) -> str:
 </body>
 </html>
 """
+    assembled, _ = assemble_html(source)
+    return assembled
 
 
 def parse_args() -> argparse.Namespace:

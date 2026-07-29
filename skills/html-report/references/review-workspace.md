@@ -28,12 +28,13 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
 
 ## 组件组成
 
-生成报告时按需读取并内联：
+生成报告时由脚本和统一装配器按需处理：
 
-- `references/css/code-diff.css`：提供 `tok-*` 静态高亮颜色。
-- `references/css/review-workspace.css`：提供 Workspace 布局、代码窗格、响应式和打印样式。
+- `assets/components/code-block/style.css`：提供 `tok-*` 静态高亮颜色，由依赖自动带入。
+- `assets/review-workspace/workspace.css`：提供 Workspace 布局、代码窗格、响应式和打印样式。
 - `assets/review-workspace/workspace.js`：提供离线交互 runtime；通常由构建脚本自动内联。
 - `scripts/build_review_workspace.py`：读取 JSON 规格和源码快照，输出安全的 HTML 组件片段。
+- `scripts/assemble_report.py`：识别 `.review-workspace`，解析依赖并内联 Workspace 和基础组件样式。
 
 不要手写大段 Workspace JS，也不要把示例报告里的业务字段、文件名、状态类型或 `localStorage` key 原样复制到新报告。
 
@@ -50,13 +51,8 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
 4. 把生成片段插入代码评审报告的 Findings / 改动概览之后、真实补丁之前。
    - 三版本窗格希望尽量同时可见时，无目录页面可给 `<main>` 增加 `rw-layout-wide`。
    - 使用左侧目录时可给 `.layout-with-toc` 增加 `rw-layout-wide`；组件 CSS 只放宽这类报告，不改变普通报告宽度。
-5. 最终 `<style>` 同时内联：
-
-   - `base.css`
-   - `interactions.css`
-   - `code-diff.css`
-   - `review-workspace.css`
-   - 长报告需要目录时再加 `toc.css`
+5. 完整报告写好后运行 `assemble_report.py`。注册表会自动加入 `base`、`interactions`、
+   `file-location`、`code-block` 和 `review-workspace`；长报告出现目录结构时再自动加入 `toc`。
 
 6. 如果一份报告有多个 Workspace，第一个片段保留 runtime，后续片段使用：
 
@@ -109,7 +105,7 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
       "id": "feed-ad-tools",
       "filename": "FeedAdTools.java",
       "path": "lib-ad-feed/.../FeedAdTools.java",
-      "display_path": "lib-ad-feed/.../FeedAdTools.java:88",
+      "display_path": "FeedAdTools.java:88",
       "absolute_path": "/absolute/path/FeedAdTools.java",
       "idea_line": 88,
       "group": "lib_ad",
@@ -196,8 +192,8 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
 | `id` | 是 | 文件稳定 ID，报告内唯一 |
 | `filename` | 是 | 文件名 |
 | `path` | 否 | 搜索和回退展示用路径 |
-| `display_path` | 否 | 页面显示的短路径，建议保留文件名和行号 |
-| `absolute_path` | 否 | 有值时构建 `idea://open` 链接 |
+| `display_path` | 否 | 页面短标签；默认 `文件名:行号`，同名消歧最多增加一级父目录 |
+| `absolute_path` | 否 | 必须是绝对路径；有值时构建 `idea://open` 链接，相对路径只放在 `path` |
 | `idea_line` | 否 | IDEA 跳转行；缺省时优先取右侧较新版本的首个 `focus` 行 |
 | `group` / `repo` | 否 | 文件列表里的仓库、模块或分组 |
 | `status` | 否 | 筛选状态；包含 `id`、`label`、`tone` |
@@ -257,6 +253,7 @@ git show backup/ref:path/to/File.kt
 - 900px 以下改为文件导航在上、版本窗格单列。
 - 打印时隐藏工具栏、文件导航和复制按钮，按版本纵向输出静态源码。
 - 重要结论必须在 Workspace 外的普通正文中出现，不能只藏在需要 JS 的交互区。
+- IDE 跳转显示短标签，完整路径和行号保留在 `href` / `title`；静态快照与 runtime 切换后的结构必须一致。
 
 ## 预览与回归
 

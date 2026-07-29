@@ -15,7 +15,7 @@ import sys
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 CODE_WRAP_RE = re.compile(r'<div\b[^>]*class=["\'][^"\']*\bcode-wrap\b[^"\']*["\'][^>]*>.*?</div>', re.DOTALL)
@@ -67,6 +67,23 @@ REVIEW_WORKSPACE_RUNTIME_RE = re.compile(
     r'<script\b(?=[^>]*\bdata-review-workspace-runtime(?:\s|=|>))[^>]*>(.*?)</script>',
     re.DOTALL | re.IGNORECASE,
 )
+COMPONENT_STYLE_RE = re.compile(
+    r'<style\b[^>]*\bdata-html-report-components=["\']([^"\']*)["\'][^>]*>(.*?)</style>',
+    re.DOTALL | re.IGNORECASE,
+)
+COMPONENT_RUNTIME_RE = re.compile(
+    r'<script\b[^>]*\bdata-html-report-runtime=["\']([^"\']+)["\'][^>]*>(.*?)</script>',
+    re.DOTALL | re.IGNORECASE,
+)
+SORTABLE_TABLE_RE = re.compile(
+    r'<table\b[^>]*class=["\'][^"\']*\bsortable\b[^"\']*["\'][^>]*>.*?</table>',
+    re.DOTALL | re.IGNORECASE,
+)
+FILE_LOCATION_LINK_RE = re.compile(
+    r'<a\b(?=[^>]*\bclass=["\'][^"\']*\bfile-location\b[^"\']*["\'])'
+    r'([^>]*)>(.*?)</a>',
+    re.DOTALL | re.IGNORECASE,
+)
 
 TEXT_LIKE_LANGS = {"markdown", "text", "txt", "log", "logs", "plain", "plaintext"}
 MEDIA_EXTENSIONS = {".apng", ".avif", ".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".ogg", ".ogv", ".png", ".svg", ".webm", ".webp"}
@@ -87,10 +104,27 @@ def load_supported_langs() -> set[str]:
 SUPPORTED_LANGS = load_supported_langs()
 
 
+def load_component_registry() -> dict[str, Any]:
+    """读取装配器注册表，让生成和校验共用同一份组件依赖真源。"""
+
+    path = Path(__file__).resolve().parents[1] / "assets" / "components" / "registry.json"
+    try:
+        registry = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"无法读取 html-report 组件注册表: {path}") from error
+    if not isinstance(registry, dict) or not isinstance(registry.get("components"), dict):
+        raise RuntimeError(f"html-report 组件注册表结构错误: {path}")
+    return registry
+
+
+COMPONENT_REGISTRY = load_component_registry()
+
+
 @dataclass
 class TagFrame:
     tag: str
     classes: set[str]
+    attrs: dict[str, str]
 
 
 @dataclass
@@ -107,6 +141,8 @@ class MediaItem:
     line: int
     figure_index: int | None
     source_count: int = 0
+    lightbox_href: str = ""
+    lightbox_enabled: bool = False
 
 
 @dataclass
@@ -121,6 +157,58 @@ class FigureState:
     @property
     def figcaption_text(self) -> str:
         return " ".join(chunk.strip() for chunk in self.figcaption_text_chunks if chunk.strip())
+
+
+@dataclass
+class TabsState:
+    """保存单个 Tabs 根节点内的 ARIA 关系，避免不同实例互相掩盖错误。"""
+
+    line: int
+    attrs: dict[str, str]
+    tablist_count: int = 0
+    tabs: list[dict[str, str]] = field(default_factory=list)
+    panels: list[dict[str, str]] = field(default_factory=list)
+
+
+class TabsMarkupParser(HTMLParser):
+    """逐实例收集 Tabs 结构；只关心原生属性，不依赖脆弱的嵌套标签正则。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.depth = 0
+        self.instances: list[TabsState] = []
+        self.active: list[tuple[int, TabsState]] = []
+
+    @staticmethod
+    def normalized_attrs(attrs: list[tuple[str, str | None]]) -> dict[str, str]:
+        return {name: value or "" for name, value in attrs}
+
+    def collect(self, attrs: dict[str, str]) -> None:
+        role = attrs.get("role")
+        for _, instance in self.active:
+            if role == "tablist":
+                instance.tablist_count += 1
+            elif role == "tab":
+                instance.tabs.append(attrs)
+            elif role == "tabpanel":
+                instance.panels.append(attrs)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr_map = self.normalized_attrs(attrs)
+        classes = set(attr_map.get("class", "").split())
+        if "report-tabs" in classes:
+            instance = TabsState(line=self.getpos()[0], attrs=attr_map)
+            self.instances.append(instance)
+            self.active.append((self.depth, instance))
+        self.collect(attr_map)
+        self.depth += 1
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.collect(self.normalized_attrs(attrs))
+
+    def handle_endtag(self, tag: str) -> None:
+        self.depth = max(0, self.depth - 1)
+        self.active = [(depth, instance) for depth, instance in self.active if depth != self.depth]
 
 
 class ReportParser(HTMLParser):
@@ -182,11 +270,21 @@ class ReportParser(HTMLParser):
                 self.errors.append(f"第 {line} 行普通表格未包在 .table-wrap 中，窄屏滚动和统一网格线无法保证")
 
         if tag in {"img", "video"}:
+            lightbox_frame = next(
+                (
+                    frame
+                    for frame in reversed(self.stack)
+                    if frame.tag == "a" and "image-lightbox-trigger" in frame.classes
+                ),
+                None,
+            )
             media = MediaItem(
                 tag=tag,
                 attrs=attr_map,
                 line=line,
                 figure_index=current_figure.index if current_figure else None,
+                lightbox_href=lightbox_frame.attrs.get("href", "") if lightbox_frame else "",
+                lightbox_enabled=bool(lightbox_frame and "data-image-lightbox" in lightbox_frame.attrs),
             )
             self.media_items.append(media)
             media_index = len(self.media_items) - 1
@@ -238,7 +336,7 @@ class ReportParser(HTMLParser):
             if inside_pre and not inside_code_wrap:
                 self.errors.append("发现未包在 .code-wrap 中的 <pre><code> 代码块")
 
-        self.stack.append(TagFrame(tag=tag, classes=classes))
+        self.stack.append(TagFrame(tag=tag, classes=classes, attrs=attr_map))
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "style":
@@ -262,7 +360,13 @@ class ReportParser(HTMLParser):
         if self.figcaption_depth and self.figure_stack:
             self.figure_stack[-1].figcaption_text_chunks.append(data)
 
-        if any(frame.tag in {"code", "pre", "script", "style"} for frame in self.stack):
+        # Diff/Workspace 源码也可能合法包含反引号，不能当成正文 Markdown 漏渲染。
+        if any(
+            frame.tag in {"code", "pre", "script", "style"}
+            or "diff-code" in frame.classes
+            or "rw-src" in frame.classes
+            for frame in self.stack
+        ):
             return
 
         for match in RAW_INLINE_CODE_RE.findall(data):
@@ -322,6 +426,194 @@ def css_rule_has(css: str, selector_fragments: tuple[str, ...], declaration_frag
     return False
 
 
+def html_class_tokens(source_html: str) -> set[str]:
+    """提取 class token，供注册表检测和组件契约检查复用。"""
+
+    tokens: set[str] = set()
+    for match in re.finditer(r'\bclass\s*=\s*(["\'])(.*?)\1', source_html, re.DOTALL | re.IGNORECASE):
+        tokens.update(part for part in match.group(2).split() if part)
+    return tokens
+
+
+def detect_registered_components(source_html: str) -> list[str]:
+    classes = html_class_tokens(source_html)
+    detected: list[str] = []
+    for name, component in COMPONENT_REGISTRY["components"].items():
+        detect = component.get("detect", {})
+        has_class = any(marker in classes for marker in detect.get("classes", []))
+        has_attribute = any(
+            re.search(rf"\s{re.escape(marker)}(?:\s|=|>)", source_html, re.IGNORECASE)
+            for marker in detect.get("attributes", [])
+        )
+        if has_class or has_attribute:
+            detected.append(name)
+    return detected
+
+
+def check_component_bundle(source_html: str) -> list[str]:
+    """校验统一装配器写入的组件声明、依赖和 runtime 唯一性。"""
+
+    errors: list[str] = []
+    style_blocks = COMPONENT_STYLE_RE.findall(source_html)
+    runtime_blocks = COMPONENT_RUNTIME_RE.findall(source_html)
+    has_managed_marker = "HTML_REPORT_COMPONENT_STYLES_START" in source_html
+    if not style_blocks and not has_managed_marker:
+        return errors  # 兼容重构前生成的历史报告；新报告由 SKILL.md 强制走装配器。
+    if len(style_blocks) != 1:
+        return ["组件化报告必须且只能有一个 data-html-report-components 样式块"]
+
+    declared = style_blocks[0][0].split()
+    declared_set = set(declared)
+    components = COMPONENT_REGISTRY["components"]
+    if len(declared) != len(declared_set):
+        errors.append("data-html-report-components 包含重复组件")
+    for name in declared:
+        if name not in components:
+            errors.append(f"data-html-report-components 声明未知组件: {name}")
+            continue
+        for dependency in components[name].get("dependencies", []):
+            if dependency not in declared_set:
+                errors.append(f"组件 {name} 缺少依赖 {dependency}")
+        if components[name].get("styles") and f"html-report component: {name}" not in style_blocks[0][1]:
+            errors.append(f"组件 {name} 已声明但样式块缺少对应资产标记")
+
+    for detected in detect_registered_components(source_html):
+        if detected not in declared_set:
+            errors.append(f"页面使用组件 {detected}，但装配声明未包含它")
+
+    runtime_counts: dict[str, int] = {}
+    for name, runtime in runtime_blocks:
+        runtime_counts[name] = runtime_counts.get(name, 0) + 1
+        if name not in components:
+            errors.append(f"页面内联未知组件 runtime: {name}")
+        if not runtime.strip():
+            errors.append(f"组件 runtime {name} 为空")
+        if name in components and components[name].get("scripts"):
+            # 所有标准 runtime 都使用同一命名标记，校验时可统一发现截断或手工漏贴。
+            marker_name = name.replace("-", "_").upper()
+            for suffix in ("START", "END"):
+                marker = f"HTML_REPORT_{marker_name}_RUNTIME_{suffix}"
+                if marker not in runtime:
+                    errors.append(f"组件 runtime {name} 缺少完整性标记 {marker}")
+    for name in declared:
+        if name not in components or not components[name].get("scripts"):
+            continue
+        count = runtime_counts.get(name, 0)
+        if count != 1:
+            errors.append(f"组件 {name} 必须且只能内联一个 data-html-report-runtime，当前 {count} 个")
+    for name, count in runtime_counts.items():
+        if count > 1:
+            errors.append(f"组件 runtime {name} 重复内联 {count} 次")
+    return errors
+
+
+def check_behavior_component_markup(source_html: str) -> list[str]:
+    """检查交互组件的语义结构，使无障碍和无 JS 回退不依赖模型临场发挥。"""
+
+    errors: list[str] = []
+    for index, table in enumerate(SORTABLE_TABLE_RE.findall(source_html), start=1):
+        if "sort-button" not in html_class_tokens(table):
+            errors.append(f"第 {index} 个可排序表格表头缺少 .sort-button")
+        if "sort-arrow" not in html_class_tokens(table):
+            errors.append(f"第 {index} 个可排序表格表头缺少 .sort-arrow 状态槽")
+
+    tabs_parser = TabsMarkupParser()
+    tabs_parser.feed(source_html)
+    for index, instance in enumerate(tabs_parser.instances, start=1):
+        prefix = f"第 {index} 个标签页（第 {instance.line} 行）"
+        if "data-tabs" not in instance.attrs:
+            errors.append(f"{prefix}根节点缺少 data-tabs 初始化标记")
+        if instance.tablist_count != 1:
+            errors.append(f"{prefix}必须且只能包含一个 role=tablist，当前 {instance.tablist_count} 个")
+        if not instance.tabs:
+            errors.append(f"{prefix}缺少 role=tab")
+        if not instance.panels:
+            errors.append(f"{prefix}缺少 role=tabpanel")
+
+        tab_ids = [tab.get("id", "") for tab in instance.tabs]
+        panel_ids = [panel.get("id", "") for panel in instance.panels]
+        if any(not tab_id for tab_id in tab_ids):
+            errors.append(f"{prefix}每个 role=tab 都必须有 id")
+        if any(not panel_id for panel_id in panel_ids):
+            errors.append(f"{prefix}每个 role=tabpanel 都必须有 id")
+        if len(set(filter(None, tab_ids))) != len(list(filter(None, tab_ids))):
+            errors.append(f"{prefix}包含重复的 tab id")
+        if len(set(filter(None, panel_ids))) != len(list(filter(None, panel_ids))):
+            errors.append(f"{prefix}包含重复的 tabpanel id")
+
+        panel_by_id = {panel_id: panel for panel_id, panel in zip(panel_ids, instance.panels) if panel_id}
+        tab_by_id = {tab_id: tab for tab_id, tab in zip(tab_ids, instance.tabs) if tab_id}
+        for tab in instance.tabs:
+            tab_id = tab.get("id", "")
+            panel_id = tab.get("aria-controls", "")
+            if not panel_id:
+                errors.append(f"{prefix} tab {tab_id or '<missing-id>'} 缺少 aria-controls")
+                continue
+            panel = panel_by_id.get(panel_id)
+            if panel is None:
+                errors.append(f"{prefix} tab {tab_id or '<missing-id>'} 的 aria-controls 未指向本组件 tabpanel: {panel_id}")
+            elif tab_id and panel.get("aria-labelledby", "") != tab_id:
+                errors.append(f"{prefix} tab {tab_id} 与 tabpanel {panel_id} 的 ARIA 引用不互为对应")
+        for panel in instance.panels:
+            panel_id = panel.get("id", "")
+            tab_id = panel.get("aria-labelledby", "")
+            if not tab_id:
+                errors.append(f"{prefix} tabpanel {panel_id or '<missing-id>'} 缺少 aria-labelledby")
+                continue
+            tab = tab_by_id.get(tab_id)
+            if tab is None:
+                errors.append(f"{prefix} tabpanel {panel_id or '<missing-id>'} 的 aria-labelledby 未指向本组件 tab: {tab_id}")
+            elif panel_id and tab.get("aria-controls", "") != panel_id:
+                errors.append(f"{prefix} tabpanel {panel_id} 与 tab {tab_id} 的 ARIA 引用不互为对应")
+    return errors
+
+
+def check_file_location_links(source_html: str) -> list[str]:
+    """IDE 跳转显示文件名和行范围，完整路径只放在 href/title。"""
+
+    errors: list[str] = []
+    for index, (attributes, body) in enumerate(FILE_LOCATION_LINK_RE.findall(source_html), start=1):
+        label = fragment_text(body)
+        href_match = re.search(r'\bhref=["\']([^"\']+)["\']', attributes, re.IGNORECASE)
+        title_match = re.search(r'\btitle=["\']([^"\']+)["\']', attributes, re.IGNORECASE)
+        href = html_lib.unescape(href_match.group(1)) if href_match else ""
+        title = html_lib.unescape(title_match.group(1)) if title_match else ""
+        # 文件名可以包含空格，但可见路径仍限制为文件名或一级父目录。
+        label_match = re.fullmatch(r"([^/<>\r\n]+(?:/[^/<>\r\n]+)?):(\d+)(?:-(\d+))?", label)
+        if not label_match:
+            errors.append(
+                f"第 {index} 个文件定位链接显示文本应为 文件名:行号-行号；同名时最多增加一级父目录，当前为 {label!r}"
+            )
+        parsed_href = urlparse(href)
+        query = parse_qs(parsed_href.query)
+        href_file = query.get("file", [""])[0]
+        href_line = query.get("line", [""])[0]
+        if parsed_href.scheme != "idea" or parsed_href.netloc != "open" or not href_file or not href_line.isdigit():
+            errors.append(f"第 {index} 个文件定位链接缺少 idea:// 文件和起始行参数")
+        elif not Path(href_file).is_absolute():
+            errors.append(f"第 {index} 个文件定位链接 href 必须使用绝对路径")
+        title_match_value = re.fullmatch(r"(.+):(\d+)(?:-(\d+))?", title)
+        if not title_match_value or not Path(title_match_value.group(1)).is_absolute():
+            errors.append(f"第 {index} 个文件定位链接 title 必须保留完整路径和行号")
+            continue
+        title_file, title_start, title_end = title_match_value.groups()
+        if href_file and href_file != title_file:
+            errors.append(f"第 {index} 个文件定位链接 href 与 title 的完整路径不一致")
+        if href_line.isdigit() and href_line != title_start:
+            errors.append(f"第 {index} 个文件定位链接 href 起始行与 title 不一致")
+        if label_match:
+            label_path, label_start, label_end = label_match.groups()
+            expected_paths = {Path(title_file).name}
+            parent_name = Path(title_file).parent.name
+            if parent_name:
+                expected_paths.add(f"{parent_name}/{Path(title_file).name}")
+            if label_path not in expected_paths:
+                errors.append(f"第 {index} 个文件定位链接短标签与完整路径不一致")
+            if (label_start, label_end) != (title_start, title_end):
+                errors.append(f"第 {index} 个文件定位链接短标签与 title 行范围不一致")
+    return errors
+
+
 def looks_like_unified_diff(text: str) -> bool:
     return bool(RAW_UNIFIED_DIFF_RE.search(text) or ("diff --git " in text and HUNK_MARKER_RE.search(text)))
 
@@ -329,6 +621,8 @@ def looks_like_unified_diff(text: str) -> bool:
 def check_code_wrap_blocks(html: str, css: str) -> list[str]:
     errors: list[str] = []
     compact_css = re.sub(r"\s+", " ", css)
+    if CODE_WRAP_RE.search(html) and not css_rule_has(css, (".code-wrap pre",), ("overflow-x: auto",)):
+        errors.append("报告包含代码块，但 .code-wrap pre 缺少 overflow-x: auto 横向滚动保护")
     for index, block in enumerate(CODE_WRAP_RE.findall(html), start=1):
         lang_match = LANG_RE.search(block)
         if not lang_match:
@@ -962,6 +1256,13 @@ def check_media_support(parser: ReportParser, report_path: Path, css: str) -> tu
 
         figure = figure_by_index.get(media.figure_index or -1)
         if figure and ("media-evidence" in figure.classes or "media-card" in figure.classes):
+            if media.tag == "img":
+                if not media.lightbox_enabled:
+                    errors.append(
+                        f"第 {media.line} 行媒体证据图片必须包在 a.image-lightbox-trigger[data-image-lightbox] 中，保留原图链接并支持点击放大"
+                    )
+                elif not media.lightbox_href:
+                    errors.append(f"第 {media.line} 行图片灯箱触发链接缺少 href 原图地址")
             if not figure.figcaption_text:
                 warnings.append(f"第 {media.line} 行媒体证据卡建议提供 figcaption，说明标题、内容和结论")
             if not figure.attrs.get("data-case"):
@@ -989,7 +1290,6 @@ def check_document_chrome(parser: ReportParser) -> list[str]:
 
     required_css_fragments = {
         "box-sizing: border-box": "缺少全局 box-sizing，卡片/表格在窄屏下更容易溢出",
-        "overflow-x: auto": "缺少横向滚动保护，宽表格/代码块/ASCII 图可能显示不全",
         "@media (max-width": "缺少窄屏响应式样式，分屏或移动端可能显示不全",
         "@media print": "缺少打印样式，彩色/黑白打印或预览可能显示不全",
     }
@@ -1025,6 +1325,9 @@ def validate_with_warnings(path: Path, require_review_pack: bool = False) -> tup
     warnings: list[str] = []
     errors.extend(check_document_chrome(parser))
     css = "\n".join(parser.style_chunks)
+    errors.extend(check_component_bundle(html))
+    errors.extend(check_behavior_component_markup(html))
+    errors.extend(check_file_location_links(html))
     errors.extend(check_table_support(parser, css))
     errors.extend(check_code_wrap_blocks(html, css))
     errors.extend(check_diff_viewer_blocks(html, css))

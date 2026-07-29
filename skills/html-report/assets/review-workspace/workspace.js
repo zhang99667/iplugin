@@ -250,9 +250,11 @@
 
       const meta = createElement("div", "rw-meta");
       const path = createElement(file.ideaHref ? "a" : "span", "path rw-path", file.displayPath || file.path);
-      path.title = file.absolutePath || file.path || "";
+      path.title = file.locationTitle || file.absolutePath || file.path || "";
       if (file.ideaHref) {
         path.classList.add("file-link");
+        // 有明确起始行时启用统一 IDE 定位组件；短标签与完整 title 均来自构建期校验数据。
+        if (file.ideaHref.includes("&line=")) path.classList.add("file-location");
         path.href = file.ideaHref;
       }
       meta.appendChild(path);

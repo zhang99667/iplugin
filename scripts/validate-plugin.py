@@ -62,7 +62,7 @@ HTML_REPORT_REVIEW_WORKSPACE_ASSETS = {
         "rw-diff-only",
         "document.execCommand",
     ),
-    SKILLS_DIR / "html-report" / "references" / "css" / "review-workspace.css": (
+    SKILLS_DIR / "html-report" / "assets" / "review-workspace" / "workspace.css": (
         ".review-workspace .rw-toolbar",
         ".review-workspace .rw-panes",
         ".review-workspace .rw-code-scroll",
@@ -74,9 +74,11 @@ HTML_REPORT_REVIEW_WORKSPACE_ASSETS = {
         "render_fragment",
         "render_standalone",
         "workspace.js",
-        "review-workspace.css",
+        "assemble_html",
     ),
 }
+HTML_REPORT_COMPONENT_ROOT = SKILLS_DIR / "html-report" / "assets" / "components"
+HTML_REPORT_COMPONENT_REGISTRY = HTML_REPORT_COMPONENT_ROOT / "registry.json"
 
 # 两个平台 manifest 中必须保持一致的公共字段。
 PRIMARY_COMMON_FIELDS = ("name", "version", "description", "keywords")
@@ -1005,6 +1007,97 @@ def check_html_report_review_workspace_assets() -> CheckResult:
     return result
 
 
+def check_html_report_component_assets() -> CheckResult:
+    """检查组件注册表、依赖和资产完整性，保证装配器输入是一致的单一真源。"""
+
+    result = CheckResult("HTML report component assets are valid")
+    registry, error = load_json(HTML_REPORT_COMPONENT_REGISTRY)
+    if error:
+        result.details.append(error)
+        return result
+    if not isinstance(registry, dict) or registry.get("schemaVersion") != 1:
+        result.details.append(f"{rel(HTML_REPORT_COMPONENT_REGISTRY)} schemaVersion must be 1")
+        return result
+
+    components = registry.get("components")
+    defaults = registry.get("defaults")
+    if not isinstance(components, dict) or not components:
+        result.details.append(f"{rel(HTML_REPORT_COMPONENT_REGISTRY)} components must be a non-empty object")
+        return result
+    if not isinstance(defaults, list) or not all(isinstance(name, str) for name in defaults):
+        result.details.append(f"{rel(HTML_REPORT_COMPONENT_REGISTRY)} defaults must be a string array")
+        defaults = []
+
+    for name in defaults:
+        if name not in components:
+            result.details.append(f"{rel(HTML_REPORT_COMPONENT_REGISTRY)} default component is missing: {name}")
+
+    skill_root = SKILLS_DIR / "html-report"
+    for name, component in components.items():
+        label = f"{rel(HTML_REPORT_COMPONENT_REGISTRY)} component {name}"
+        if not isinstance(component, dict):
+            result.details.append(f"{label} must be an object")
+            continue
+
+        dependencies = component.get("dependencies")
+        if not isinstance(dependencies, list) or not all(isinstance(item, str) for item in dependencies):
+            result.details.append(f"{label} dependencies must be a string array")
+            dependencies = []
+        for dependency in dependencies:
+            if dependency not in components:
+                result.details.append(f"{label} references missing dependency {dependency}")
+
+        for asset_type, suffix in (("styles", "style"), ("scripts", "script")):
+            assets = component.get(asset_type)
+            if not isinstance(assets, list) or not all(isinstance(item, str) for item in assets):
+                result.details.append(f"{label} {asset_type} must be a string array")
+                continue
+            for asset in assets:
+                asset_path = (HTML_REPORT_COMPONENT_ROOT / asset).resolve()
+                try:
+                    asset_path.relative_to(skill_root.resolve())
+                except ValueError:
+                    result.details.append(f"{label} {suffix} escapes html-report: {asset}")
+                    continue
+                if not asset_path.is_file():
+                    result.details.append(f"{label} {suffix} does not exist: {asset}")
+                    continue
+                source = read_text(asset_path)
+                closing_tag = f"</{suffix}>"
+                if closing_tag in source.lower():
+                    result.details.append(f"{rel(asset_path)} must not contain literal {closing_tag}")
+                if asset_type == "scripts":
+                    marker_name = name.replace("-", "_").upper()
+                    for marker_suffix in ("START", "END"):
+                        marker = f"HTML_REPORT_{marker_name}_RUNTIME_{marker_suffix}"
+                        if marker not in source:
+                            result.details.append(f"{rel(asset_path)} is missing {marker}")
+
+    for path, fragments in {
+        SKILLS_DIR / "html-report" / "scripts" / "assemble_report.py": (
+            "REGISTRY_PATH",
+            "resolve_components",
+            "data-html-report-components",
+            "data-html-report-runtime",
+        ),
+        SKILLS_DIR / "html-report" / "scripts" / "check_html_report.py": (
+            "registry.json",
+            "check_component_bundle",
+            "check_behavior_component_markup",
+            "check_file_location_links",
+        ),
+    }.items():
+        if not path.is_file():
+            result.details.append(f"{rel(path)} does not exist")
+            continue
+        source = read_text(path)
+        for fragment in fragments:
+            if fragment not in source:
+                result.details.append(f"{rel(path)} is missing {fragment}")
+
+    return result
+
+
 def print_results(results: list[CheckResult]) -> None:
     """按固定格式输出所有检查项，便于提交前快速扫一眼。"""
 
@@ -1050,6 +1143,7 @@ def main() -> int:
         check_no_hardcoded_homedir(skills),
         check_skill_evals(skills),
         check_html_report_annotation_assets(),
+        check_html_report_component_assets(),
         check_html_report_review_workspace_assets(),
     ]
 

@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "defaults": ["base", "interactions"],
+  "components": {
+    "base": {
+      "category": "core",
+      "description": "页面、抬头、基础卡片、路径和打印兜底",
+      "dependencies": [],
+      "styles": ["base/style.css"],
+      "scripts": [],
+      "detect": {}
+    },
+    "interactions": {
+      "category": "core",
+      "description": "details 和 toast 的通用样式",
+      "dependencies": ["base"],
+      "styles": ["interactions/style.css"],
+      "scripts": [],
+      "detect": {}
+    },
+    "table": {
+      "category": "content",
+      "description": "带完整网格线和宽表滚动的普通表格",
+      "dependencies": ["base"],
+      "styles": ["table/style.css"],
+      "scripts": [],
+      "detect": {"classes": ["table-wrap"]}
+    },
+    "file-location": {
+      "category": "navigation",
+      "description": "显示文件名和行范围、保留完整 IDE 跳转目标的路径 chip",
+      "dependencies": ["base"],
+      "styles": ["file-location/style.css"],
+      "scripts": [],
+      "detect": {"classes": ["file-location", "file-link"]}
+    },
+    "code-block": {
+      "category": "content",
+      "description": "代码、日志、ASCII 和静态语法高亮",
+      "dependencies": ["base", "interactions"],
+      "styles": ["code-block/style.css"],
+      "scripts": ["code-block/runtime.js"],
+      "detect": {"classes": ["code-wrap", "ascii-diagram"]}
+    },
+    "diff-viewer": {
+      "category": "pattern",
+      "description": "按文件拆分的 unified diff 复合组件",
+      "dependencies": ["code-block"],
+      "styles": ["diff-viewer/style.css"],
+      "scripts": [],
+      "detect": {"classes": ["diff-viewer"]}
+    },
+    "media": {
+      "category": "content",
+      "description": "图片、关键帧和视频证据",
+      "dependencies": ["base"],
+      "styles": ["media/style.css"],
+      "scripts": [],
+      "detect": {"classes": ["media-evidence", "media-frame"]}
+    },
+    "image-lightbox": {
+      "category": "behavior",
+      "description": "基于原图链接和原生 dialog 的图片放大",
+      "dependencies": ["base"],
+      "styles": ["image-lightbox/style.css"],
+      "scripts": ["image-lightbox/runtime.js"],
+      "detect": {"classes": ["image-lightbox-trigger"], "attributes": ["data-image-lightbox"]}
+    },
+    "diagram": {
+      "category": "content",
+      "description": "内联 SVG 技术图和宽图滚动",
+      "dependencies": ["base"],
+      "styles": ["diagram/style.css"],
+      "scripts": [],
+      "detect": {"classes": ["diagram-block", "tech-diagram"]}
+    },
+    "toc": {
+      "category": "navigation",
+      "description": "默认展开、可整体收起的长文档目录",
+      "dependencies": ["base"],
+      "styles": ["toc/style.css"],
+      "scripts": ["toc/runtime.js"],
+      "detect": {"classes": ["layout-with-toc", "toc-toggle"]}
+    },
+    "tabs": {
+      "category": "behavior",
+      "description": "支持键盘导航并具备无 JS 回退的标签页",
+      "dependencies": ["base"],
+      "styles": ["tabs/style.css"],
+      "scripts": ["tabs/runtime.js"],
+      "detect": {"classes": ["report-tabs"], "attributes": ["data-tabs"]}
+    },
+    "sortable-table": {
+      "category": "behavior",
+      "description": "普通表格的可选稳定排序增强",
+      "dependencies": ["table"],
+      "styles": ["sortable-table/style.css"],
+      "scripts": ["sortable-table/runtime.js"],
+      "detect": {"classes": ["sortable"]}
+    },
+    "review-workspace": {
+      "category": "pattern",
+      "description": "多文件、两到三版本完整源码审阅台",
+      "dependencies": ["base", "interactions", "file-location", "code-block"],
+      "styles": ["../review-workspace/workspace.css"],
+      "scripts": [],
+      "detect": {"classes": ["review-workspace"]}
+    }
+  }
+}
