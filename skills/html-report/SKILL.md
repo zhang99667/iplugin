@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.6.4
+version: 0.6.5
 tags:
   - report
   - html
@@ -34,7 +34,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `scripts/build_review_workspace.py`：按 JSON 规格读取 2 到 3 份源码快照，生成安全静态高亮并输出可内联 Workspace 片段；不要手工拼含源码的 JSON `<script>`。
 - `scripts/assemble_report.py`：统一组件装配器。语义 HTML 和脚本生成片段准备完成后，用它自动检测组件、递归解析依赖并幂等内联 CSS/JS；不要手贴组件资产。
 - `scripts/inject_annotation_mode.py`：当需要评论模式时，在基础 HTML 通过常规校验后运行它注入稳定的离线评论 UI、评论结果内嵌交接、Markdown 兜底和无批注发布版导出能力；不要手写批注 JS。
-- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、普通表格圆角滚动容器与完整网格线、状态标签默认前景/背景、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、每文件独立 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
+- `scripts/check_html_report.py`：生成后校验脚本。写完 HTML 后运行它检查外部 CSS/JS、普通表格圆角滚动容器与完整网格线、状态标签默认前景/背景、评论类型徽标稳定布局、未渲染的 Markdown 行内代码、裸 `<pre><code>`、`.code-wrap`、静态高亮 token/inline style、token CSS 样式、复制按钮、viewport、响应式/打印样式、每文件独立 diff viewer 结构/CSS、可整体收起的目录侧栏结构，以及已出现图片/视频的相对路径、alt、controls 和响应式保护。
 - `evals/evals.json`：html-report 的回归用例清单。只有评估或维护 skill 质量时读取，不参与普通报告生成；当前覆盖代码评审、问题排查、技术方案、聚焦 diff、多版本 Review Workspace、Android mock 验收、评论模式、既有知识文档结构保真和基础组件稳定性。
 
 ## 触发边界

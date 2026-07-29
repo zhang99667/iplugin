@@ -100,6 +100,7 @@
         "评论模式由 skills/html-report/scripts/inject_annotation_mode.py 注入，而不是手写评论脚本。",
         "选中文本后的轻量气泡只保留一个注释按钮，不并列展示提问和批注类型选择。",
         "批注输入浮层的提交按钮内显示 Ctrl/⌘ + Enter 快捷键标识，并保留 aria-keyshortcuts。",
+        "评论侧栏的提问/注释类型徽标保持横排且不参与 flex 收缩，长章节标题换行时不能把徽标挤成竖排。",
         "注入后再次通过 check_html_report.py。",
         "评论版包含保存评论结果到 HTML、Markdown 兜底、导出无批注版和编辑已有批注能力，不再提供独立下载 JSON 入口。",
         "新注入且尚未保存批注的评论版可以没有内嵌包；点击保存后必须生成唯一、安全转义的 AgentQuestionPack 节点。",

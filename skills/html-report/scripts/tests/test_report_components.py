@@ -54,6 +54,20 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn('<span class="qa-submit-label">提交</span>', annotated)
         self.assertIn('<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>', annotated)
         self.assertIn('aria-keyshortcuts="Meta+Enter Control+Enter"', annotated)
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotated,
+                (".qa-kind",),
+                ("flex: 0 0 auto", "white-space: nowrap"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotated,
+                (".qa-section",),
+                ("min-width: 0", "overflow-wrap: anywhere"),
+            )
+        )
         popover_start = annotated.index('id="qaSelectionPopover"')
         popover_end = annotated.index("</div>", popover_start)
         popover = annotated[popover_start:popover_end]
@@ -61,6 +75,18 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn('data-qa-action="note-selection"', popover)
         self.assertIn("注释", popover)
         self.assertEqual([], self.validate_html(annotated))
+
+    def test_annotation_kind_badge_without_stable_width_is_rejected(self) -> None:
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-kind-badge-report.html"),
+        )
+        broken = annotated.replace("      flex: 0 0 auto;\n", "").replace("      white-space: nowrap;\n", "")
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("类型徽标必须禁止 flex 收缩和文字换行" in error for error in errors))
 
     def test_multi_file_diff_is_split_into_independent_cards(self) -> None:
         source = (SKILL_DIR / "evals" / "fixtures" / "code_review_patch.diff").read_text(encoding="utf-8")

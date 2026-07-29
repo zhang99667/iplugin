@@ -1117,6 +1117,12 @@ def check_annotation_mode(
     if ".qa-launcher-count[hidden]" not in compact_css and ".qa-launcher.publish-mode .qa-launcher-count" not in compact_css:
         errors.append("发布模式下必须强制隐藏右上角批注数量徽标，避免导出发布版按钮残留蓝色圆点")
 
+    if not require_review_pack:
+        if not css_rule_has(css, (".qa-kind",), ("flex: 0 0 auto", "white-space: nowrap")):
+            errors.append("评论卡片类型徽标必须禁止 flex 收缩和文字换行，避免“提问/注释”被挤成竖排")
+        if not css_rule_has(css, (".qa-section",), ("min-width: 0", "overflow-wrap: anywhere")):
+            errors.append("评论卡片长章节标题必须承担收缩并允许换行，不能挤压左侧类型徽标")
+
     errors.extend(check_embedded_review_pack(html, required=require_review_pack, block_ids=block_ids))
     return errors
 

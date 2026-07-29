@@ -347,6 +347,7 @@
     .qa-kind {
       display: inline-flex;
       align-items: center;
+      flex: 0 0 auto;
       min-height: 22px;
       padding: 2px 8px;
       border-radius: 999px;
@@ -354,9 +355,17 @@
       color: #075985;
       font-size: 12px;
       font-weight: 900;
+      white-space: nowrap;
     }
     .qa-card.kind-note .qa-kind { background: #ccfbf1; color: #115e59; }
-    .qa-section { color: var(--qa-muted); font-size: 12px; line-height: 1.4; }
+    .qa-section {
+      min-width: 0;
+      color: var(--qa-muted);
+      font-size: 12px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+      text-align: right;
+    }
     .qa-quote {
       margin: 8px 0;
       padding: 8px 10px;
