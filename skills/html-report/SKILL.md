@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.7.1
+version: 0.7.2
 tags:
   - report
   - html

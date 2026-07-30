@@ -133,6 +133,49 @@ class ReportComponentTest(unittest.TestCase):
 
         self.assertEqual([], self.validate_html(html))
 
+    def test_diff_line_numbers_are_compact_without_internal_rule(self) -> None:
+        """行号列随内容收缩，并且 old/new 之间不重复绘制分隔线。"""
+
+        css = self.component_css("base", "code-block", "diff-viewer")
+
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".diff-viewer .diff-num",),
+                ("width: 1%", "min-width: 0", "white-space: nowrap", "font-variant-numeric: tabular-nums"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".diff-viewer .diff-old-num",),
+                ("border-right: 0 !important",),
+            )
+        )
+
+    def test_validator_rejects_wide_or_divided_diff_line_numbers(self) -> None:
+        """防止后续样式回退为固定宽行号列，或重新出现 old/new 中间竖线。"""
+
+        source = (SKILL_DIR / "evals" / "fixtures" / "focused_diff_patch.diff").read_text(encoding="utf-8")
+        css = self.component_css("base", "code-block", "diff-viewer")
+        body = highlight_code.render_diff_viewer(source)
+        wide_css = css.replace(
+            ".diff-viewer .diff-num {\n  width: 1%;\n  min-width: 0;",
+            ".diff-viewer .diff-num {\n  width: 1%;\n  min-width: 40px;",
+            1,
+        )
+        divided_css = css.replace(
+            ".diff-viewer .diff-old-num {\n  border-right: 0 !important;\n}\n",
+            "",
+            1,
+        )
+
+        wide_errors = self.validate_html(self.report_html(wide_css, body))
+        divided_errors = self.validate_html(self.report_html(divided_css, body))
+
+        self.assertTrue(any("必须按内容收缩" in error for error in wide_errors))
+        self.assertTrue(any("不应显示多余竖线" in error for error in divided_errors))
+
     def test_validator_rejects_multi_file_diff_in_one_card(self) -> None:
         source = (SKILL_DIR / "evals" / "fixtures" / "code_review_patch.diff").read_text(encoding="utf-8")
         css = self.component_css("base", "code-block", "diff-viewer")
