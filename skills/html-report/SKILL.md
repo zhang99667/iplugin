@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.7.0
+version: 0.7.1
 tags:
   - report
   - html
@@ -24,6 +24,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - `references/css-template.md`：统一装配流程和最小 HTML 骨架。开始写 HTML 文件时读取；不再从 reference 手工复制 CSS/JS。
 - `references/component-contracts.md`：组件分层、依赖、语义结构、无 JS 回退和维护门禁。报告使用表格、IDE 跳转、代码、Diff、图片灯箱、目录、Tabs、排序表格或 Workspace 时读取对应章节。
 - `assets/components/registry.json`：页面组件、依赖和资产的机器可读单一真源；由装配器和校验器共同使用，普通生成时不手工修改。
+- `assets/component-gallery/component-gallery.html`、`scripts/build_component_gallery.py`：覆盖全部注册组件和评论模式的标准 Gallery 及确定性构建入口。只在维护组件、人工验收或版本发布时使用，不参与普通报告生成。
 - `references/review-workspace.md`：代码评审需要多个文件的 2 到 3 份完整源码并排审阅，或用户要求复用“三方 Review Workspace / 审阅台”时读取；它定义适用边界、JSON 规格、构建流程和与真实 diff 的分工。
 - `assets/review-workspace/workspace.css`：Review Workspace 的布局、源码窗格、响应式和打印资产；由统一装配器按注册表内联。
 - `assets/review-workspace/workspace.js`：Review Workspace 离线交互 runtime；通常由 `build_review_workspace.py` 自动内联，不要手写或业务化复制。

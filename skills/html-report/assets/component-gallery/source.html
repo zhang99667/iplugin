@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTML Report Component Gallery</title>
+  <style>
+    .gallery-section {
+      padding: 6px 0 28px;
+      border-bottom: 1px solid #dbe3ef;
+    }
+    .gallery-section:last-child { border-bottom: 0; }
+    .gallery-label {
+      margin: 0 0 8px;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .gallery-states {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .gallery-state {
+      min-width: 0;
+      padding: 12px 0;
+    }
+    .gallery-state h3 { font-size: 15px; }
+    .gallery-inline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    @media (max-width: 720px) {
+      .gallery-states { grid-template-columns: 1fr; }
+    }
+    @media print {
+      .gallery-section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout-with-toc">
+    <nav class="toc" aria-label="目录">
+      <div class="toc-header">
+        <p class="toc-title">目录</p>
+        <button class="toc-toggle" type="button" aria-expanded="true" aria-label="收起目录" title="收起目录">
+          <span class="toc-toggle-icon" aria-hidden="true">‹</span>
+        </button>
+      </div>
+      <a href="#overview">Overview</a>
+      <a href="#base">Base / Interactions</a>
+      <a href="#navigation">File Location</a>
+      <a href="#tables">Tables</a>
+      <a href="#code">Code / Diff</a>
+      <a href="#media">Media / Lightbox</a>
+      <a href="#diagram">Diagram</a>
+      <a href="#tabs">Tabs</a>
+      <a href="#workspace">Review Workspace</a>
+    </nav>
+
+    <main>
+      <header class="doc-header" id="overview">
+        <h1>HTML Report Component Gallery</h1>
+        <p class="doc-subtitle">标准状态 · 长内容 · 空状态 · 交互态</p>
+        <div class="doc-meta">
+          <span class="doc-chip">13 registered components</span>
+          <span class="doc-chip">annotation mode</span>
+          <span class="doc-chip">single file</span>
+        </div>
+      </header>
+
+      <section class="gallery-section" id="base">
+        <h2>Base / Interactions</h2>
+        <p class="gallery-label">Default</p>
+        <div class="summary">
+          <h3>结论摘要</h3>
+          <p>报告基础层提供正文、标题、状态标签、卡片和打印回退。</p>
+          <div class="meta">
+            <span class="tag">默认</span>
+            <span class="tag p0">P0</span>
+            <span class="tag p1">P1</span>
+            <span class="tag p2">P2</span>
+          </div>
+        </div>
+        <div class="gallery-states">
+          <div class="gallery-state">
+            <h3>Inline code</h3>
+            <p>运行 <code>check_html_report.py</code> 后归档结果。</p>
+          </div>
+          <div class="gallery-state">
+            <h3>Long content</h3>
+            <p><code>extremely_long_configuration_key_that_must_wrap_without_breaking_the_report_viewport</code></p>
+          </div>
+          <div class="gallery-state">
+            <h3>Empty</h3>
+            <p class="muted">暂无补充信息。</p>
+          </div>
+        </div>
+        <details>
+          <summary>折叠详情</summary>
+          <div class="details-body">原生 details 在 JavaScript 不可用时仍可展开。</div>
+        </details>
+      </section>
+
+      <section class="gallery-section" id="navigation">
+        <h2>File Location</h2>
+        <div class="gallery-inline">
+          <a class="file-location file-link"
+             href="idea://open?file=/repo/demo/report/ReportBuilder.py&amp;line=128"
+             title="/repo/demo/report/ReportBuilder.py:128-146">ReportBuilder.py:128-146</a>
+          <span class="path">relative/UnknownSource.kt:42</span>
+        </div>
+      </section>
+
+      <section class="gallery-section" id="tables">
+        <h2>Table / Sortable Table</h2>
+        <p class="gallery-label">Grid and long content</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>组件</th><th>状态</th><th>边界内容</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>table</td><td><span class="ok">通过</span></td><td>完整 1px 网格线</td></tr>
+              <tr><td>long-content</td><td><span class="warn">关注</span></td><td>very_long_unbroken_identifier_used_to_verify_horizontal_overflow_protection</td></tr>
+              <tr><td>empty</td><td>无数据</td><td class="muted">暂无补充信息</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="gallery-label">Interactive sorting</p>
+        <div class="table-wrap">
+          <table class="sortable">
+            <thead>
+              <tr>
+                <th><button class="sort-button" type="button" data-sort-type="auto">组件<span class="sort-arrow" aria-hidden="true"></span></button></th>
+                <th><button class="sort-button" type="button" data-sort-type="number">用例数<span class="sort-arrow" aria-hidden="true"></span></button></th>
+                <th><button class="sort-button" type="button" data-sort-type="date">更新时间<span class="sort-arrow" aria-hidden="true"></span></button></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>table</td><td>3</td><td>2026-07-29</td></tr>
+              <tr><td>tabs</td><td>2</td><td>2026-07-28</td></tr>
+              <tr><td>toc</td><td>4</td><td>2026-07-27</td></tr>
+              <tr><td>code-block</td><td>8</td><td>2026-07-26</td></tr>
+              <tr><td>diff-viewer</td><td>6</td><td>2026-07-25</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="gallery-section" id="code">
+        <h2>Code Block</h2>
+        {{CODE_BLOCK}}
+        <h2>Diff Viewer</h2>
+        {{DIFF_VIEWER}}
+      </section>
+
+      <section class="gallery-section" id="media">
+        <h2>Media / Image Lightbox</h2>
+        <figure class="media-evidence" data-case="gallery-media" data-conclusion="图片可直接查看并点击放大">
+          <div class="media-frame">
+            <a class="image-lightbox-trigger" data-image-lightbox href="{{MEDIA_URI}}" data-lightbox-caption="组件关系示例图">
+              <img src="{{MEDIA_URI}}" alt="组件关系示例图，展示内容、行为和复合组件三层结构">
+            </a>
+          </div>
+          <figcaption class="media-caption">
+            <span class="media-caption-title">组件关系示例图</span>
+            内容组件、行为增强和复合模式保持独立装配边界。
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="gallery-section" id="diagram">
+        <h2>Diagram</h2>
+        <figure class="diagram-block">
+          <svg class="tech-diagram" viewBox="0 0 900 260" role="img" aria-labelledby="gallery-diagram-title gallery-diagram-desc">
+            <title id="gallery-diagram-title">HTML Report 组件装配链路</title>
+            <desc id="gallery-diagram-desc">语义正文经过组件检测和依赖解析后生成离线单文件报告。</desc>
+            <rect x="24" y="72" width="210" height="116" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+            <rect x="345" y="72" width="210" height="116" rx="8" fill="#f0fdf4" stroke="#15803d" stroke-width="2"/>
+            <rect x="666" y="72" width="210" height="116" rx="8" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+            <path d="M234 130H345M555 130H666" stroke="#475569" stroke-width="3" fill="none"/>
+            <path d="M330 121L345 130L330 139M651 121L666 130L651 139" stroke="#475569" stroke-width="3" fill="none"/>
+            <text x="129" y="118" text-anchor="middle" fill="#1e3a8a" font-size="20" font-weight="700">Semantic HTML</text>
+            <text x="129" y="148" text-anchor="middle" fill="#475569" font-size="14">content + markers</text>
+            <text x="450" y="118" text-anchor="middle" fill="#166534" font-size="20" font-weight="700">Assembler</text>
+            <text x="450" y="148" text-anchor="middle" fill="#475569" font-size="14">detect + resolve</text>
+            <text x="771" y="118" text-anchor="middle" fill="#9a3412" font-size="20" font-weight="700">Single HTML</text>
+            <text x="771" y="148" text-anchor="middle" fill="#475569" font-size="14">inline CSS + JS</text>
+          </svg>
+          <figcaption>语义正文 → 组件检测与依赖解析 → 离线单文件。</figcaption>
+        </figure>
+      </section>
+
+      <section class="gallery-section" id="tabs">
+        <h2>Tabs</h2>
+        <section class="report-tabs" data-tabs>
+          <div class="tabs" role="tablist" aria-label="组件状态">
+            <button id="gallery-tab-default" class="tab-label" type="button" role="tab" aria-selected="true" aria-controls="gallery-panel-default">Default</button>
+            <button id="gallery-tab-long" class="tab-label" type="button" role="tab" aria-selected="false" aria-controls="gallery-panel-long">Long content</button>
+            <button id="gallery-tab-empty" class="tab-label" type="button" role="tab" aria-selected="false" aria-controls="gallery-panel-empty">Empty</button>
+          </div>
+          <div class="tab-content">
+            <section id="gallery-panel-default" class="tab-panel" role="tabpanel" aria-labelledby="gallery-tab-default"><p>默认面板内容。</p></section>
+            <section id="gallery-panel-long" class="tab-panel" role="tabpanel" aria-labelledby="gallery-tab-long"><p><code>long_panel_content_that_must_remain_readable_in_a_narrow_split_view</code></p></section>
+            <section id="gallery-panel-empty" class="tab-panel" role="tabpanel" aria-labelledby="gallery-tab-empty"><p class="muted">暂无内容。</p></section>
+          </div>
+        </section>
+      </section>
+
+      <section class="gallery-section" id="workspace">
+        <h2>Review Workspace</h2>
+        {{REVIEW_WORKSPACE}}
+      </section>
+    </main>
+  </div>
+</body>
+</html>

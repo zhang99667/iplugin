@@ -182,6 +182,7 @@ JS 时源码仍保持可读和可选中。
 3. 让 runtime 使用 `HTML_REPORT_<NAME>_RUNTIME_START/END` 完整性标记，并保护重复初始化。
 4. 在 `scripts/tests/test_report_components.py` 增加正向、缺依赖或坏结构的反向用例。
 5. 必要时扩展 `check_html_report.py` 的确定性结构门禁，不评价内容审美。
-6. 运行装配幂等测试、组件测试、真实报告校验和插件全仓校验。
+6. 运行 `scripts/build_component_gallery.py` 更新标准 Gallery，确认默认、长内容、空状态和交互态仍能组合展示。
+7. 运行装配幂等测试、组件测试、真实报告校验和插件全仓校验。
 
 不要把组件拆成新 skill，也不要把 CSS/JS 源码复制回 reference。

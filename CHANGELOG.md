@@ -1,3 +1,10 @@
+## [0.22.21] - 2026-07-30
+### Added
+- html-report: 新增可重建的标准组件 Gallery，集中展示全部 13 个注册组件、评论模式及默认、长内容、空状态和交互状态
+
+### Changed
+- html-report: Gallery 的代码、Diff 和 Review Workspace 复用正式生成器，并增加组件覆盖、产物新鲜度和最终 HTML 校验；skill 版本从 `0.7.0` 升级到 `0.7.1`，插件升级到 `0.22.21`
+
 ## [0.22.20] - 2026-07-29
 ### Added
 - html-report: 新增隔离 Eval Runner，支持独立任务 Agent 与 grader 自动执行、确定性 HTML 校验、逐项证据评分和多轮通过率汇总
