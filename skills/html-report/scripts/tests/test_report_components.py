@@ -152,9 +152,15 @@ class ReportComponentTest(unittest.TestCase):
                 ("border-right: 0 !important",),
             )
         )
+        for selector, declaration in (
+            (".diff-viewer .diff-add .diff-gutter", "border-left: 2px solid #16a34a"),
+            (".diff-viewer .diff-del .diff-gutter", "border-left: 2px solid #dc2626"),
+            (".diff-viewer .diff-context .diff-gutter", "border-left: 2px solid transparent"),
+        ):
+            self.assertTrue(check_html_report.css_rule_has(css, (selector,), (declaration,)))
 
-    def test_validator_rejects_wide_or_divided_diff_line_numbers(self) -> None:
-        """防止后续样式回退为固定宽行号列，或重新出现 old/new 中间竖线。"""
+    def test_validator_rejects_wide_divided_or_thick_diff_gutter(self) -> None:
+        """防止行号区回退为固定宽列、多余竖线或过粗变更轨道。"""
 
         source = (SKILL_DIR / "evals" / "fixtures" / "focused_diff_patch.diff").read_text(encoding="utf-8")
         css = self.component_css("base", "code-block", "diff-viewer")
@@ -169,12 +175,15 @@ class ReportComponentTest(unittest.TestCase):
             "",
             1,
         )
+        thick_track_css = css.replace("border-left: 2px", "border-left: 5px")
 
         wide_errors = self.validate_html(self.report_html(wide_css, body))
         divided_errors = self.validate_html(self.report_html(divided_css, body))
+        thick_track_errors = self.validate_html(self.report_html(thick_track_css, body))
 
         self.assertTrue(any("必须按内容收缩" in error for error in wide_errors))
         self.assertTrue(any("不应显示多余竖线" in error for error in divided_errors))
+        self.assertTrue(any("必须统一使用 2px 细轨道" in error for error in thick_track_errors))
 
     def test_validator_rejects_multi_file_diff_in_one_card(self) -> None:
         source = (SKILL_DIR / "evals" / "fixtures" / "code_review_patch.diff").read_text(encoding="utf-8")

@@ -722,6 +722,15 @@ def check_diff_viewer_blocks(html: str, css: str) -> list[str]:
     if not css_rule_has(css, (".diff-viewer .diff-old-num",), ("border-right: 0 !important",)):
         errors.append("diff viewer old/new 行号之间不应显示多余竖线")
 
+    # 三种行使用相同的细轨道宽度，透明上下文轨道负责保持 +/- 列横向对齐。
+    change_track_rules = (
+        (".diff-viewer .diff-add .diff-gutter", "border-left: 2px solid #16a34a"),
+        (".diff-viewer .diff-del .diff-gutter", "border-left: 2px solid #dc2626"),
+        (".diff-viewer .diff-context .diff-gutter", "border-left: 2px solid transparent"),
+    )
+    if not all(css_rule_has(css, (selector,), (declaration,)) for selector, declaration in change_track_rules):
+        errors.append("diff viewer 左侧变更指示条必须统一使用 2px 细轨道")
+
     return errors
 
 

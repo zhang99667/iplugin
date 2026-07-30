@@ -1,3 +1,8 @@
+## [0.22.23] - 2026-07-30
+### Changed
+- html-report: Diff Viewer 最左侧红绿变更指示条从 5px 收窄到 2px，`+/-` gutter 继续保持 25px，兼顾细状态标识与符号对齐
+- html-report: 校验器、组件回归和 Gallery 新增 2px 指示条门禁；skill 版本从 `0.7.2` 升级到 `0.7.3`，插件升级到 `0.22.23`
+
 ## [0.22.22] - 2026-07-30
 ### Changed
 - html-report: Diff Viewer 的 old/new 行号列取消 40px 固定最小宽度，改为按当前 diff 的最长行号自然收缩，减少空白占宽
