@@ -60,6 +60,33 @@ const runLauncherUpdate = new Function(
   "launcher",
   extractFunction("updateLauncherMode") + "; updateLauncherMode();",
 );
+const buildRebind = new Function(
+  extractFunction("buildReboundAnnotation") + "; return { buildReboundAnnotation };",
+);
+const { buildReboundAnnotation } = buildRebind();
+const runCancelRebind = new Function(
+  "window",
+  "annotations",
+  "let rebindAnnotationId = 'q-old';"
+  + "let cachedSelectionTarget = { blockId: 'old-b001' };"
+  + "let actionUpdates = 0;"
+  + "function updateSelectionActionMode() { actionUpdates += 1; }"
+  + "function hideSelectionPopover() {}"
+  + extractFunction("cancelAnnotationRebind")
+  + "; const cancelled = cancelAnnotationRebind();"
+  + "; return { cancelled, rebindAnnotationId, cachedSelectionTarget, annotations, actionUpdates };",
+);
+const buildSelectionTarget = new Function(
+  "window",
+  "Node",
+  "main",
+  "normalizeText",
+  "findQuestionTarget",
+  "ensureBlockId",
+  "nearestSectionId",
+  "nearestSectionTitle",
+  extractFunction("buildTargetFromSelection") + "; return { buildTargetFromSelection };",
+);
 
 assert.equal(isNoteKind("注释"), true, "新建内容应按注释类型展示");
 assert.equal(isNoteKind("批注"), true, "旧评论包的批注类型必须继续兼容");
@@ -126,6 +153,102 @@ assert.equal(populatedLauncher.launcherLabel.textContent, "批注", "有批注�
 assert.equal(populatedLauncher.launcherCount.textContent, "3", "数量徽标应反映当前批注数");
 assert.equal(populatedLauncher.launcherCount.hidden, false, "有批注时应显示数量徽标");
 assert.equal(populatedLauncher.attributes["aria-label"], "打开报告批注，当前 3 条", "有批注时应补充可访问数量");
+
+
+/** 重新关联只替换锚点字段，批注身份、正文和创建时间必须保持不变。 */
+const originalAnnotation = {
+  id: "q-old",
+  kind: "提问",
+  text: "原问题内容",
+  createdAt: "2026-08-03T00:00:00.000Z",
+  blockId: "old-b001",
+  sectionId: "old-section",
+  sectionTitle: "旧章节",
+  selectedText: "旧选区",
+  blockText: "旧正文",
+  contextBefore: "旧前文",
+  contextAfter: "旧后文",
+  reportFileName: "report.html",
+};
+const rebound = buildReboundAnnotation(originalAnnotation, {
+  blockId: "new-b002",
+  sectionId: "new-section",
+  sectionTitle: "新章节",
+  selectedText: "新选区",
+  blockText: "新正文",
+  contextBefore: "新前文",
+  contextAfter: "新后文",
+});
+assert.equal(rebound.id, originalAnnotation.id, "重新关联不得生成新批注 id");
+assert.equal(rebound.text, originalAnnotation.text, "重新关联不得覆盖批注正文");
+assert.equal(rebound.kind, originalAnnotation.kind, "重新关联不得改变批注类型");
+assert.equal(rebound.createdAt, originalAnnotation.createdAt, "重新关联不得改变创建时间");
+assert.equal(rebound.reportFileName, originalAnnotation.reportFileName, "重新关联不得丢失来源字段");
+assert.deepEqual(
+  {
+    blockId: rebound.blockId,
+    sectionId: rebound.sectionId,
+    sectionTitle: rebound.sectionTitle,
+    selectedText: rebound.selectedText,
+    blockText: rebound.blockText,
+    contextBefore: rebound.contextBefore,
+    contextAfter: rebound.contextAfter,
+  },
+  {
+    blockId: "new-b002",
+    sectionId: "new-section",
+    sectionTitle: "新章节",
+    selectedText: "新选区",
+    blockText: "新正文",
+    contextBefore: "新前文",
+    contextAfter: "新后文",
+  },
+  "重新关联应完整替换正文锚点字段",
+);
+assert.equal(originalAnnotation.blockId, "old-b001", "未确认新选区前旧批注对象不能被修改");
+
+const cancelledState = runCancelRebind(
+  { getSelection() { return { removeAllRanges() {} }; } },
+  [originalAnnotation],
+);
+assert.equal(cancelledState.cancelled, true, "取消重新关联应返回已取消状态");
+assert.equal(cancelledState.rebindAnnotationId, null, "取消后不应保留临时批注 id");
+assert.equal(cancelledState.cachedSelectionTarget, null, "取消后不应保留旧选区缓存");
+assert.deepEqual(cancelledState.annotations, [originalAnnotation], "取消重新关联不得改变批注数组");
+
+
+/** 构造最小 Selection/Range 桩，验证手动重新关联只能接受 main 内正文选区。 */
+function selectionState(insideMain) {
+  const block = {
+    innerText: "当前正文中的新选区",
+    dataset: {},
+  };
+  const range = {
+    commonAncestorContainer: { nodeType: 1 },
+    getBoundingClientRect() { return { width: 80, top: 10, left: 10 }; },
+  };
+  const selection = {
+    rangeCount: 1,
+    isCollapsed: false,
+    toString() { return "新选区"; },
+    getRangeAt() { return range; },
+  };
+  const main = { contains() { return insideMain; } };
+  const target = buildSelectionTarget(
+    { getSelection() { return selection; } },
+    { ELEMENT_NODE: 1 },
+    main,
+    value => String(value || "").replace(/\s+/g, " ").trim(),
+    () => block,
+    () => "section-b002",
+    () => "section",
+    () => "章节",
+  ).buildTargetFromSelection();
+  return target;
+}
+
+assert.equal(selectionState(false), null, "main 外选区必须被拒绝，不能重绑到批注 UI 或页面其他区域");
+assert.equal(selectionState(true).selectedText, "新选区", "main 内合法选区应生成新的定位目标");
 
 
 /** 构造最小 DOM 包含关系，验证父级大容器不会抢占更精确的正文节点。 */

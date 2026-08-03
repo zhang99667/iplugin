@@ -27,6 +27,8 @@
       const list = document.getElementById('qaList');
       const filterBar = document.getElementById('qaFilterBar');
       const selectionPopover = document.getElementById('qaSelectionPopover');
+      const selectionAction = document.getElementById('qaSelectionAction');
+      const selectionActionLabel = document.getElementById('qaSelectionActionLabel');
       const contextMenu = document.getElementById('qaContextMenu');
       const composer = document.getElementById('qaComposer');
       const composerTitle = document.getElementById('qaComposerTitle');
@@ -42,6 +44,8 @@
       let editingAnnotationId = null;
       let lastContextTarget = null;
       let cachedSelectionTarget = null;
+      // 重新关联只存在于当前页面会话；用户确认新选区前不修改任何批注数据。
+      let rebindAnnotationId = null;
       let blockSeq = 0;
       // 筛选是当前浏览会话的 UI 状态，不写入 AgentQuestionPack，避免改变交接语义。
       let annotationFilter = 'all';
@@ -68,7 +72,7 @@
       renderAnnotations();
       syncAnnotatedState();
       if (initialReconciliation.unresolved.length) {
-        setTimeout(() => showToast('有 ' + initialReconciliation.unresolved.length + ' 条评论的原文已变化，请重新定位'), 0);
+        setTimeout(() => showToast('有 ' + initialReconciliation.unresolved.length + ' 条评论的原文已变化，请重新关联'), 0);
       }
 
       launcher?.addEventListener('click', () => {
@@ -101,6 +105,8 @@
         if (!annotations.length) return;
         if (!confirm('确定清空本页所有批注吗？')) return;
         annotations = [];
+        rebindAnnotationId = null;
+        updateSelectionActionMode();
         saveAnnotations();
         syncAnnotatedState();
         renderAnnotations();
@@ -112,6 +118,12 @@
       });
       document.addEventListener('keyup', event => {
         if (event.key === 'Escape') {
+          if (cancelAnnotationRebind()) {
+            renderAnnotations();
+            setSidebarOpen(true);
+            showToast('已取消重新关联');
+            return;
+          }
           hideFloatingUi();
           closeComposer();
           setSidebarOpen(false);
@@ -123,6 +135,12 @@
         if (!event.target.closest('.qa-selection-popover') && !event.target.closest('.qa-context-menu') && !event.target.closest('.qa-composer')) {
           contextMenu.classList.remove('show');
           closeComposer();
+          // 正文拖选会保留合法选区；普通点击造成选区折叠时退出临时模式，且不触碰批注数组。
+          if (rebindAnnotationId && !event.target.closest('[data-qa-ui]') && !buildTargetFromSelection() && cancelAnnotationRebind()) {
+            renderAnnotations();
+            setSidebarOpen(true);
+            showToast('已取消重新关联');
+          }
         }
       });
 
@@ -154,6 +172,10 @@
         contextMenu.classList.remove('show');
         hideSelectionPopover();
         const selectionTarget = preferCachedSelection ? (cachedSelectionTarget || buildTargetFromSelection()) : buildTargetFromSelection();
+        if (action === 'rebind-selection') {
+          finishAnnotationRebind(selectionTarget);
+          return;
+        }
         if (action === 'ask-selection' || action === 'note-selection') {
           const target = selectionTarget || buildTargetFromElement(lastContextTarget);
           openComposer(target, action === 'ask-selection' ? '提问' : '注释');
@@ -375,6 +397,7 @@
         cachedSelectionTarget = target;
         lastContextTarget = target.element;
         closeComposer();
+        updateSelectionActionMode();
         const top = Math.max(10, rect.top - 48);
         const left = Math.min(window.innerWidth - 190, Math.max(10, rect.left + rect.width / 2 - 88));
         selectionPopover.style.top = top + 'px';
@@ -539,17 +562,20 @@
         }
         list.innerHTML = visibleAnnotations.map(item => {
           const locationMissing = !findAnnotationElementById(item);
+          const rebinding = locationMissing && rebindAnnotationId === item.id;
           return `
-          <article class="qa-card ${isNoteKind(item.kind) ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''}" data-qa-id="${escapeAttr(item.id)}">
+          <article class="qa-card ${isNoteKind(item.kind) ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''} ${rebinding ? 'rebinding' : ''}" data-qa-id="${escapeAttr(item.id)}">
             <div class="qa-card-head">
               <span class="qa-kind">${escapeHtml(item.kind || '提问')}</span>
               <span class="qa-section">${escapeHtml(item.sectionTitle || '未命名章节')}</span>
             </div>
             <button class="qa-quote qa-quote-link" type="button" data-qa-card-action="locate" title="点击原文定位到正文">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</button>
             <div class="qa-question">${escapeHtml(item.text || item.question || '')}</div>
-            ${locationMissing ? '<div class="qa-location-warning">原文已变化，当前报告中无法安全定位；请删除后在新位置重新添加。</div>' : ''}
+            ${locationMissing ? '<div class="qa-location-warning">' + (rebinding
+              ? '正在重新关联：请在正文选中新位置，再点击选区气泡中的“重新关联”；按 Esc 取消。'
+              : '原文已变化，当前报告中无法安全定位；可以手动重新关联到当前选区。') + '</div>' : ''}
             <div class="qa-card-actions">
-              <button class="qa-mini-btn" type="button" data-qa-card-action="locate">${locationMissing ? '尝试定位' : '定位'}</button>
+              <button class="qa-mini-btn ${locationMissing ? 'rebind' : ''}" type="button" data-qa-card-action="${locationMissing ? 'rebind' : 'locate'}">${rebinding ? '取消重新关联' : (locationMissing ? '重新关联' : '定位')}</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="edit">编辑</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="copy">复制此条</button>
               <button class="qa-mini-btn" type="button" data-qa-card-action="delete">删除</button>
@@ -566,9 +592,25 @@
             if (!item) return;
             const action = event.target.closest('[data-qa-card-action]')?.dataset.qaCardAction;
             if (action === 'locate') locateAnnotation(item);
-            if (action === 'edit') openEditAnnotation(item, card);
+            if (action === 'rebind') {
+              if (rebindAnnotationId === item.id) {
+                cancelAnnotationRebind();
+                renderAnnotations();
+                showToast('已取消重新关联');
+              } else {
+                startAnnotationRebind(item);
+              }
+            }
+            if (action === 'edit') {
+              if (cancelAnnotationRebind()) renderAnnotations();
+              openEditAnnotation(item, card);
+            }
             if (action === 'copy') copyText(buildSinglePrompt(item));
             if (action === 'delete') {
+              if (rebindAnnotationId === item.id) {
+                rebindAnnotationId = null;
+                updateSelectionActionMode();
+              }
               annotations = annotations.filter(x => x.id !== item.id);
               saveAnnotations();
               syncAnnotatedState();
@@ -619,6 +661,76 @@
         });
       }
 
+      // 失效批注才允许进入手动模式；正常批注继续使用定位，避免同一动作承担两种职责。
+      function startAnnotationRebind(item) {
+        if (!item || findAnnotationElementById(item)) return;
+        rebindAnnotationId = item.id;
+        cachedSelectionTarget = null;
+        window.getSelection()?.removeAllRanges();
+        closeComposer();
+        hideFloatingUi();
+        updateSelectionActionMode();
+        renderAnnotations();
+        // 收起侧栏后正文才能在桌面和窄屏上完整参与拖选；右上角入口仍可重新打开并取消。
+        setSidebarOpen(false);
+        showToast('请在正文选中新位置，再点击“重新关联”；Esc 可取消');
+      }
+
+      // 临时模式退出只清理 UI 状态；批注内容与旧锚点必须保持原样，直到用户确认合法新选区。
+      function cancelAnnotationRebind() {
+        if (!rebindAnnotationId) return false;
+        rebindAnnotationId = null;
+        cachedSelectionTarget = null;
+        updateSelectionActionMode();
+        hideSelectionPopover();
+        window.getSelection()?.removeAllRanges();
+        return true;
+      }
+
+      function updateSelectionActionMode() {
+        if (!selectionAction || !selectionActionLabel) return;
+        const rebinding = Boolean(rebindAnnotationId);
+        selectionAction.dataset.qaAction = rebinding ? 'rebind-selection' : 'note-selection';
+        selectionAction.title = rebinding ? '将批注关联到当前选区' : '添加注释';
+        selectionActionLabel.textContent = rebinding ? '重新关联' : '注释';
+      }
+
+      // 只替换定位字段，保留 id、批注正文、类型、创建时间和来源路径，避免手动迁移变成删除重建。
+      function buildReboundAnnotation(item, target) {
+        return {
+          ...item,
+          blockId: target.blockId,
+          sectionId: target.sectionId,
+          sectionTitle: target.sectionTitle,
+          selectedText: target.selectedText,
+          blockText: target.blockText,
+          contextBefore: target.contextBefore,
+          contextAfter: target.contextAfter
+        };
+      }
+
+      function finishAnnotationRebind(target) {
+        const index = annotations.findIndex(item => item.id === rebindAnnotationId);
+        // 缓存选区也必须仍属于正文；无效选择安全退出，不对原批注做部分更新。
+        if (index < 0 || !target?.element || !main.contains(target.element)) {
+          cancelAnnotationRebind();
+          renderAnnotations();
+          setSidebarOpen(true);
+          showToast('未找到有效正文选区，已取消重新关联');
+          return;
+        }
+        annotations[index] = buildReboundAnnotation(annotations[index], target);
+        rebindAnnotationId = null;
+        cachedSelectionTarget = null;
+        updateSelectionActionMode();
+        hideSelectionPopover();
+        saveAnnotations();
+        syncAnnotatedState();
+        renderAnnotations();
+        setSidebarOpen(true);
+        showToast('已重新关联到当前选区');
+      }
+
       function updateLauncherMode() {
         const count = annotations.length;
         // 文案保持稳定，数量只表达当前工作状态；零条也必须能进入侧栏并写回合法空包。
@@ -641,7 +753,7 @@
         }
         const el = findAnnotationElementById(item);
         if (!el) {
-          showToast('无法定位：报告内容已变化，请在新位置重新添加评论');
+          showToast('无法定位：报告内容已变化，请使用“重新关联”选择新原文');
           return;
         }
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -681,7 +793,7 @@
         }
         if (reconciliation.unresolved.length) {
           setSidebarOpen(true);
-          showToast('有 ' + reconciliation.unresolved.length + ' 条评论无法定位，已停止保存');
+          showToast('有 ' + reconciliation.unresolved.length + ' 条评论无法定位，请先重新关联');
           return;
         }
         const currentName = currentFileName();

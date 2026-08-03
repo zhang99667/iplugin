@@ -370,6 +370,11 @@
       border-left-color: #d97706;
       background: #fffbeb;
     }
+    .qa-card.rebinding {
+      border-color: #2563eb;
+      border-left-color: #2563eb;
+      background: #eff6ff;
+    }
     .qa-card-head {
       display: flex;
       align-items: center;
@@ -447,6 +452,12 @@
       padding: 5px 8px;
     }
     .qa-mini-btn:hover { background: #f1f5f9; color: var(--qa-accent); }
+    .qa-mini-btn.rebind {
+      border-color: #f59e0b;
+      background: #fffbeb;
+      color: #92400e;
+    }
+    .qa-mini-btn.rebind:hover { border-color: #d97706; background: #fef3c7; color: #78350f; }
     .qa-annotated-block {
       outline: 2px solid rgba(37, 99, 235, .30);
       outline-offset: 3px;

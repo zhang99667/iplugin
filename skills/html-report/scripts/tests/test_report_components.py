@@ -73,8 +73,37 @@ class ReportComponentTest(unittest.TestCase):
         popover = annotated[popover_start:popover_end]
         self.assertEqual(1, popover.count("<button"))
         self.assertIn('data-qa-action="note-selection"', popover)
-        self.assertIn("注释", popover)
+        self.assertIn('id="qaSelectionActionLabel">注释</span>', popover)
         self.assertEqual([], self.validate_html(annotated))
+
+    def test_annotation_rebind_contract_is_present(self) -> None:
+        """失效批注应能在当前正文选区上重绑，而不是要求删除重建。"""
+
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-rebind-report.html"),
+        )
+
+        self.assertIn('id="qaSelectionAction"', annotated)
+        self.assertIn("startAnnotationRebind", annotated)
+        self.assertIn("buildReboundAnnotation", annotated)
+        self.assertIn("main.contains(target.element)", annotated)
+        self.assertIn("按 Esc 取消", annotated)
+        self.assertNotIn("请删除后在新位置重新添加", annotated)
+        self.assertEqual([], self.validate_html(annotated))
+
+    def test_annotation_validator_rejects_missing_rebind_logic(self) -> None:
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-rebind-contract-report.html"),
+        )
+        broken = annotated.replace("buildReboundAnnotation", "buildAnchorCopy")
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("只更新定位字段" in error for error in errors))
 
     def test_annotation_launcher_remains_a_stable_sidebar_entry(self) -> None:
         """零批注只隐藏数量，不能把右上角入口变成发布版导出。"""

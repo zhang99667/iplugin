@@ -1076,6 +1076,16 @@ def check_annotation_mode(
         required_fragments["findAnnotationElementByText"] = "评论模式缺少按原文唯一匹配旧评论位置的回退逻辑"
         required_fragments["reconciliation.unresolved.length"] = "评论模式保存前必须阻止无法定位的评论进入交接文件"
         required_fragments["原文已变化，当前报告中无法安全定位"] = "评论卡片必须明确提示正文变化导致的定位失效"
+        required_fragments['id="qaSelectionAction"'] = "评论模式缺少可切换的选区操作入口"
+        required_fragments['id="qaSelectionActionLabel"'] = "选区操作入口缺少可更新的文案节点"
+        required_fragments["rebindAnnotationId"] = "评论模式缺少当前重新关联批注的临时状态"
+        required_fragments["startAnnotationRebind"] = "失效批注卡片缺少进入手动重新关联的入口"
+        required_fragments["cancelAnnotationRebind"] = "重新关联模式缺少不改数据的取消路径"
+        required_fragments["buildReboundAnnotation"] = "重新关联必须通过独立函数只更新定位字段"
+        required_fragments["finishAnnotationRebind"] = "重新关联缺少选区确认与保存逻辑"
+        required_fragments["updateSelectionActionMode"] = "选区气泡缺少重新关联模式文案切换"
+        required_fragments["按 Esc 取消"] = "重新关联模式必须提供 Esc 取消提示"
+        required_fragments["main.contains(target.element)"] = "重新关联必须限制在当前报告正文内"
     for fragment, message in required_fragments.items():
         if fragment not in annotation_scope:
             errors.append(message)
@@ -1102,7 +1112,10 @@ def check_annotation_mode(
             popover_html = popover_match.group(1)
             if len(re.findall(r"<button\b", popover_html, re.IGNORECASE)) != 1:
                 errors.append("选中文本气泡必须只保留一个“注释”按钮")
-            if 'data-qa-action="note-selection"' not in popover_html or not re.search(r">\s*注释\s*</button>", popover_html):
+            if 'data-qa-action="note-selection"' not in popover_html or not re.search(
+                r'<span\b[^>]*\bid=["\']qaSelectionActionLabel["\'][^>]*>\s*注释\s*</span>',
+                popover_html,
+            ):
                 errors.append("选中文本气泡唯一操作必须是“注释”")
 
         filter_match = re.search(
@@ -1143,6 +1156,7 @@ def check_annotation_mode(
     if not require_review_pack:
         forbidden_fragments['<span class="qa-mode-chip">审核模式</span>'] = "评论模式标签不能使用旧名称“审核模式”"
         forbidden_fragments["publish-mode"] = "右上角入口职责必须稳定，不能保留零批注发布模式"
+        forbidden_fragments["请删除后在新位置重新添加"] = "失效批注必须提供重新关联入口，不能要求删除重建"
     for fragment, message in forbidden_fragments.items():
         if fragment in annotation_scope:
             errors.append(message)
@@ -1162,6 +1176,8 @@ def check_annotation_mode(
         required_css[".qa-shortcut-hint"] = "批注提交按钮缺少可见快捷键提示样式"
         required_css[".qa-card.location-missing"] = "评论模式缺少失效定位卡片的警示样式"
         required_css[".qa-location-warning"] = "评论模式缺少失效定位提示样式"
+        required_css[".qa-card.rebinding"] = "评论模式缺少重新关联中的卡片状态样式"
+        required_css[".qa-mini-btn.rebind"] = "失效批注缺少重新关联按钮样式"
     for fragment, message in required_css.items():
         if fragment not in compact_css:
             errors.append(message)
