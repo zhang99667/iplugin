@@ -25,6 +25,7 @@
       const sidebar = document.getElementById('qaSidebar');
       const closeBtn = document.getElementById('qaClose');
       const list = document.getElementById('qaList');
+      const filterBar = document.getElementById('qaFilterBar');
       const selectionPopover = document.getElementById('qaSelectionPopover');
       const contextMenu = document.getElementById('qaContextMenu');
       const composer = document.getElementById('qaComposer');
@@ -42,6 +43,8 @@
       let lastContextTarget = null;
       let cachedSelectionTarget = null;
       let blockSeq = 0;
+      // 筛选是当前浏览会话的 UI 状态，不写入 AgentQuestionPack，避免改变交接语义。
+      let annotationFilter = 'all';
 
       if (!main) return;
 
@@ -73,6 +76,14 @@
         setSidebarOpen(!sidebar.classList.contains('open'));
       });
       closeBtn?.addEventListener('click', () => setSidebarOpen(false));
+      filterBar?.addEventListener('click', event => {
+        const button = event.target.closest('[data-qa-filter]');
+        if (!button || !filterBar.contains(button)) return;
+        const nextFilter = button.dataset.qaFilter;
+        if (!['all', 'question', 'note'].includes(nextFilter)) return;
+        annotationFilter = nextFilter;
+        renderAnnotations();
+      });
       composerSave?.addEventListener('click', saveDraftAnnotation);
       composerText?.addEventListener('keydown', event => {
         if (!isComposerSubmitShortcut(event)) return;
@@ -515,12 +526,18 @@
 
       function renderAnnotations() {
         updateLauncherMode();
+        updateAnnotationFilterControls();
         if (!list) return;
         if (!annotations.length) {
           list.innerHTML = '<div class="qa-empty">还没有批注。选中文本后点击小气泡，或在正文中右键，对段落、表格、图表发起提问。</div>';
           return;
         }
-        list.innerHTML = annotations.map(item => {
+        const visibleAnnotations = annotations.filter(item => matchesAnnotationFilter(item, annotationFilter));
+        if (!visibleAnnotations.length) {
+          list.innerHTML = '<div class="qa-empty">当前筛选下没有批注。切换“全部”查看其他批注。</div>';
+          return;
+        }
+        list.innerHTML = visibleAnnotations.map(item => {
           const locationMissing = !findAnnotationElementById(item);
           return `
           <article class="qa-card ${isNoteKind(item.kind) ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''}" data-qa-id="${escapeAttr(item.id)}">
@@ -528,7 +545,7 @@
               <span class="qa-kind">${escapeHtml(item.kind || '提问')}</span>
               <span class="qa-section">${escapeHtml(item.sectionTitle || '未命名章节')}</span>
             </div>
-            <div class="qa-quote">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</div>
+            <button class="qa-quote qa-quote-link" type="button" data-qa-card-action="locate" title="点击原文定位到正文">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</button>
             <div class="qa-question">${escapeHtml(item.text || item.question || '')}</div>
             ${locationMissing ? '<div class="qa-location-warning">原文已变化，当前报告中无法安全定位；请删除后在新位置重新添加。</div>' : ''}
             <div class="qa-card-actions">
@@ -547,7 +564,7 @@
             const card = event.target.closest('.qa-card');
             const item = annotations.find(x => x.id === card.dataset.qaId);
             if (!item) return;
-            const action = event.target.dataset.qaCardAction;
+            const action = event.target.closest('[data-qa-card-action]')?.dataset.qaCardAction;
             if (action === 'locate') locateAnnotation(item);
             if (action === 'edit') openEditAnnotation(item, card);
             if (action === 'copy') copyText(buildSinglePrompt(item));
@@ -558,6 +575,29 @@
               renderAnnotations();
             }
           });
+        });
+      }
+
+      function matchesAnnotationFilter(item, filter) {
+        if (filter === 'note') return isNoteKind(item?.kind);
+        if (filter === 'question') return !isNoteKind(item?.kind);
+        return true;
+      }
+
+      function updateAnnotationFilterControls() {
+        if (!filterBar) return;
+        const counts = {
+          all: annotations.length,
+          question: annotations.filter(item => matchesAnnotationFilter(item, 'question')).length,
+          note: annotations.filter(item => matchesAnnotationFilter(item, 'note')).length
+        };
+        filterBar.querySelectorAll('[data-qa-filter]').forEach(button => {
+          const filter = button.dataset.qaFilter || 'all';
+          const active = filter === annotationFilter;
+          button.classList.toggle('active', active);
+          button.setAttribute('aria-pressed', String(active));
+          const count = button.querySelector('[data-qa-filter-count]');
+          if (count) count.textContent = String(counts[filter] ?? 0);
         });
       }
 

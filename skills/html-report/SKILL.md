@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.7.4
+version: 0.7.5
 tags:
   - report
   - html
@@ -80,7 +80,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 图片/视频证据是可选能力，不是所有报告的强制结构；需要展示截图、录屏或关键帧时，默认用相对路径引用同目录 `evidence_YYYYMMDD/` 资源，小图可选 base64，视频不建议 base64。
 - 用户没有指定路径时，默认输出到桌面。
 - 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
-- 评论模式只在用户明确需要时加入。右上角必须稳定作为批注侧栏入口，不能在零条时切换成发布操作；评论版 HTML 必须以内嵌 `AgentQuestionPack` 的 `完成批注` 为主操作，并保留 Markdown 兜底；独立 `下载 JSON` 不再作为用户入口。
+- 评论模式只在用户明确需要时加入。右上角必须稳定作为批注侧栏入口，不能在零条时切换成发布操作；侧栏可按全部/提问/注释筛选并从原文摘录快速定位；评论版 HTML 必须以内嵌 `AgentQuestionPack` 的 `完成批注` 为主操作，并保留 Markdown 兜底；独立 `下载 JSON` 不再作为用户入口。
 - 评论版内嵌包必须包含原 HTML 的文件名、绝对路径和 `file://` URL，使用唯一 `#qaEmbeddedReviewData[data-qa-review-data]` 节点和 `QA_EMBEDDED_REVIEW_START/END` 标记，避免 Agent 或子 Agent 丢失上下文。
 - 用户声明已完成批注时，必须用 `--require-review-pack` 校验交接文件；合法空数组表示明确的空评论结果，缺少、损坏或重复的包则是阻塞错误。
 - 评论版必须内置 `导出无批注版`；对外发布版要物理剥离批注 UI、批注 JS、批注高亮、`data-block-id` 和内嵌评论包，不能泄露内部意见或本地路径。

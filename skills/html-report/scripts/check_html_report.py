@@ -1010,9 +1010,17 @@ def check_annotation_mode(
         'id="qaSelectionPopover"': "评论模式缺少选中文本气泡",
         'id="qaComposer"': "评论模式缺少轻量输入浮层",
         'id="qaSidebar"': "评论模式缺少右侧批注栏",
+        'id="qaFilterBar"': "批注侧栏缺少类型筛选栏",
         'id="qaExportPublic"': "评论模式缺少导出发布版按钮",
         'id="qaLauncherLabel"': "评论模式缺少稳定的右上角批注入口",
         "updateLauncherMode": "评论模式必须根据批注数量更新右上角状态徽标",
+        "annotationFilter": "批注侧栏必须保留当前筛选视图状态",
+        "matchesAnnotationFilter": "批注侧栏缺少按类型筛选批注的逻辑",
+        "updateAnnotationFilterControls": "批注侧栏缺少同步筛选按钮和数量徽标的逻辑",
+        'data-qa-filter="all"': "批注筛选栏缺少“全部”视图",
+        'data-qa-filter="question"': "批注筛选栏缺少“提问”视图",
+        'data-qa-filter="note"': "批注筛选栏缺少“注释”视图",
+        'class="qa-quote qa-quote-link"': "批注原文缺少直接定位正文的快捷入口",
         'id="qaSaveReviewHtml"': "批注侧栏缺少完成批注入口",
         'id="qaExportPublic">导出无批注版</button>': "发布版按钮必须明确标注为不含批注",
         "qa-save-review-btn": "完成批注按钮必须作为醒目的主按钮展示",
@@ -1097,6 +1105,21 @@ def check_annotation_mode(
             if 'data-qa-action="note-selection"' not in popover_html or not re.search(r">\s*注释\s*</button>", popover_html):
                 errors.append("选中文本气泡唯一操作必须是“注释”")
 
+        filter_match = re.search(
+            r'<div\b[^>]*\bid=["\']qaFilterBar["\'][^>]*>(.*?)</div>',
+            annotation_scope,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if not filter_match:
+            errors.append("批注筛选栏结构缺失")
+        else:
+            filter_html = filter_match.group(1)
+            filter_names = re.findall(r'\bdata-qa-filter=["\']([^"\']+)["\']', filter_html)
+            if filter_names != ["all", "question", "note"]:
+                errors.append("批注筛选栏必须按“全部、提问、注释”顺序提供三个视图")
+            if filter_html.count('aria-pressed=') != 3:
+                errors.append("批注筛选按钮必须通过 aria-pressed 暴露当前视图")
+
     save_review_start = annotation_scope.find("async function saveReviewHtml()")
     save_review_end = annotation_scope.find("// 发布版只保留正文", save_review_start)
     if not require_review_pack and save_review_start >= 0 and save_review_end > save_review_start:
@@ -1129,6 +1152,9 @@ def check_annotation_mode(
         ".qa-selection-popover": "评论模式缺少选区气泡样式",
         ".qa-composer": "评论模式缺少输入浮层样式",
         ".qa-sidebar": "评论模式缺少右侧栏样式",
+        ".qa-filter-bar": "批注侧栏缺少筛选栏样式",
+        ".qa-filter-btn": "批注侧栏缺少分段筛选按钮样式",
+        ".qa-quote-link": "批注原文快捷定位缺少按钮样式",
         ".qa-highlight": "评论模式缺少选中文本高亮样式",
         ".qa-panel-open": "评论模式缺少右侧栏打开时的正文避让样式",
     }

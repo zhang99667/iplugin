@@ -276,6 +276,56 @@
       margin-top: 12px;
     }
     .qa-actions .qa-wide { grid-column: 1 / -1; }
+    .qa-filter-bar {
+      display: flex;
+      gap: 6px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--qa-border);
+      background: #ffffff;
+      overflow-x: auto;
+    }
+    .qa-filter-btn {
+      appearance: none;
+      display: inline-flex;
+      flex: 1 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      min-width: 76px;
+      min-height: 32px;
+      padding: 5px 9px;
+      border: 1px solid var(--qa-border);
+      border-radius: 8px;
+      background: #ffffff;
+      color: #475569;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .qa-filter-btn:hover,
+    .qa-filter-btn.active {
+      border-color: rgba(37, 99, 235, .38);
+      background: var(--qa-accent-soft);
+      color: #1d4ed8;
+    }
+    .qa-filter-btn:focus-visible,
+    .qa-quote-link:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, .24);
+      outline-offset: 1px;
+    }
+    .qa-filter-count {
+      min-width: 18px;
+      padding: 2px 5px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 11px;
+      line-height: 1.1;
+      text-align: center;
+    }
+    .qa-filter-btn.active .qa-filter-count { background: #bfdbfe; color: #1e40af; }
     .qa-save-review-btn {
       display: inline-flex;
       align-items: center;
@@ -361,6 +411,18 @@
       overflow: auto;
       white-space: pre-wrap;
     }
+    .qa-quote-link {
+      appearance: none;
+      display: block;
+      width: 100%;
+      border-top: 0;
+      border-right: 0;
+      border-bottom: 0;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+    }
+    .qa-quote-link:hover { background: #eff6ff; color: #1d4ed8; }
     .qa-question { margin: 8px 0; color: #111827; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
     .qa-location-warning {
       margin: 8px 0 0;

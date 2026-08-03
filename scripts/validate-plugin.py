@@ -37,6 +37,8 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "QA_ANNOTATION_CSS_END",
         ".qa-shortcut-hint",
         ".qa-launcher-count[hidden]",
+        ".qa-filter-bar",
+        ".qa-quote-link",
     ),
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.html": (
         "QA_ANNOTATION_HTML_START",
@@ -44,6 +46,10 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         'id="qaSaveReviewHtml"',
         '<span class="qa-launcher-label" id="qaLauncherLabel">批注</span>',
         "完成批注",
+        'id="qaFilterBar"',
+        'data-qa-filter="all"',
+        'data-qa-filter="question"',
+        'data-qa-filter="note"',
         'data-qa-action="note-selection" title="添加注释"',
         '<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>',
     ),
@@ -58,6 +64,8 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "launcherLabel.textContent = '批注'",
         "launcherCount.hidden = count === 0",
         "setSidebarOpen(!sidebar.classList.contains('open'))",
+        "matchesAnnotationFilter",
+        "updateAnnotationFilterControls",
         "reviewFallbackFileName",
     ),
 }

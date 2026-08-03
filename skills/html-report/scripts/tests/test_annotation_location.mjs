@@ -39,6 +39,20 @@ const buildResolver = new Function(
 const { findAnnotationElementByText } = buildResolver();
 const buildKindMatcher = new Function(extractFunction("isNoteKind") + "; return { isNoteKind };");
 const { isNoteKind } = buildKindMatcher();
+const buildFilterMatcher = new Function(
+  extractFunction("isNoteKind") + extractFunction("matchesAnnotationFilter")
+  + "; return { matchesAnnotationFilter };",
+);
+const { matchesAnnotationFilter } = buildFilterMatcher();
+const runFilterControls = new Function(
+  "annotations",
+  "annotationFilter",
+  "filterBar",
+  extractFunction("isNoteKind")
+  + extractFunction("matchesAnnotationFilter")
+  + extractFunction("updateAnnotationFilterControls")
+  + "; updateAnnotationFilterControls();",
+);
 const runLauncherUpdate = new Function(
   "annotations",
   "launcherLabel",
@@ -50,6 +64,41 @@ const runLauncherUpdate = new Function(
 assert.equal(isNoteKind("注释"), true, "新建内容应按注释类型展示");
 assert.equal(isNoteKind("批注"), true, "旧评论包的批注类型必须继续兼容");
 assert.equal(isNoteKind("提问"), false, "显式提问仍保留独立类型");
+assert.equal(matchesAnnotationFilter({ kind: "提问" }, "question"), true, "提问筛选应保留提问");
+assert.equal(matchesAnnotationFilter({ kind: "注释" }, "question"), false, "提问筛选应排除注释");
+assert.equal(matchesAnnotationFilter({ kind: "批注" }, "note"), true, "注释筛选应兼容旧批注类型");
+assert.equal(matchesAnnotationFilter({ kind: "提问" }, "all"), true, "全部筛选应保留所有类型");
+
+
+/** 用最小控件桩执行数量同步，验证筛选切换不会污染批注数据。 */
+function filterControlState(filter) {
+  const buttons = ["all", "question", "note"].map(name => {
+    const count = { textContent: "" };
+    return {
+      dataset: { qaFilter: name },
+      classList: { active: false, toggle(_className, active) { this.active = active; } },
+      attributes: {},
+      setAttribute(name, value) { this.attributes[name] = value; },
+      querySelector() { return count; },
+      count,
+    };
+  });
+  const filterBar = { querySelectorAll() { return buttons; } };
+  runFilterControls(
+    [{ kind: "提问" }, { kind: "注释" }, { kind: "批注" }],
+    filter,
+    filterBar,
+  );
+  return buttons;
+}
+
+
+const noteFilterButtons = filterControlState("note");
+assert.equal(noteFilterButtons[0].count.textContent, "3", "全部筛选数量应包含旧批注类型");
+assert.equal(noteFilterButtons[1].count.textContent, "1", "提问筛选数量应只统计提问");
+assert.equal(noteFilterButtons[2].count.textContent, "2", "注释筛选数量应兼容注释和旧批注");
+assert.equal(noteFilterButtons[2].classList.active, true, "当前筛选按钮应标记 active");
+assert.equal(noteFilterButtons[2].attributes["aria-pressed"], "true", "当前筛选按钮应暴露 aria-pressed");
 
 
 /** 直接执行正式入口状态函数，验证数量只改变徽标，不改变按钮职责。 */

@@ -51,6 +51,17 @@
         <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空批注</button>
       </div>
     </div>
+    <div class="qa-filter-bar" id="qaFilterBar" role="group" aria-label="批注筛选" data-qa-ui>
+      <button class="qa-filter-btn active" type="button" data-qa-filter="all" aria-pressed="true">
+        全部 <span class="qa-filter-count" data-qa-filter-count="all">0</span>
+      </button>
+      <button class="qa-filter-btn" type="button" data-qa-filter="question" aria-pressed="false">
+        提问 <span class="qa-filter-count" data-qa-filter-count="question">0</span>
+      </button>
+      <button class="qa-filter-btn" type="button" data-qa-filter="note" aria-pressed="false">
+        注释 <span class="qa-filter-count" data-qa-filter-count="note">0</span>
+      </button>
+    </div>
     <div class="qa-list" id="qaList"></div>
   </aside>
 

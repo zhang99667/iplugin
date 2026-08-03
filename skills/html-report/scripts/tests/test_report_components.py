@@ -96,6 +96,9 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn('id="qaLauncherCount" hidden', launcher)
         self.assertNotIn("导出无批注版", launcher)
         self.assertNotIn("publish-mode", annotated)
+        self.assertIn('id="qaFilterBar"', annotated)
+        self.assertEqual(3, annotated.count('data-qa-filter="'))
+        self.assertIn('class="qa-quote qa-quote-link"', annotated)
         self.assertIn("setSidebarOpen", handler)
         self.assertNotIn("exportPublicHtml", handler)
         self.assertIn("完成批注", annotated)
@@ -119,6 +122,20 @@ class ReportComponentTest(unittest.TestCase):
         errors = self.validate_html(broken)
 
         self.assertTrue(any("不能在零条时直接导出发布版" in error for error in errors))
+
+    def test_annotation_validator_rejects_incomplete_filter_bar(self) -> None:
+        """筛选入口缺失时应阻止生成不完整的评论侧栏。"""
+
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-filter-contract-report.html"),
+        )
+        broken = annotated.replace('data-qa-filter="note"', 'data-qa-filter="other"', 1)
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("缺少“注释”视图" in error for error in errors))
 
     def test_annotation_kind_badge_without_stable_width_is_rejected(self) -> None:
         assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))

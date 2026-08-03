@@ -317,6 +317,56 @@
       margin-top: 12px;
     }
     .qa-actions .qa-wide { grid-column: 1 / -1; }
+    .qa-filter-bar {
+      display: flex;
+      gap: 6px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--qa-border);
+      background: #ffffff;
+      overflow-x: auto;
+    }
+    .qa-filter-btn {
+      appearance: none;
+      display: inline-flex;
+      flex: 1 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      min-width: 76px;
+      min-height: 32px;
+      padding: 5px 9px;
+      border: 1px solid var(--qa-border);
+      border-radius: 8px;
+      background: #ffffff;
+      color: #475569;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .qa-filter-btn:hover,
+    .qa-filter-btn.active {
+      border-color: rgba(37, 99, 235, .38);
+      background: var(--qa-accent-soft);
+      color: #1d4ed8;
+    }
+    .qa-filter-btn:focus-visible,
+    .qa-quote-link:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, .24);
+      outline-offset: 1px;
+    }
+    .qa-filter-count {
+      min-width: 18px;
+      padding: 2px 5px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 11px;
+      line-height: 1.1;
+      text-align: center;
+    }
+    .qa-filter-btn.active .qa-filter-count { background: #bfdbfe; color: #1e40af; }
     .qa-save-review-btn {
       display: inline-flex;
       align-items: center;
@@ -402,6 +452,18 @@
       overflow: auto;
       white-space: pre-wrap;
     }
+    .qa-quote-link {
+      appearance: none;
+      display: block;
+      width: 100%;
+      border-top: 0;
+      border-right: 0;
+      border-bottom: 0;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+    }
+    .qa-quote-link:hover { background: #eff6ff; color: #1d4ed8; }
     .qa-question { margin: 8px 0; color: #111827; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
     .qa-location-warning {
       margin: 8px 0 0;
@@ -2905,6 +2967,17 @@ main.rw-layout-wide {
         <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空批注</button>
       </div>
     </div>
+    <div class="qa-filter-bar" id="qaFilterBar" role="group" aria-label="批注筛选" data-qa-ui>
+      <button class="qa-filter-btn active" type="button" data-qa-filter="all" aria-pressed="true">
+        全部 <span class="qa-filter-count" data-qa-filter-count="all">0</span>
+      </button>
+      <button class="qa-filter-btn" type="button" data-qa-filter="question" aria-pressed="false">
+        提问 <span class="qa-filter-count" data-qa-filter-count="question">0</span>
+      </button>
+      <button class="qa-filter-btn" type="button" data-qa-filter="note" aria-pressed="false">
+        注释 <span class="qa-filter-count" data-qa-filter-count="note">0</span>
+      </button>
+    </div>
     <div class="qa-list" id="qaList"></div>
   </aside>
 
@@ -2949,6 +3022,7 @@ main.rw-layout-wide {
       const sidebar = document.getElementById('qaSidebar');
       const closeBtn = document.getElementById('qaClose');
       const list = document.getElementById('qaList');
+      const filterBar = document.getElementById('qaFilterBar');
       const selectionPopover = document.getElementById('qaSelectionPopover');
       const contextMenu = document.getElementById('qaContextMenu');
       const composer = document.getElementById('qaComposer');
@@ -2966,6 +3040,8 @@ main.rw-layout-wide {
       let lastContextTarget = null;
       let cachedSelectionTarget = null;
       let blockSeq = 0;
+      // 筛选是当前浏览会话的 UI 状态，不写入 AgentQuestionPack，避免改变交接语义。
+      let annotationFilter = 'all';
 
       if (!main) return;
 
@@ -2997,6 +3073,14 @@ main.rw-layout-wide {
         setSidebarOpen(!sidebar.classList.contains('open'));
       });
       closeBtn?.addEventListener('click', () => setSidebarOpen(false));
+      filterBar?.addEventListener('click', event => {
+        const button = event.target.closest('[data-qa-filter]');
+        if (!button || !filterBar.contains(button)) return;
+        const nextFilter = button.dataset.qaFilter;
+        if (!['all', 'question', 'note'].includes(nextFilter)) return;
+        annotationFilter = nextFilter;
+        renderAnnotations();
+      });
       composerSave?.addEventListener('click', saveDraftAnnotation);
       composerText?.addEventListener('keydown', event => {
         if (!isComposerSubmitShortcut(event)) return;
@@ -3439,12 +3523,18 @@ main.rw-layout-wide {
 
       function renderAnnotations() {
         updateLauncherMode();
+        updateAnnotationFilterControls();
         if (!list) return;
         if (!annotations.length) {
           list.innerHTML = '<div class="qa-empty">还没有批注。选中文本后点击小气泡，或在正文中右键，对段落、表格、图表发起提问。</div>';
           return;
         }
-        list.innerHTML = annotations.map(item => {
+        const visibleAnnotations = annotations.filter(item => matchesAnnotationFilter(item, annotationFilter));
+        if (!visibleAnnotations.length) {
+          list.innerHTML = '<div class="qa-empty">当前筛选下没有批注。切换“全部”查看其他批注。</div>';
+          return;
+        }
+        list.innerHTML = visibleAnnotations.map(item => {
           const locationMissing = !findAnnotationElementById(item);
           return `
           <article class="qa-card ${isNoteKind(item.kind) ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''}" data-qa-id="${escapeAttr(item.id)}">
@@ -3452,7 +3542,7 @@ main.rw-layout-wide {
               <span class="qa-kind">${escapeHtml(item.kind || '提问')}</span>
               <span class="qa-section">${escapeHtml(item.sectionTitle || '未命名章节')}</span>
             </div>
-            <div class="qa-quote">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</div>
+            <button class="qa-quote qa-quote-link" type="button" data-qa-card-action="locate" title="点击原文定位到正文">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</button>
             <div class="qa-question">${escapeHtml(item.text || item.question || '')}</div>
             ${locationMissing ? '<div class="qa-location-warning">原文已变化，当前报告中无法安全定位；请删除后在新位置重新添加。</div>' : ''}
             <div class="qa-card-actions">
@@ -3471,7 +3561,7 @@ main.rw-layout-wide {
             const card = event.target.closest('.qa-card');
             const item = annotations.find(x => x.id === card.dataset.qaId);
             if (!item) return;
-            const action = event.target.dataset.qaCardAction;
+            const action = event.target.closest('[data-qa-card-action]')?.dataset.qaCardAction;
             if (action === 'locate') locateAnnotation(item);
             if (action === 'edit') openEditAnnotation(item, card);
             if (action === 'copy') copyText(buildSinglePrompt(item));
@@ -3482,6 +3572,29 @@ main.rw-layout-wide {
               renderAnnotations();
             }
           });
+        });
+      }
+
+      function matchesAnnotationFilter(item, filter) {
+        if (filter === 'note') return isNoteKind(item?.kind);
+        if (filter === 'question') return !isNoteKind(item?.kind);
+        return true;
+      }
+
+      function updateAnnotationFilterControls() {
+        if (!filterBar) return;
+        const counts = {
+          all: annotations.length,
+          question: annotations.filter(item => matchesAnnotationFilter(item, 'question')).length,
+          note: annotations.filter(item => matchesAnnotationFilter(item, 'note')).length
+        };
+        filterBar.querySelectorAll('[data-qa-filter]').forEach(button => {
+          const filter = button.dataset.qaFilter || 'all';
+          const active = filter === annotationFilter;
+          button.classList.toggle('active', active);
+          button.setAttribute('aria-pressed', String(active));
+          const count = button.querySelector('[data-qa-filter-count]');
+          if (count) count.textContent = String(counts[filter] ?? 0);
         });
       }
 
