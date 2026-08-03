@@ -69,10 +69,7 @@
       }
 
       launcher?.addEventListener('click', () => {
-        if (!annotations.length && !hasPersistedReviewState()) {
-          exportPublicHtml();
-          return;
-        }
+        // 右上角始终是批注工作区入口，发布动作只从侧栏触发，避免零批注时按钮职责突变。
         setSidebarOpen(!sidebar.classList.contains('open'));
       });
       closeBtn?.addEventListener('click', () => setSidebarOpen(false));
@@ -584,20 +581,15 @@
 
       function updateLauncherMode() {
         const count = annotations.length;
-        // 清空过旧批注的页面仍属于评论态，必须允许再次打开侧栏并把空结果写回 HTML。
-        const clearedReviewMode = count === 0 && hasPersistedReviewState();
-        const publishMode = count === 0 && !clearedReviewMode;
-        if (launcherLabel) launcherLabel.textContent = publishMode ? '导出无批注版' : clearedReviewMode ? '保存评论结果' : '批注';
+        // 文案保持稳定，数量只表达当前工作状态；零条也必须能进入侧栏并写回合法空包。
+        if (launcherLabel) launcherLabel.textContent = '批注';
         if (launcherCount) {
           launcherCount.textContent = count > 0 ? String(count) : '';
           launcherCount.hidden = count === 0;
         }
-        launcher?.classList.toggle('publish-mode', publishMode);
-        launcher?.setAttribute('aria-label', publishMode
-          ? '导出不含批注的发布版 HTML'
-          : clearedReviewMode
-            ? '打开评论结果，当前批注已清空，可保存空结果到 HTML'
-            : '打开报告批注，当前 ' + count + ' 条');
+        launcher?.setAttribute('aria-label', count > 0
+          ? '打开报告批注，当前 ' + count + ' 条'
+          : '打开报告批注');
       }
 
       function locateAnnotation(item) {
@@ -662,10 +654,10 @@
           clearStoredAnnotations();
         }
         if (result === 'saved') {
-          showToast('评论结果已写入 HTML，可直接交给 Agent');
+          showToast('批注已写入 HTML，可将该文件交给 Agent');
         }
         if (result === 'downloaded') {
-          showToast('已发起评论版下载，原页草稿仍保留');
+          showToast('已发起批注版下载，原页草稿仍保留');
         }
       }
 
@@ -938,19 +930,6 @@
           }
         }
         return normalizeAnnotations(readEmbeddedReviewPack()?.annotations);
-      }
-
-      // 显式的空数组也代表“已清空待写回”，不能退回 0 批注时的快捷发布入口。
-      function hasPersistedReviewState() {
-        if (document.querySelector('[data-qa-review-data]')) return true;
-        for (const key of storageKeys) {
-          try {
-            if (localStorage.getItem(key) !== null) return true;
-          } catch (error) {
-            // localStorage 不可读时只依据 HTML 内嵌包判断。
-          }
-        }
-        return false;
       }
 
       // 内嵌包只作为无本地更新时的持久化来源，显式清空的 [] 不会被旧批注复活。

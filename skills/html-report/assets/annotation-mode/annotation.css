@@ -29,20 +29,6 @@
       cursor: pointer;
     }
     .qa-launcher:hover { background: var(--qa-accent-soft); }
-    .qa-launcher.publish-mode {
-      border-color: rgba(37, 99, 235, .34);
-      background: #ffffff;
-      color: #1d4ed8;
-      box-shadow: 0 10px 26px rgba(15, 23, 42, .14);
-    }
-    .qa-launcher.publish-mode:hover { background: var(--qa-accent-soft); }
-    .qa-launcher-icon {
-      display: none;
-      width: 15px;
-      height: 15px;
-      stroke-width: 2.4;
-    }
-    .qa-launcher.publish-mode .qa-launcher-icon { display: block; }
     .qa-launcher-label { line-height: 1; }
     .qa-launcher-count {
       display: inline-flex;
@@ -57,10 +43,7 @@
       font-size: 12px;
       line-height: 1;
     }
-    .qa-launcher-count[hidden],
-    .qa-launcher.publish-mode .qa-launcher-count {
-      display: none !important;
-    }
+    .qa-launcher-count[hidden] { display: none !important; }
     .qa-selection-popover,
     .qa-context-menu,
     .qa-composer {

@@ -1,7 +1,6 @@
   <!-- QA_ANNOTATION_HTML_START: 离线评论模式，导出发布版时会被移除。 -->
   <button class="qa-launcher" type="button" id="qaLauncher" aria-controls="qaSidebar" aria-expanded="false" data-qa-ui>
-    <svg class="qa-launcher-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 8 5-5 5 5"></path><path d="M5 15v4h14v-4"></path></svg>
-    <span class="qa-launcher-label" id="qaLauncherLabel">导出无批注版</span>
+    <span class="qa-launcher-label" id="qaLauncherLabel">批注</span>
     <span class="qa-launcher-count" id="qaLauncherCount" hidden>0</span>
   </button>
 
@@ -40,11 +39,11 @@
         <span class="qa-mode-chip">评论模式</span>
         <button class="qa-close" type="button" id="qaClose" aria-label="关闭批注栏">×</button>
       </div>
-      <p class="qa-help">评论完成后保存评论结果到 HTML，Agent 可直接读取内嵌批注；对外发送时再导出无批注版。</p>
+      <p class="qa-help">完成批注会将当前批注内嵌到 HTML 文件，供 Agent 继续处理；对外发送请导出无批注版。</p>
       <div class="qa-actions">
         <button class="qa-primary-btn qa-save-review-btn qa-wide" type="button" id="qaSaveReviewHtml">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M5 4h12l2 2v14H5Z"></path><path d="M8 4v6h8V4"></path><path d="M8 20v-6h8v6"></path></svg>
-          保存评论结果到 HTML
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
+          完成批注
         </button>
         <button class="qa-secondary-btn qa-wide" type="button" id="qaExportPublic">导出无批注版</button>
         <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>

@@ -39,10 +39,44 @@ const buildResolver = new Function(
 const { findAnnotationElementByText } = buildResolver();
 const buildKindMatcher = new Function(extractFunction("isNoteKind") + "; return { isNoteKind };");
 const { isNoteKind } = buildKindMatcher();
+const runLauncherUpdate = new Function(
+  "annotations",
+  "launcherLabel",
+  "launcherCount",
+  "launcher",
+  extractFunction("updateLauncherMode") + "; updateLauncherMode();",
+);
 
 assert.equal(isNoteKind("注释"), true, "新建内容应按注释类型展示");
 assert.equal(isNoteKind("批注"), true, "旧评论包的批注类型必须继续兼容");
 assert.equal(isNoteKind("提问"), false, "显式提问仍保留独立类型");
+
+
+/** 直接执行正式入口状态函数，验证数量只改变徽标，不改变按钮职责。 */
+function launcherState(count) {
+  const launcherLabel = { textContent: "" };
+  const launcherCount = { textContent: "", hidden: false };
+  const attributes = {};
+  const launcher = {
+    setAttribute(name, value) {
+      attributes[name] = value;
+    },
+  };
+  runLauncherUpdate(Array.from({ length: count }), launcherLabel, launcherCount, launcher);
+  return { launcherLabel, launcherCount, attributes };
+}
+
+
+const emptyLauncher = launcherState(0);
+assert.equal(emptyLauncher.launcherLabel.textContent, "批注", "零条时入口仍应显示批注");
+assert.equal(emptyLauncher.launcherCount.hidden, true, "零条时应隐藏数量徽标");
+assert.equal(emptyLauncher.attributes["aria-label"], "打开报告批注", "零条入口应说明打开批注工作区");
+
+const populatedLauncher = launcherState(3);
+assert.equal(populatedLauncher.launcherLabel.textContent, "批注", "有批注时入口文案也不能改变职责");
+assert.equal(populatedLauncher.launcherCount.textContent, "3", "数量徽标应反映当前批注数");
+assert.equal(populatedLauncher.launcherCount.hidden, false, "有批注时应显示数量徽标");
+assert.equal(populatedLauncher.attributes["aria-label"], "打开报告批注，当前 3 条", "有批注时应补充可访问数量");
 
 
 /** 构造最小 DOM 包含关系，验证父级大容器不会抢占更精确的正文节点。 */

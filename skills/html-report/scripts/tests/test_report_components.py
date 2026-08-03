@@ -76,6 +76,50 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn("注释", popover)
         self.assertEqual([], self.validate_html(annotated))
 
+    def test_annotation_launcher_remains_a_stable_sidebar_entry(self) -> None:
+        """零批注只隐藏数量，不能把右上角入口变成发布版导出。"""
+
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-stable-launcher-report.html"),
+        )
+
+        launcher_start = annotated.index('id="qaLauncher"')
+        launcher_end = annotated.index("</button>", launcher_start)
+        launcher = annotated[launcher_start:launcher_end]
+        handler_start = annotated.index("launcher?.addEventListener('click'")
+        handler_end = annotated.index("closeBtn?.addEventListener", handler_start)
+        handler = annotated[handler_start:handler_end]
+
+        self.assertIn('<span class="qa-launcher-label" id="qaLauncherLabel">批注</span>', launcher)
+        self.assertIn('id="qaLauncherCount" hidden', launcher)
+        self.assertNotIn("导出无批注版", launcher)
+        self.assertNotIn("publish-mode", annotated)
+        self.assertIn("setSidebarOpen", handler)
+        self.assertNotIn("exportPublicHtml", handler)
+        self.assertIn("完成批注", annotated)
+        self.assertIn('id="qaExportPublic">导出无批注版</button>', annotated)
+        self.assertEqual([], self.validate_html(annotated))
+
+    def test_annotation_validator_rejects_launcher_role_switching(self) -> None:
+        """校验器必须阻止旧版“零条即导出”的职责切换重新混入资产。"""
+
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-role-switch-report.html"),
+        )
+        broken = annotated.replace(
+            "// 右上角始终是批注工作区入口，发布动作只从侧栏触发，避免零批注时按钮职责突变。\n        setSidebarOpen(!sidebar.classList.contains('open'));",
+            "if (!annotations.length) {\n          exportPublicHtml();\n          return;\n        }\n        setSidebarOpen(!sidebar.classList.contains('open'));",
+            1,
+        )
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("不能在零条时直接导出发布版" in error for error in errors))
+
     def test_annotation_kind_badge_without_stable_width_is_rejected(self) -> None:
         assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
         annotated = inject_annotation_mode.inject_annotation_mode(

@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.7.3
+version: 0.7.4
 tags:
   - report
   - html
@@ -69,7 +69,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 6. 代码评审需要多文件、2 到 3 版本完整源码审阅，或用户明确要求 Workspace / 审阅台时，读取 `references/review-workspace.md`，准备源码快照和 JSON 规格，再用 `scripts/build_review_workspace.py` 生成组件；Workspace 放在 Findings / 改动概览之后，不能替代真实 unified diff。
 7. 报告包含代码、SQL、XML、JSON、配置片段、shell 命令或 diff 时，先用 `scripts/highlight_code.py` 生成高亮 HTML 片段，再嵌入报告；不要手写裸 `<pre><code>`。多文件 unified diff 直接把完整 patch 交给 `--diff-view`，由脚本自动拆成每文件一张卡片，不要把脚本输出重新合并。
 8. 写 HTML 时读取 `references/css-template.md` 和实际使用组件在 `references/component-contracts.md` 中的章节。先完成语义正文，再执行 `python3 skills/html-report/scripts/assemble_report.py <source-html> -o <final-html>`；普通表格、IDE 跳转、图片灯箱、目录、Tabs 和排序结构必须遵守组件契约。
-9. 如果用户要求离线评论模式（包括旧称“审核模式”）或希望把 HTML 中的意见交给 Agent，先装配并运行基础校验，再读取 `references/annotation-mode.md`，执行 `python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>` 注入评论模式。评论完成后由页面的 `保存评论结果到 HTML` 把结构化批注直接内嵌回单文件。
+9. 如果用户要求离线评论模式（包括旧称“审核模式”）或希望把 HTML 中的意见交给 Agent，先装配并运行基础校验，再读取 `references/annotation-mode.md`，执行 `python3 skills/html-report/scripts/inject_annotation_mode.py <html-file>` 注入评论模式。评论完成后由页面的 `完成批注` 把结构化批注直接内嵌回单文件。
    - 如果用户说已经在 HTML 中完成批注并要求更新，先执行 `check_html_report.py <html-file> --require-review-pack`；缺包、坏包或多包时停止修改并请用户重新保存正确评论版，不能静默当作零批注。
 10. 完成前运行 `python3 skills/html-report/scripts/check_html_report.py <html-file>`；若失败，修正 HTML 后重跑直到通过。
 11. 完成后只回复文件路径和一句话概要，不复述报告全文。
@@ -80,7 +80,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 图片/视频证据是可选能力，不是所有报告的强制结构；需要展示截图、录屏或关键帧时，默认用相对路径引用同目录 `evidence_YYYYMMDD/` 资源，小图可选 base64，视频不建议 base64。
 - 用户没有指定路径时，默认输出到桌面。
 - 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
-- 评论模式只在用户明确需要时加入。评论版 HTML 必须以内嵌 `AgentQuestionPack` 的 `保存评论结果到 HTML` 为主操作，并保留 Markdown 兜底；独立 `下载 JSON` 不再作为用户入口。
+- 评论模式只在用户明确需要时加入。右上角必须稳定作为批注侧栏入口，不能在零条时切换成发布操作；评论版 HTML 必须以内嵌 `AgentQuestionPack` 的 `完成批注` 为主操作，并保留 Markdown 兜底；独立 `下载 JSON` 不再作为用户入口。
 - 评论版内嵌包必须包含原 HTML 的文件名、绝对路径和 `file://` URL，使用唯一 `#qaEmbeddedReviewData[data-qa-review-data]` 节点和 `QA_EMBEDDED_REVIEW_START/END` 标记，避免 Agent 或子 Agent 丢失上下文。
 - 用户声明已完成批注时，必须用 `--require-review-pack` 校验交接文件；合法空数组表示明确的空评论结果，缺少、损坏或重复的包则是阻塞错误。
 - 评论版必须内置 `导出无批注版`；对外发布版要物理剥离批注 UI、批注 JS、批注高亮、`data-block-id` 和内嵌评论包，不能泄露内部意见或本地路径。

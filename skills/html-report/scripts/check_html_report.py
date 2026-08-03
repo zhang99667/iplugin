@@ -1011,12 +1011,11 @@ def check_annotation_mode(
         'id="qaComposer"': "评论模式缺少轻量输入浮层",
         'id="qaSidebar"': "评论模式缺少右侧批注栏",
         'id="qaExportPublic"': "评论模式缺少导出发布版按钮",
-        'id="qaLauncherLabel"': "评论模式右上角入口必须能在 0 批注时显示“导出无批注版”而不是“批注 0”",
-        "updateLauncherMode": "评论模式必须根据批注数量切换右上角“导出无批注版”/“批注 N”入口",
-        "publish-mode": "评论模式必须给 0 批注发布入口提供更醒目的视觉状态",
-        'id="qaSaveReviewHtml"': "批注侧栏缺少保存评论结果入口",
+        'id="qaLauncherLabel"': "评论模式缺少稳定的右上角批注入口",
+        "updateLauncherMode": "评论模式必须根据批注数量更新右上角状态徽标",
+        'id="qaSaveReviewHtml"': "批注侧栏缺少完成批注入口",
         'id="qaExportPublic">导出无批注版</button>': "发布版按钮必须明确标注为不含批注",
-        "qa-save-review-btn": "保存评论结果按钮必须作为醒目的主按钮展示",
+        "qa-save-review-btn": "完成批注按钮必须作为醒目的主按钮展示",
         "saveReviewHtml": "评论模式缺少保存评论版的交互逻辑",
         "saveHtmlFile": "评论版和发布版必须复用统一的 HTML 保存/下载回退逻辑",
         "reviewFallbackFileName": "下载评论版必须使用与当前草稿不同的默认文件名，避免本地状态碰撞",
@@ -1028,8 +1027,6 @@ def check_annotation_mode(
         "readEmbeddedReviewPack": "评论模式缺少从 HTML 恢复内嵌批注的逻辑",
         "stored !== null": "批注加载必须区分 localStorage 不存在与用户明确清空的 []",
         "legacyStorageKey": "评论模式必须兼容迁移旧版 localStorage 草稿键",
-        "hasPersistedReviewState": "清空最后一条批注后必须保留评论态，允许把空结果写回 HTML",
-        "clearedReviewMode": "清空后的评论态必须使用独立入口并隐藏 0 数量徽标",
         "Math.max(blockSeq": "评论版必须从已有定位 ID 恢复序号，避免 Agent 增段后生成重复 blockId",
         "clearStoredAnnotations": "直接写入 HTML 后必须清理旧本地基线，避免 Agent 更新后复活旧批注",
         "stripEmbeddedReviewBlock": "重复保存和发布版导出必须能剥离旧内嵌评论包",
@@ -1061,9 +1058,12 @@ def check_annotation_mode(
     # 接收上一版本已保存的评论包时允许旧 UI 文案；处理完成并重新注入后，普通校验会强制升级新名称。
     if not require_review_pack:
         required_fragments['<span class="qa-mode-chip">评论模式</span>'] = "评论模式标签缺失或仍使用旧名称"
+        required_fragments['<span class="qa-launcher-label" id="qaLauncherLabel">批注</span>'] = "右上角入口必须固定显示“批注”，不能在零条时切换为发布操作"
+        required_fragments["launcherLabel.textContent = '批注'"] = "右上角入口运行时必须保持“批注”文案稳定"
+        required_fragments["launcherCount.hidden = count === 0"] = "右上角数量徽标必须在零条时隐藏"
         required_fragments['<span class="qa-submit-label">提交</span>'] = "批注输入浮层只保留一个“提交”按钮"
         required_fragments['<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>'] = "批注提交按钮必须显示 Ctrl/⌘ + Enter 快捷键提示"
-        required_fragments["保存评论结果到 HTML"] = "批注侧栏必须把 HTML 内嵌交接作为主要评论操作"
+        required_fragments["完成批注"] = "批注侧栏必须以“完成批注”作为 HTML 内嵌交接主操作"
         required_fragments["reconcileAnnotationTargets"] = "评论模式必须在加载和保存前迁移或识别失效的正文定位"
         required_fragments["findAnnotationElementByText"] = "评论模式缺少按原文唯一匹配旧评论位置的回退逻辑"
         required_fragments["reconciliation.unresolved.length"] = "评论模式保存前必须阻止无法定位的评论进入交接文件"
@@ -1073,6 +1073,16 @@ def check_annotation_mode(
             errors.append(message)
 
     if not require_review_pack:
+        launcher_handler = re.search(
+            r"launcher\?\.addEventListener\(\s*['\"]click['\"]\s*,\s*\(\)\s*=>\s*\{(.*?)\n\s*\}\);",
+            annotation_scope,
+            re.DOTALL,
+        )
+        if not launcher_handler or "setSidebarOpen" not in launcher_handler.group(1):
+            errors.append("右上角批注入口必须始终打开或关闭批注侧栏")
+        elif "exportPublicHtml" in launcher_handler.group(1):
+            errors.append("右上角批注入口不能在零条时直接导出发布版")
+
         popover_match = re.search(
             r'<div\b[^>]*\bid=["\']qaSelectionPopover["\'][^>]*>(.*?)</div>',
             annotation_scope,
@@ -1094,7 +1104,7 @@ def check_annotation_mode(
         reconcile_index = save_review_scope.find("reconcileAnnotationTargets()")
         save_file_index = save_review_scope.find("await saveHtmlFile(")
         if reconcile_index < 0 or save_file_index < 0 or reconcile_index > save_file_index:
-            errors.append("保存评论结果前必须先校验并迁移正文定位，不能先生成含失效 blockId 的 HTML")
+            errors.append("完成批注前必须先校验并迁移正文定位，不能先生成含失效 blockId 的 HTML")
 
     forbidden_fragments = {
         "qaComposerCancel": "批注输入浮层不要保留取消按钮；点击浮层外侧即关闭",
@@ -1109,6 +1119,7 @@ def check_annotation_mode(
     }
     if not require_review_pack:
         forbidden_fragments['<span class="qa-mode-chip">审核模式</span>'] = "评论模式标签不能使用旧名称“审核模式”"
+        forbidden_fragments["publish-mode"] = "右上角入口职责必须稳定，不能保留零批注发布模式"
     for fragment, message in forbidden_fragments.items():
         if fragment in annotation_scope:
             errors.append(message)
@@ -1129,8 +1140,8 @@ def check_annotation_mode(
         if fragment not in compact_css:
             errors.append(message)
 
-    if ".qa-launcher-count[hidden]" not in compact_css and ".qa-launcher.publish-mode .qa-launcher-count" not in compact_css:
-        errors.append("发布模式下必须强制隐藏右上角批注数量徽标，避免导出发布版按钮残留蓝色圆点")
+    if ".qa-launcher-count[hidden]" not in compact_css:
+        errors.append("零批注时必须强制隐藏右上角数量徽标，避免显示空白圆点")
 
     if not require_review_pack:
         if not css_rule_has(css, (".qa-kind",), ("flex: 0 0 auto", "white-space: nowrap")):
@@ -1155,7 +1166,7 @@ def check_embedded_review_pack(
     node_matches = list(EMBEDDED_REVIEW_DATA_RE.finditer(html))
     if not start_matches and not end_matches and not node_matches:
         if required:
-            errors.append("未找到 HTML 内嵌评论包；请确认用户已点击“保存评论结果到 HTML”并提供了该文件")
+            errors.append("未找到 HTML 内嵌评论包；请确认用户已点击“完成批注”并提供了该文件")
         return errors
     if len(start_matches) != 1 or len(end_matches) != 1:
         errors.append("评论版必须且只能包含一对 QA_EMBEDDED_REVIEW_START/END 标记")
