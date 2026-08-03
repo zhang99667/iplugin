@@ -135,7 +135,7 @@ def replace_once(source: str, marker: str, replacement: str) -> str:
 
 
 def render_gallery(source: str) -> tuple[str, list[str]]:
-    """装配全部注册组件并注入评论模式，返回最终 HTML 和组件声明。"""
+    """装配全部注册组件并注入批注模式，返回最终 HTML 和组件声明。"""
 
     rendered = replace_once(
         source,
@@ -160,7 +160,7 @@ def render_gallery(source: str) -> tuple[str, list[str]]:
     missing = sorted(registered - set(components))
     if missing:
         raise ValueError("Gallery 未覆盖注册组件: " + ", ".join(missing))
-    # Gallery 需要同时验收评论复合模块，但不把它错误注册成普通页面组件。
+    # Gallery 需要同时验收批注复合模块，但不把它错误注册成普通页面组件。
     annotated = inject_annotation_mode.inject_annotation_mode(assembled)
     # 组件资产中的缩进行空白不影响浏览器，但提交的生成物必须稳定通过 diff 检查。
     normalized = "\n".join(line.rstrip() for line in annotated.splitlines()) + "\n"

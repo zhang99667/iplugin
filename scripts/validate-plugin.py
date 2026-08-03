@@ -37,7 +37,9 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "QA_ANNOTATION_CSS_END",
         ".qa-shortcut-hint",
         ".qa-launcher-count[hidden]",
-        ".qa-filter-bar",
+        ".qa-round-status",
+        ".qa-copy-agent-btn",
+        ".qa-more-actions",
         ".qa-quote-link",
         ".qa-card.rebinding",
         ".qa-mini-btn.rebind",
@@ -45,16 +47,17 @@ HTML_REPORT_ANNOTATION_ASSETS = {
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.html": (
         "QA_ANNOTATION_HTML_START",
         "QA_ANNOTATION_HTML_END",
+        'id="qaCopyForAgent"',
         'id="qaSaveReviewHtml"',
+        'id="qaRoundStatus"',
         '<span class="qa-launcher-label" id="qaLauncherLabel">批注</span>',
-        "完成批注",
-        'id="qaFilterBar"',
-        'data-qa-filter="all"',
-        'data-qa-filter="question"',
-        'data-qa-filter="note"',
+        '<span class="qa-mode-chip">批注模式</span>',
+        "复制批注给 Agent",
+        "保存批注版 HTML（备用）",
+        "导出发布版",
         'id="qaSelectionAction"',
         'id="qaSelectionActionLabel"',
-        'data-qa-action="note-selection" title="添加注释"',
+        'data-qa-action="note-selection" title="添加批注"',
         '<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>',
     ),
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.js": (
@@ -64,12 +67,17 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "buildReviewedHtml",
         "serializeReviewPack",
         "readEmbeddedReviewPack",
+        "readEmbeddedReviewReceipt",
+        "stripReviewReceiptBlock",
+        "copyAnnotationsForAgent",
+        "updateRoundStatus",
+        "handoffStorageKey",
+        "ensureRoundId",
+        "data-qa-review-receipt",
         "legacyStorageKey",
         "launcherLabel.textContent = '批注'",
         "launcherCount.hidden = count === 0",
         "setSidebarOpen(!sidebar.classList.contains('open'))",
-        "matchesAnnotationFilter",
-        "updateAnnotationFilterControls",
         "rebindAnnotationId",
         "startAnnotationRebind",
         "cancelAnnotationRebind",
@@ -77,6 +85,20 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "finishAnnotationRebind",
         "updateSelectionActionMode",
         "reviewFallbackFileName",
+    ),
+}
+HTML_REPORT_ANNOTATION_FORBIDDEN = {
+    SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.html": (
+        '<span class="qa-mode-chip">评论模式</span>',
+        'id="qaSelectionActionLabel">注释</span>',
+        'id="qaFilterBar"',
+        "完成批注",
+        "导出无批注版",
+    ),
+    SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.js": (
+        "matchesAnnotationFilter",
+        "updateAnnotationFilterControls",
+        "annotationFilter",
     ),
 }
 HTML_REPORT_REVIEW_WORKSPACE_ASSETS = {
@@ -987,7 +1009,7 @@ def check_html_report_annotation_assets() -> CheckResult:
     """检查 html-report 批注模式资产是否保留剥离 marker 和路径元数据占位符。
 
     批注资产最终会被注入到单文件 HTML 中，marker 是重复注入清理和导出发布版
-    物理剥离的边界；`__QA_REPORT_META__` 则保护内嵌审核包和 Markdown 能回查来源。
+    物理剥离的边界；`__QA_REPORT_META__` 则保护内嵌批注包、回执和 Markdown 能回查来源。
     """
 
     result = CheckResult("HTML report annotation assets are valid")
@@ -1000,6 +1022,9 @@ def check_html_report_annotation_assets() -> CheckResult:
         for fragment in required_fragments:
             if fragment not in text:
                 result.details.append(f"{rel(path)} is missing {fragment}")
+        for fragment in HTML_REPORT_ANNOTATION_FORBIDDEN.get(path, ()):
+            if fragment in text:
+                result.details.append(f"{rel(path)} still contains legacy annotation UI fragment {fragment}")
 
         if path.name == "annotation.js" and text.count("</script>") != 1:
             # 资产自身就是 inline script；注释或字符串出现结束标签也会让浏览器提前截断脚本。

@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -73,7 +75,7 @@ class ReportComponentTest(unittest.TestCase):
         popover = annotated[popover_start:popover_end]
         self.assertEqual(1, popover.count("<button"))
         self.assertIn('data-qa-action="note-selection"', popover)
-        self.assertIn('id="qaSelectionActionLabel">注释</span>', popover)
+        self.assertIn('id="qaSelectionActionLabel">添加批注</span>', popover)
         self.assertEqual([], self.validate_html(annotated))
 
     def test_annotation_rebind_contract_is_present(self) -> None:
@@ -125,13 +127,19 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn('id="qaLauncherCount" hidden', launcher)
         self.assertNotIn("导出无批注版", launcher)
         self.assertNotIn("publish-mode", annotated)
-        self.assertIn('id="qaFilterBar"', annotated)
-        self.assertEqual(3, annotated.count('data-qa-filter="'))
+        self.assertNotIn('id="qaFilterBar"', annotated)
+        self.assertNotIn('data-qa-filter="', annotated)
         self.assertIn('class="qa-quote qa-quote-link"', annotated)
         self.assertIn("setSidebarOpen", handler)
         self.assertNotIn("exportPublicHtml", handler)
-        self.assertIn("完成批注", annotated)
-        self.assertIn('id="qaExportPublic">导出无批注版</button>', annotated)
+        self.assertIn('id="qaCopyForAgent"', annotated)
+        self.assertIn('id="qaCopyForAgent" disabled', annotated)
+        self.assertIn("copyForAgent.disabled = count === 0", annotated)
+        self.assertIn("复制批注给 Agent", annotated)
+        self.assertIn("保存批注版 HTML（备用）", annotated)
+        self.assertIn('id="qaRoundStatus"', annotated)
+        self.assertIn('id="qaExportPublic">导出发布版</button>', annotated)
+        self.assertNotIn("完成批注", annotated)
         self.assertEqual([], self.validate_html(annotated))
 
     def test_annotation_validator_rejects_launcher_role_switching(self) -> None:
@@ -152,19 +160,170 @@ class ReportComponentTest(unittest.TestCase):
 
         self.assertTrue(any("不能在零条时直接导出发布版" in error for error in errors))
 
-    def test_annotation_validator_rejects_incomplete_filter_bar(self) -> None:
-        """筛选入口缺失时应阻止生成不完整的评论侧栏。"""
+    def test_annotation_validator_rejects_legacy_type_filter(self) -> None:
+        """主路径不再要求用户区分提问和注释，旧类型筛选重新混入时应失败。"""
 
         assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
         annotated = inject_annotation_mode.inject_annotation_mode(
             assembled,
             Path("/tmp/annotation-filter-contract-report.html"),
         )
-        broken = annotated.replace('data-qa-filter="note"', 'data-qa-filter="other"', 1)
+        broken = annotated.replace(
+            '<div class="qa-list" id="qaList"></div>',
+            '<div id="qaFilterBar"><button data-qa-filter="question">提问</button></div>'
+            '<div class="qa-list" id="qaList"></div>',
+            1,
+        )
 
         errors = self.validate_html(broken)
 
-        self.assertTrue(any("缺少“注释”视图" in error for error in errors))
+        self.assertTrue(any("移除类型筛选" in error for error in errors))
+
+    def test_annotation_processed_receipt_is_persistent_and_valid(self) -> None:
+        """Agent 回写后必须保留可校验回执，不能只让待处理批注无痕消失。"""
+
+        output_path = Path("/tmp/annotation-receipt-report.html")
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        receipt = inject_annotation_mode.build_standalone_review_receipt(
+            "round-test",
+            3,
+            output_path,
+            "yes",
+            ["验证范围"],
+        )
+        annotated = inject_annotation_mode.inject_annotation_mode(assembled, output_path, receipt)
+
+        self.assertIn('id="qaEmbeddedReviewReceipt" data-qa-review-receipt', annotated)
+        self.assertIn('"roundId": "round-test"', annotated)
+        self.assertIn('"contentChanged": true', annotated)
+        self.assertIn("readEmbeddedReviewReceipt", annotated)
+        self.assertIn("Agent 已处理 ", annotated)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "receipt.html"
+            path.write_text(annotated, encoding="utf-8")
+            errors, _ = check_html_report.validate_with_warnings(path, require_review_receipt=True)
+        self.assertEqual([], errors)
+
+    def test_embedded_pack_can_be_converted_to_processed_receipt(self) -> None:
+        """备用 HTML 交接完成后应移除待处理包，并保留同 roundId 的处理回执。"""
+
+        output_path = Path("/tmp/annotation-processed-report.html")
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(assembled, output_path)
+        pack = {
+            "type": "AgentQuestionPack",
+            "version": "0.3.0",
+            "roundId": "round-embedded",
+            "reportTitle": "报告",
+            "annotations": [{"id": "q-1"}, {"id": "q-2"}],
+        }
+        pack_block = "\n".join(
+            (
+                "<!-- QA_EMBEDDED_REVIEW_START: Agent 读取并逐条处理以下批注。 -->",
+                '<script type="application/json" id="qaEmbeddedReviewData" data-qa-review-data>',
+                inject_annotation_mode.serialize_raw_json(pack),
+                "</script>",
+                "<!-- QA_EMBEDDED_REVIEW_END -->",
+            )
+        )
+        with_pack = annotated.replace("</head>", pack_block + "\n</head>", 1)
+
+        parsed_pack = inject_annotation_mode.read_embedded_review_pack(with_pack)
+        self.assertIsNotNone(parsed_pack)
+        receipt = inject_annotation_mode.build_default_review_receipt(
+            parsed_pack,
+            output_path,
+            "yes",
+            ["正文"],
+        )
+        processed = inject_annotation_mode.inject_annotation_mode(
+            inject_annotation_mode.strip_embedded_review_pack(with_pack),
+            output_path,
+            receipt,
+        )
+
+        # 批注运行时会保留未来构造备用包所需的 id 字符串；应按真实节点解析，避免把脚本源码误判成待处理包。
+        self.assertIsNone(inject_annotation_mode.read_embedded_review_pack(processed))
+        self.assertNotIn("QA_EMBEDDED_REVIEW_START: Agent 读取并逐条处理以下批注。", processed)
+        self.assertIn('id="qaEmbeddedReviewReceipt"', processed)
+        self.assertIn('"roundId": "round-embedded"', processed)
+        self.assertIn('"handled": 2', processed)
+
+    def test_receipt_file_completes_only_the_matching_embedded_round(self) -> None:
+        """逐条回执必须消费同轮次待处理包，不能把其他轮次误标成已完成。"""
+
+        output_path = Path("/tmp/annotation-receipt-file-report.html")
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(assembled, output_path)
+        pack = {
+            "type": "AgentQuestionPack",
+            "version": "0.3.0",
+            "roundId": "round-receipt-file",
+            "annotations": [{"id": "q-1"}],
+        }
+        pack_block = "\n".join(
+            (
+                "<!-- QA_EMBEDDED_REVIEW_START: Agent 读取并逐条处理以下批注。 -->",
+                '<script type="application/json" id="qaEmbeddedReviewData" data-qa-review-data>',
+                inject_annotation_mode.serialize_raw_json(pack),
+                "</script>",
+                "<!-- QA_EMBEDDED_REVIEW_END -->",
+            )
+        )
+        with_pack = annotated.replace("</head>", pack_block + "\n</head>", 1)
+        receipt = {
+            "type": "AgentReviewReceipt",
+            "version": "0.1.0",
+            "roundId": "round-receipt-file",
+            "processedAt": "2026-08-03T00:00:00Z",
+            "status": "processed",
+            "total": 1,
+            "handled": 1,
+            "skipped": 0,
+            "contentChanged": True,
+            "changedSections": ["正文"],
+            "results": [{"annotationId": "q-1", "status": "applied", "message": "已更新"}],
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            html_path = Path(directory) / "report.html"
+            receipt_path = Path(directory) / "receipt.json"
+            html_path.write_text(with_pack, encoding="utf-8")
+            receipt_path.write_text(json.dumps(receipt, ensure_ascii=False), encoding="utf-8")
+            completed = subprocess.run(
+                [
+                    "python3",
+                    str(SKILL_DIR / "scripts" / "inject_annotation_mode.py"),
+                    str(html_path),
+                    "--receipt-file",
+                    str(receipt_path),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, completed.returncode, completed.stdout + completed.stderr)
+            processed = html_path.read_text(encoding="utf-8")
+            self.assertIsNone(inject_annotation_mode.read_embedded_review_pack(processed))
+            self.assertIn('id="qaEmbeddedReviewReceipt"', processed)
+
+            receipt["roundId"] = "round-other"
+            html_path.write_text(with_pack, encoding="utf-8")
+            receipt_path.write_text(json.dumps(receipt, ensure_ascii=False), encoding="utf-8")
+            rejected = subprocess.run(
+                [
+                    "python3",
+                    str(SKILL_DIR / "scripts" / "inject_annotation_mode.py"),
+                    str(html_path),
+                    "--receipt-file",
+                    str(receipt_path),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertNotEqual(0, rejected.returncode)
+            self.assertIn("回执 roundId 与 HTML 内嵌批注包不一致", rejected.stderr)
 
     def test_annotation_kind_badge_without_stable_width_is_rejected(self) -> None:
         assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
@@ -176,7 +335,7 @@ class ReportComponentTest(unittest.TestCase):
 
         errors = self.validate_html(broken)
 
-        self.assertTrue(any("类型徽标必须禁止 flex 收缩和文字换行" in error for error in errors))
+        self.assertTrue(any("批注卡片徽标必须禁止 flex 收缩和文字换行" in error for error in errors))
 
     def test_multi_file_diff_is_split_into_independent_cards(self) -> None:
         source = (SKILL_DIR / "evals" / "fixtures" / "code_review_patch.diff").read_text(encoding="utf-8")

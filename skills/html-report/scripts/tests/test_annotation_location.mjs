@@ -37,27 +37,26 @@ const buildResolver = new Function(
   + "; return { findAnnotationElementByText };",
 );
 const { findAnnotationElementByText } = buildResolver();
-const buildKindMatcher = new Function(extractFunction("isNoteKind") + "; return { isNoteKind };");
-const { isNoteKind } = buildKindMatcher();
-const buildFilterMatcher = new Function(
-  extractFunction("isNoteKind") + extractFunction("matchesAnnotationFilter")
-  + "; return { matchesAnnotationFilter };",
+const buildAnnotationNormalizer = new Function(
+  extractFunction("normalizeAnnotations") + "; return { normalizeAnnotations };",
 );
-const { matchesAnnotationFilter } = buildFilterMatcher();
-const runFilterControls = new Function(
+const { normalizeAnnotations } = buildAnnotationNormalizer();
+const runRoundStatus = new Function(
   "annotations",
-  "annotationFilter",
-  "filterBar",
-  extractFunction("isNoteKind")
-  + extractFunction("matchesAnnotationFilter")
-  + extractFunction("updateAnnotationFilterControls")
-  + "; updateAnnotationFilterControls();",
+  "handoffState",
+  "reviewReceipt",
+  "roundStatus",
+  "function escapeHtml(value) { return String(value || ''); }"
+  + extractFunction("formatReceiptTime")
+  + extractFunction("updateRoundStatus")
+  + "; updateRoundStatus();",
 );
 const runLauncherUpdate = new Function(
   "annotations",
   "launcherLabel",
   "launcherCount",
   "launcher",
+  "copyForAgent",
   extractFunction("updateLauncherMode") + "; updateLauncherMode();",
 );
 const buildRebind = new Function(
@@ -88,44 +87,44 @@ const buildSelectionTarget = new Function(
   extractFunction("buildTargetFromSelection") + "; return { buildTargetFromSelection };",
 );
 
-assert.equal(isNoteKind("注释"), true, "新建内容应按注释类型展示");
-assert.equal(isNoteKind("批注"), true, "旧评论包的批注类型必须继续兼容");
-assert.equal(isNoteKind("提问"), false, "显式提问仍保留独立类型");
-assert.equal(matchesAnnotationFilter({ kind: "提问" }, "question"), true, "提问筛选应保留提问");
-assert.equal(matchesAnnotationFilter({ kind: "注释" }, "question"), false, "提问筛选应排除注释");
-assert.equal(matchesAnnotationFilter({ kind: "批注" }, "note"), true, "注释筛选应兼容旧批注类型");
-assert.equal(matchesAnnotationFilter({ kind: "提问" }, "all"), true, "全部筛选应保留所有类型");
+const normalizedKinds = normalizeAnnotations([
+  { id: "old-question", kind: "提问" },
+  { id: "old-note", kind: "注释" },
+  { id: "old-annotation", kind: "批注" },
+]);
+assert.deepEqual(
+  normalizedKinds.map(item => item.kind),
+  ["批注", "批注", "批注"],
+  "旧类型只做数据兼容，所有可见和新交接语义必须统一为批注",
+);
 
 
-/** 用最小控件桩执行数量同步，验证筛选切换不会污染批注数据。 */
-function filterControlState(filter) {
-  const buttons = ["all", "question", "note"].map(name => {
-    const count = { textContent: "" };
-    return {
-      dataset: { qaFilter: name },
-      classList: { active: false, toggle(_className, active) { this.active = active; } },
-      attributes: {},
-      setAttribute(name, value) { this.attributes[name] = value; },
-      querySelector() { return count; },
-      count,
-    };
-  });
-  const filterBar = { querySelectorAll() { return buttons; } };
-  runFilterControls(
-    [{ kind: "提问" }, { kind: "注释" }, { kind: "批注" }],
-    filter,
-    filterBar,
-  );
-  return buttons;
+/** 用最小状态节点执行轮次渲染，验证复制交接和 Agent 回执不会退化成短暂 toast。 */
+function roundStatusState(annotations, handoffState, reviewReceipt) {
+  const classes = [];
+  const roundStatus = {
+    className: "",
+    innerHTML: "",
+    classList: { add(name) { classes.push(name); } },
+  };
+  runRoundStatus(annotations, handoffState, reviewReceipt, roundStatus);
+  return { html: roundStatus.innerHTML, classes };
 }
 
 
-const noteFilterButtons = filterControlState("note");
-assert.equal(noteFilterButtons[0].count.textContent, "3", "全部筛选数量应包含旧批注类型");
-assert.equal(noteFilterButtons[1].count.textContent, "1", "提问筛选数量应只统计提问");
-assert.equal(noteFilterButtons[2].count.textContent, "2", "注释筛选数量应兼容注释和旧批注");
-assert.equal(noteFilterButtons[2].classList.active, true, "当前筛选按钮应标记 active");
-assert.equal(noteFilterButtons[2].attributes["aria-pressed"], "true", "当前筛选按钮应暴露 aria-pressed");
+const copiedRound = roundStatusState([{}, {}], { status: "copied" }, null);
+assert.match(copiedRound.html, /2 条批注已复制/, "复制主路径必须持久显示待 Agent 处理状态");
+
+const processedRound = roundStatusState([], null, {
+  status: "processed",
+  total: 3,
+  handled: 3,
+  contentChanged: true,
+  processedAt: "2026-08-03T00:00:00.000Z",
+  changedSections: ["验证范围"],
+});
+assert.match(processedRound.html, /Agent 已处理 3\/3 条批注 · HTML 已更新/, "处理回执必须明确显示处理数和 HTML 更新状态");
+assert.equal(processedRound.classes.includes("is-processed"), true, "成功回执必须使用持久完成态样式");
 
 
 /** 直接执行正式入口状态函数，验证数量只改变徽标，不改变按钮职责。 */
@@ -138,20 +137,23 @@ function launcherState(count) {
       attributes[name] = value;
     },
   };
-  runLauncherUpdate(Array.from({ length: count }), launcherLabel, launcherCount, launcher);
-  return { launcherLabel, launcherCount, attributes };
+  const copyForAgent = { disabled: false };
+  runLauncherUpdate(Array.from({ length: count }), launcherLabel, launcherCount, launcher, copyForAgent);
+  return { launcherLabel, launcherCount, attributes, copyForAgent };
 }
 
 
 const emptyLauncher = launcherState(0);
 assert.equal(emptyLauncher.launcherLabel.textContent, "批注", "零条时入口仍应显示批注");
 assert.equal(emptyLauncher.launcherCount.hidden, true, "零条时应隐藏数量徽标");
+assert.equal(emptyLauncher.copyForAgent.disabled, true, "零条时主交接按钮必须禁用");
 assert.equal(emptyLauncher.attributes["aria-label"], "打开报告批注", "零条入口应说明打开批注工作区");
 
 const populatedLauncher = launcherState(3);
 assert.equal(populatedLauncher.launcherLabel.textContent, "批注", "有批注时入口文案也不能改变职责");
 assert.equal(populatedLauncher.launcherCount.textContent, "3", "数量徽标应反映当前批注数");
 assert.equal(populatedLauncher.launcherCount.hidden, false, "有批注时应显示数量徽标");
+assert.equal(populatedLauncher.copyForAgent.disabled, false, "有批注时主交接按钮必须可用");
 assert.equal(populatedLauncher.attributes["aria-label"], "打开报告批注，当前 3 条", "有批注时应补充可访问数量");
 
 

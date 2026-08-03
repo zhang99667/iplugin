@@ -40,7 +40,7 @@
       .gallery-section { break-inside: avoid; }
     }
 
-    /* QA_ANNOTATION_CSS_START: 离线评论模式，导出发布版时会被移除。 */
+    /* QA_ANNOTATION_CSS_START: 离线批注模式，导出发布版时会被移除。 */
     :root {
       --qa-accent: #2563eb;
       --qa-accent-soft: #eff6ff;
@@ -310,64 +310,52 @@
       font-weight: 900;
     }
     .qa-help { margin: 0; color: var(--qa-muted); font-size: 12px; line-height: 1.55; }
+    .qa-round-status {
+      min-height: 42px;
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+    .qa-round-status.is-processed { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    .qa-round-status.is-partial { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+    .qa-round-status.is-failed { border-color: #fecaca; background: #fff1f2; color: #991b1b; }
+    .qa-round-status small { display: block; margin-top: 2px; color: inherit; font-weight: 600; opacity: .78; }
     .qa-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 8px;
       margin-top: 12px;
     }
-    .qa-actions .qa-wide { grid-column: 1 / -1; }
-    .qa-filter-bar {
-      display: flex;
-      gap: 6px;
-      padding: 9px 12px;
-      border-bottom: 1px solid var(--qa-border);
-      background: #ffffff;
-      overflow-x: auto;
+    .qa-actions .qa-wide { width: 100%; }
+    .qa-more {
+      border-top: 1px solid var(--qa-border);
+      padding-top: 6px;
     }
-    .qa-filter-btn {
-      appearance: none;
-      display: inline-flex;
-      flex: 1 0 auto;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      min-width: 76px;
-      min-height: 32px;
-      padding: 5px 9px;
-      border: 1px solid var(--qa-border);
-      border-radius: 8px;
-      background: #ffffff;
+    .qa-more summary {
+      padding: 6px 2px;
       color: #475569;
       cursor: pointer;
-      font: inherit;
       font-size: 12px;
       font-weight: 800;
-      white-space: nowrap;
     }
-    .qa-filter-btn:hover,
-    .qa-filter-btn.active {
-      border-color: rgba(37, 99, 235, .38);
-      background: var(--qa-accent-soft);
-      color: #1d4ed8;
+    .qa-more-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding-top: 4px;
     }
-    .qa-filter-btn:focus-visible,
+    .qa-more-actions .qa-wide { grid-column: 1 / -1; }
     .qa-quote-link:focus-visible {
       outline: 3px solid rgba(37, 99, 235, .24);
       outline-offset: 1px;
     }
-    .qa-filter-count {
-      min-width: 18px;
-      padding: 2px 5px;
-      border-radius: 999px;
-      background: #e2e8f0;
-      color: #475569;
-      font-size: 11px;
-      line-height: 1.1;
-      text-align: center;
-    }
-    .qa-filter-btn.active .qa-filter-count { background: #bfdbfe; color: #1e40af; }
-    .qa-save-review-btn {
+    .qa-copy-agent-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -375,22 +363,30 @@
       min-height: 42px;
       box-shadow: 0 10px 24px rgba(37, 99, 235, .18);
     }
-    .qa-save-review-btn svg {
+    .qa-copy-agent-btn svg {
       width: 16px;
       height: 16px;
       stroke-width: 2.4;
+    }
+    .qa-copy-agent-btn:disabled {
+      border-color: #cbd5e1;
+      background: #e2e8f0;
+      color: #64748b;
+      box-shadow: none;
+      cursor: not-allowed;
     }
     .qa-list {
       flex: 1;
       overflow: auto;
       padding: 12px;
+      border-top: 1px solid var(--qa-border);
       background: #f8fafc;
     }
     .qa-empty {
       margin: 18px 4px;
       padding: 18px;
       border: 1px dashed #cbd5e1;
-      border-radius: 12px;
+      border-radius: 8px;
       background: #ffffff;
       color: var(--qa-muted);
       font-size: 13px;
@@ -401,11 +397,10 @@
       padding: 12px;
       border: 1px solid var(--qa-border);
       border-left: 4px solid var(--qa-accent);
-      border-radius: 12px;
+      border-radius: 8px;
       background: #ffffff;
       box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
     }
-    .qa-card.kind-note { border-left-color: #0f766e; }
     .qa-card.location-missing {
       border-color: #f59e0b;
       border-left-color: #d97706;
@@ -2925,23 +2920,23 @@ main.rw-layout-wide {
 /* HTML_REPORT_SORTABLE_TABLE_RUNTIME_END */
 </script>
 <!-- HTML_REPORT_COMPONENT_RUNTIME_END -->
-  <!-- QA_ANNOTATION_HTML_START: 离线评论模式，导出发布版时会被移除。 -->
+  <!-- QA_ANNOTATION_HTML_START: 离线批注模式，导出发布版时会被移除。 -->
   <button class="qa-launcher" type="button" id="qaLauncher" aria-controls="qaSidebar" aria-expanded="false" data-qa-ui>
     <span class="qa-launcher-label" id="qaLauncherLabel">批注</span>
     <span class="qa-launcher-count" id="qaLauncherCount" hidden>0</span>
   </button>
 
   <div class="qa-selection-popover" id="qaSelectionPopover" role="menu" aria-label="选中文本操作" data-qa-ui>
-    <button class="qa-bubble-btn primary" type="button" id="qaSelectionAction" data-qa-action="note-selection" title="添加注释">
+    <button class="qa-bubble-btn primary" type="button" id="qaSelectionAction" data-qa-action="note-selection" title="添加批注">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-      <span id="qaSelectionActionLabel">注释</span>
+      <span id="qaSelectionActionLabel">添加批注</span>
     </button>
   </div>
 
   <div class="qa-composer" id="qaComposer" role="dialog" aria-label="添加批注" data-qa-ui>
     <p class="qa-composer-title" id="qaComposerTitle"></p>
     <p class="qa-composer-excerpt" id="qaComposerExcerpt"></p>
-    <textarea id="qaComposerText" placeholder="写下你想让 Agent 回答或修改的点"></textarea>
+    <textarea id="qaComposerText" placeholder="写下需要 Agent 处理的内容"></textarea>
     <div class="qa-composer-actions">
       <button class="qa-small-btn primary" type="button" id="qaComposerSave" aria-keyshortcuts="Meta+Enter Control+Enter" title="提交（Ctrl/⌘ + Enter）">
         <span class="qa-submit-label">提交</span>
@@ -2951,43 +2946,37 @@ main.rw-layout-wide {
   </div>
 
   <div class="qa-context-menu" id="qaContextMenu" role="menu" aria-label="批注右键菜单" data-qa-ui>
-    <button class="qa-menu-item" type="button" data-qa-action="ask-selection">对选中内容提问</button>
-    <button class="qa-menu-item" type="button" data-qa-action="note-selection">对选中内容添加注释</button>
+    <button class="qa-menu-item" type="button" data-qa-action="note-selection">对选中内容添加批注</button>
     <div class="qa-menu-sep"></div>
-    <button class="qa-menu-item" type="button" data-qa-action="ask-block">对本段提问</button>
-    <button class="qa-menu-item" type="button" data-qa-action="note-block">对本段添加注释</button>
-    <button class="qa-menu-item" type="button" data-qa-action="ask-section">对本节提问</button>
+    <button class="qa-menu-item" type="button" data-qa-action="note-block">对本段添加批注</button>
+    <button class="qa-menu-item" type="button" data-qa-action="note-section">对本节添加批注</button>
   </div>
 
   <aside class="qa-sidebar" id="qaSidebar" aria-label="报告批注" data-qa-ui>
     <div class="qa-sidebar-header">
       <div class="qa-title-row">
-        <h2>报告批注</h2>
-        <span class="qa-mode-chip">评论模式</span>
+        <h2>批注</h2>
+        <span class="qa-mode-chip">批注模式</span>
         <button class="qa-close" type="button" id="qaClose" aria-label="关闭批注栏">×</button>
       </div>
-      <p class="qa-help">完成批注会将当前批注内嵌到 HTML 文件，供 Agent 继续处理；对外发送请导出无批注版。</p>
+      <p class="qa-help">按轮次处理：复制本轮批注给 Agent，Agent 修改同一份 HTML 后写入处理回执。</p>
+      <div class="qa-round-status" id="qaRoundStatus" role="status" aria-live="polite"></div>
       <div class="qa-actions">
-        <button class="qa-primary-btn qa-save-review-btn qa-wide" type="button" id="qaSaveReviewHtml">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg>
-          完成批注
+        <button class="qa-primary-btn qa-copy-agent-btn qa-wide" type="button" id="qaCopyForAgent" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          复制批注给 Agent
         </button>
-        <button class="qa-secondary-btn qa-wide" type="button" id="qaExportPublic">导出无批注版</button>
-        <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
-        <button class="qa-secondary-btn" type="button" id="qaDownloadMarkdown">下载 Markdown</button>
-        <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空批注</button>
+        <button class="qa-secondary-btn qa-wide" type="button" id="qaSaveReviewHtml">保存批注版 HTML（备用）</button>
+        <details class="qa-more">
+          <summary>更多操作</summary>
+          <div class="qa-more-actions">
+            <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
+            <button class="qa-secondary-btn" type="button" id="qaDownloadMarkdown">下载 Markdown</button>
+            <button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>
+            <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空本轮</button>
+          </div>
+        </details>
       </div>
-    </div>
-    <div class="qa-filter-bar" id="qaFilterBar" role="group" aria-label="批注筛选" data-qa-ui>
-      <button class="qa-filter-btn active" type="button" data-qa-filter="all" aria-pressed="true">
-        全部 <span class="qa-filter-count" data-qa-filter-count="all">0</span>
-      </button>
-      <button class="qa-filter-btn" type="button" data-qa-filter="question" aria-pressed="false">
-        提问 <span class="qa-filter-count" data-qa-filter-count="question">0</span>
-      </button>
-      <button class="qa-filter-btn" type="button" data-qa-filter="note" aria-pressed="false">
-        注释 <span class="qa-filter-count" data-qa-filter-count="note">0</span>
-      </button>
     </div>
     <div class="qa-list" id="qaList"></div>
   </aside>
@@ -3009,23 +2998,25 @@ main.rw-layout-wide {
   <!-- QA_ANNOTATION_SCRIPT_START -->
   <script data-qa-script>
     (() => {
-      const iconQuestion = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 0 1 4.4 1.35c0 1.65-2.2 1.85-2.2 3.35"></path><path d="M12 17h.01"></path></svg>';
       const iconNote = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
       const annotationTargetSelector = 'p, li, tr, table, pre, .panel, .mini, .check, .flow-svg, h2, h3, section';
       const embeddedReviewStartMarker = 'QA_' + 'EMBEDDED_REVIEW_START';
       const embeddedReviewEndMarker = 'QA_' + 'EMBEDDED_REVIEW_END';
+      const reviewReceiptStartMarker = 'QA_' + 'AGENT_REVIEW_RECEIPT_START';
+      const reviewReceiptEndMarker = 'QA_' + 'AGENT_REVIEW_RECEIPT_END';
       const injectedReportMeta = {};
       const reportTitle = (document.querySelector('.doc-header h1')?.innerText || document.title || 'HTML 报告').trim();
       const reportFileName = injectedReportMeta.fileName || currentFileName();
       const runtimePath = decodeURIComponent(location.pathname || '');
       const reportAbsolutePath = injectedReportMeta.absolutePath || runtimePath;
       const reportFileUrl = injectedReportMeta.fileUrl || location.href || '';
-      // 另存的评论版用运行时路径隔离 localStorage，同时继续把生成期绝对路径保留给 Agent 回查来源。
+      // 另存的批注版用运行时路径隔离 localStorage，同时继续把生成期绝对路径保留给 Agent 回查来源。
       const storageKeyPrefix = 'agent-report-annotations:';
       const storageKey = storageKeyPrefix + (runtimePath || reportAbsolutePath) + ':' + reportTitle;
       // 旧版优先使用生成期绝对路径；保留迁移键，避免 HTTP 预览和 Windows file URL 升级后找不到草稿。
       const legacyStorageKey = storageKeyPrefix + (reportAbsolutePath || location.pathname) + ':' + reportTitle;
       const storageKeys = Array.from(new Set([storageKey, legacyStorageKey]));
+      const handoffStorageKey = 'agent-report-handoff:' + (runtimePath || reportAbsolutePath) + ':' + reportTitle;
       const main = document.querySelector('main');
       const launcher = document.getElementById('qaLauncher');
       const launcherLabel = document.getElementById('qaLauncherLabel');
@@ -3033,7 +3024,7 @@ main.rw-layout-wide {
       const sidebar = document.getElementById('qaSidebar');
       const closeBtn = document.getElementById('qaClose');
       const list = document.getElementById('qaList');
-      const filterBar = document.getElementById('qaFilterBar');
+      const roundStatus = document.getElementById('qaRoundStatus');
       const selectionPopover = document.getElementById('qaSelectionPopover');
       const selectionAction = document.getElementById('qaSelectionAction');
       const selectionActionLabel = document.getElementById('qaSelectionActionLabel');
@@ -3046,21 +3037,30 @@ main.rw-layout-wide {
       const copyBackdrop = document.getElementById('qaCopyBackdrop');
       const copyTextarea = document.getElementById('qaCopyTextarea');
       const copyClose = document.getElementById('qaCopyClose');
-      let annotations = loadAnnotations();
+      const copyForAgent = document.getElementById('qaCopyForAgent');
+      const embeddedReviewPack = readEmbeddedReviewPack();
+      const reviewReceipt = readEmbeddedReviewReceipt();
+      let handoffState = loadHandoffState();
+      let annotations = loadAnnotations(embeddedReviewPack);
+      // 新回执到达后，旧轮次的浏览器草稿不能复活；在同一回执基础上创建的新轮次仍可正常恢复。
+      if (reviewReceipt && handoffState?.baseReceiptRoundId !== reviewReceipt.roundId) {
+        annotations = [];
+        clearStoredAnnotations();
+        handoffState = { baseReceiptRoundId: reviewReceipt.roundId || '' };
+        saveHandoffState();
+      }
       let draftTarget = null;
-      let draftKind = '提问';
+      let draftKind = '批注';
       let editingAnnotationId = null;
       let lastContextTarget = null;
       let cachedSelectionTarget = null;
       // 重新关联只存在于当前页面会话；用户确认新选区前不修改任何批注数据。
       let rebindAnnotationId = null;
       let blockSeq = 0;
-      // 筛选是当前浏览会话的 UI 状态，不写入 AgentQuestionPack，避免改变交接语义。
-      let annotationFilter = 'all';
 
       if (!main) return;
 
-      // 评论版会保留既有定位 ID；先恢复最大序号，保护 Agent 增段后新 ID 不与旧批注冲突。
+      // 批注版会保留既有定位 ID；先恢复最大序号，保护 Agent 增段后新 ID 不与旧批注冲突。
       main.querySelectorAll('[data-block-id]').forEach(el => {
         const match = el.dataset.blockId.match(/-b(\d+)$/);
         if (match) blockSeq = Math.max(blockSeq, Number(match[1]));
@@ -3074,13 +3074,13 @@ main.rw-layout-wide {
       });
 
       // 同一路径的报告被重新生成后，localStorage 可能仍保存旧的顺序型 blockId。
-      // 先按原文做唯一匹配迁移；找不到或命中不唯一时保留评论，但禁止生成无法定位的交接文件。
+      // 先按原文做唯一匹配迁移；找不到或命中不唯一时保留批注，但禁止生成无法定位的交接文件。
       const initialReconciliation = reconcileAnnotationTargets();
       if (initialReconciliation.relocated.length) saveAnnotations();
       renderAnnotations();
       syncAnnotatedState();
       if (initialReconciliation.unresolved.length) {
-        setTimeout(() => showToast('有 ' + initialReconciliation.unresolved.length + ' 条评论的原文已变化，请重新关联'), 0);
+        setTimeout(() => showToast('有 ' + initialReconciliation.unresolved.length + ' 条批注的原文已变化，请重新关联'), 0);
       }
 
       launcher?.addEventListener('click', () => {
@@ -3088,14 +3088,6 @@ main.rw-layout-wide {
         setSidebarOpen(!sidebar.classList.contains('open'));
       });
       closeBtn?.addEventListener('click', () => setSidebarOpen(false));
-      filterBar?.addEventListener('click', event => {
-        const button = event.target.closest('[data-qa-filter]');
-        if (!button || !filterBar.contains(button)) return;
-        const nextFilter = button.dataset.qaFilter;
-        if (!['all', 'question', 'note'].includes(nextFilter)) return;
-        annotationFilter = nextFilter;
-        renderAnnotations();
-      });
       composerSave?.addEventListener('click', saveDraftAnnotation);
       composerText?.addEventListener('keydown', event => {
         if (!isComposerSubmitShortcut(event)) return;
@@ -3105,17 +3097,20 @@ main.rw-layout-wide {
         saveDraftAnnotation();
       });
       copyClose?.addEventListener('click', () => copyBackdrop.classList.remove('show'));
-      document.getElementById('qaCopyMarkdown')?.addEventListener('click', () => copyText(buildMarkdownPack()));
-      document.getElementById('qaDownloadMarkdown')?.addEventListener('click', () => downloadText(safeFileName(reportTitle) + '_questions.md', buildMarkdownPack(), 'text/markdown'));
+      copyForAgent?.addEventListener('click', copyAnnotationsForAgent);
+      document.getElementById('qaCopyMarkdown')?.addEventListener('click', () => copyText(buildMarkdownPack(), '已复制 Markdown'));
+      document.getElementById('qaDownloadMarkdown')?.addEventListener('click', () => downloadText(safeFileName(reportTitle) + '_annotations.md', buildMarkdownPack(), 'text/markdown'));
       document.getElementById('qaSaveReviewHtml')?.addEventListener('click', saveReviewHtml);
       document.getElementById('qaExportPublic')?.addEventListener('click', exportPublicHtml);
       document.getElementById('qaClearAll')?.addEventListener('click', () => {
         if (!annotations.length) return;
         if (!confirm('确定清空本页所有批注吗？')) return;
         annotations = [];
+        handoffState = { baseReceiptRoundId: reviewReceipt?.roundId || '' };
         rebindAnnotationId = null;
         updateSelectionActionMode();
         saveAnnotations();
+        saveHandoffState();
         syncAnnotatedState();
         renderAnnotations();
       });
@@ -3184,30 +3179,30 @@ main.rw-layout-wide {
           finishAnnotationRebind(selectionTarget);
           return;
         }
-        if (action === 'ask-selection' || action === 'note-selection') {
+        if (action === 'note-selection') {
           const target = selectionTarget || buildTargetFromElement(lastContextTarget);
-          openComposer(target, action === 'ask-selection' ? '提问' : '注释');
+          openComposer(target, '批注');
           return;
         }
-        if (action === 'ask-block' || action === 'note-block') {
-          openComposer(buildTargetFromElement(lastContextTarget), action === 'ask-block' ? '提问' : '注释');
+        if (action === 'note-block') {
+          openComposer(buildTargetFromElement(lastContextTarget), '批注');
           return;
         }
-        if (action === 'ask-section') {
-          openComposer(buildTargetFromSection(lastContextTarget), '提问');
+        if (action === 'note-section') {
+          openComposer(buildTargetFromSection(lastContextTarget), '批注');
         }
       }
 
       function openComposer(target, kind, options = {}) {
         if (!target) return;
         draftTarget = target;
-        draftKind = kind || '提问';
+        draftKind = '批注';
         editingAnnotationId = options.editingId || null;
-        const titlePrefix = editingAnnotationId ? '编辑' : '';
-        composerTitle.innerHTML = (isNoteKind(draftKind) ? iconNote : iconQuestion) + '<span>' + titlePrefix + draftKind + '</span>';
+        const title = editingAnnotationId ? '编辑批注' : '添加批注';
+        composerTitle.innerHTML = iconNote + '<span>' + title + '</span>';
         composerExcerpt.textContent = truncate(target.selectedText || target.blockText || '', 84);
         composerText.value = options.initialText || '';
-        composerText.placeholder = isNoteKind(draftKind) ? '写下这段内容需要注意或修改的地方' : '写下你想让 Agent 回答的问题';
+        composerText.placeholder = '写下需要 Agent 处理的内容';
         positionComposer(target);
         composer.classList.add('show');
         setTimeout(() => composerText.focus(), 0);
@@ -3255,12 +3250,13 @@ main.rw-layout-wide {
             text,
             updatedAt: new Date().toISOString()
           };
+          markDraftChanged();
           saveAnnotations();
           syncAnnotatedState();
           renderAnnotations();
           closeComposer();
           setSidebarOpen(true);
-          showToast('已更新' + draftKind);
+          showToast('已更新批注');
           return;
         }
         const item = {
@@ -3282,12 +3278,13 @@ main.rw-layout-wide {
           createdAt: new Date().toISOString()
         };
         annotations.unshift(item);
+        markDraftChanged();
         saveAnnotations();
         syncAnnotatedState();
         renderAnnotations();
         closeComposer();
         setSidebarOpen(true);
-        showToast('已保存' + draftKind);
+        showToast('已添加批注');
       }
 
       function buildTargetFromSelection() {
@@ -3447,7 +3444,7 @@ main.rw-layout-wide {
         return main.querySelector('[data-block-id="' + cssEscape(item.blockId) + '"]');
       }
 
-      // 只把旧定位迁移到唯一命中的当前正文节点；宁可提示用户重新确认，也不把评论猜到错误位置。
+      // 只把旧定位迁移到唯一命中的当前正文节点；宁可提示用户重新确认，也不把批注猜到错误位置。
       function findAnnotationElementByText(item, candidates) {
         const pool = candidates || buildAnnotationCandidates();
         const blockText = normalizeText(item?.blockText || '');
@@ -3557,24 +3554,19 @@ main.rw-layout-wide {
 
       function renderAnnotations() {
         updateLauncherMode();
-        updateAnnotationFilterControls();
+        updateRoundStatus();
         if (!list) return;
         if (!annotations.length) {
-          list.innerHTML = '<div class="qa-empty">还没有批注。选中文本后点击小气泡，或在正文中右键，对段落、表格、图表发起提问。</div>';
+          list.innerHTML = '<div class="qa-empty">当前没有待处理批注。选中文本后添加批注，积累一轮后统一交给 Agent。</div>';
           return;
         }
-        const visibleAnnotations = annotations.filter(item => matchesAnnotationFilter(item, annotationFilter));
-        if (!visibleAnnotations.length) {
-          list.innerHTML = '<div class="qa-empty">当前筛选下没有批注。切换“全部”查看其他批注。</div>';
-          return;
-        }
-        list.innerHTML = visibleAnnotations.map(item => {
+        list.innerHTML = annotations.map(item => {
           const locationMissing = !findAnnotationElementById(item);
           const rebinding = locationMissing && rebindAnnotationId === item.id;
           return `
-          <article class="qa-card ${isNoteKind(item.kind) ? 'kind-note' : ''} ${locationMissing ? 'location-missing' : ''} ${rebinding ? 'rebinding' : ''}" data-qa-id="${escapeAttr(item.id)}">
+          <article class="qa-card ${locationMissing ? 'location-missing' : ''} ${rebinding ? 'rebinding' : ''}" data-qa-id="${escapeAttr(item.id)}">
             <div class="qa-card-head">
-              <span class="qa-kind">${escapeHtml(item.kind || '提问')}</span>
+              <span class="qa-kind">批注</span>
               <span class="qa-section">${escapeHtml(item.sectionTitle || '未命名章节')}</span>
             </div>
             <button class="qa-quote qa-quote-link" type="button" data-qa-card-action="locate" title="点击原文定位到正文">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</button>
@@ -3620,34 +3612,12 @@ main.rw-layout-wide {
                 updateSelectionActionMode();
               }
               annotations = annotations.filter(x => x.id !== item.id);
+              markDraftChanged();
               saveAnnotations();
               syncAnnotatedState();
               renderAnnotations();
             }
           });
-        });
-      }
-
-      function matchesAnnotationFilter(item, filter) {
-        if (filter === 'note') return isNoteKind(item?.kind);
-        if (filter === 'question') return !isNoteKind(item?.kind);
-        return true;
-      }
-
-      function updateAnnotationFilterControls() {
-        if (!filterBar) return;
-        const counts = {
-          all: annotations.length,
-          question: annotations.filter(item => matchesAnnotationFilter(item, 'question')).length,
-          note: annotations.filter(item => matchesAnnotationFilter(item, 'note')).length
-        };
-        filterBar.querySelectorAll('[data-qa-filter]').forEach(button => {
-          const filter = button.dataset.qaFilter || 'all';
-          const active = filter === annotationFilter;
-          button.classList.toggle('active', active);
-          button.setAttribute('aria-pressed', String(active));
-          const count = button.querySelector('[data-qa-filter-count]');
-          if (count) count.textContent = String(counts[filter] ?? 0);
         });
       }
 
@@ -3663,7 +3633,7 @@ main.rw-layout-wide {
           blockText: item.blockText,
           contextBefore: item.contextBefore,
           contextAfter: item.contextAfter
-        }, item.kind || '提问', {
+        }, '批注', {
           editingId: item.id,
           initialText: item.text || item.question || ''
         });
@@ -3699,8 +3669,8 @@ main.rw-layout-wide {
         if (!selectionAction || !selectionActionLabel) return;
         const rebinding = Boolean(rebindAnnotationId);
         selectionAction.dataset.qaAction = rebinding ? 'rebind-selection' : 'note-selection';
-        selectionAction.title = rebinding ? '将批注关联到当前选区' : '添加注释';
-        selectionActionLabel.textContent = rebinding ? '重新关联' : '注释';
+        selectionAction.title = rebinding ? '将批注关联到当前选区' : '添加批注';
+        selectionActionLabel.textContent = rebinding ? '重新关联' : '添加批注';
       }
 
       // 只替换定位字段，保留 id、批注正文、类型、创建时间和来源路径，避免手动迁移变成删除重建。
@@ -3732,6 +3702,7 @@ main.rw-layout-wide {
         cachedSelectionTarget = null;
         updateSelectionActionMode();
         hideSelectionPopover();
+        markDraftChanged();
         saveAnnotations();
         syncAnnotatedState();
         renderAnnotations();
@@ -3747,9 +3718,56 @@ main.rw-layout-wide {
           launcherCount.textContent = count > 0 ? String(count) : '';
           launcherCount.hidden = count === 0;
         }
+        // 零批注时禁用主交接动作，避免用高亮按钮承诺一个实际不存在的操作。
+        if (copyForAgent) copyForAgent.disabled = count === 0;
         launcher?.setAttribute('aria-label', count > 0
           ? '打开报告批注，当前 ' + count + ' 条'
           : '打开报告批注');
+      }
+
+      function updateRoundStatus() {
+        if (!roundStatus) return;
+        roundStatus.className = 'qa-round-status';
+        if (annotations.length) {
+          const state = handoffState?.status;
+          const title = state === 'copied'
+            ? '本轮 ' + annotations.length + ' 条批注已复制，等待 Agent 处理'
+            : state === 'saved'
+              ? '本轮 ' + annotations.length + ' 条批注已写入交接 HTML'
+              : '本轮有 ' + annotations.length + ' 条待处理批注';
+          roundStatus.innerHTML = '<strong>' + escapeHtml(title) + '</strong>'
+            + '<small>' + escapeHtml(state === 'copied' ? 'Agent 处理同一份 HTML 后，请重新打开查看回执。' : '继续添加批注，完成一轮后再交给 Agent。') + '</small>';
+          roundStatus.classList.add(state === 'copied' || state === 'saved' ? 'is-ready' : 'is-draft');
+          return;
+        }
+        if (reviewReceipt) {
+          const total = Number(reviewReceipt.total || 0);
+          const handled = Number(reviewReceipt.handled ?? total);
+          const status = String(reviewReceipt.status || 'processed');
+          const changed = reviewReceipt.contentChanged;
+          const resultText = changed === true
+            ? 'HTML 已更新'
+            : changed === false
+              ? '已处理，但正文未修改'
+              : '处理结果已写入回执';
+          const title = status === 'processed'
+            ? 'Agent 已处理 ' + handled + '/' + total + ' 条批注 · ' + resultText
+            : status === 'partial'
+              ? 'Agent 已处理部分批注：' + handled + '/' + total
+              : 'Agent 处理未完成，请查看回执';
+          roundStatus.innerHTML = '<strong>' + escapeHtml(title) + '</strong>'
+            + '<small>' + escapeHtml(formatReceiptTime(reviewReceipt.processedAt) + (reviewReceipt.changedSections?.length ? ' · ' + reviewReceipt.changedSections.join('、') : '')) + '</small>';
+          roundStatus.classList.add(status === 'processed' ? 'is-processed' : status === 'partial' ? 'is-partial' : 'is-failed');
+          return;
+        }
+        roundStatus.innerHTML = '<strong>当前没有待处理批注</strong><small>添加批注后会在这里显示本轮交接状态。</small>';
+      }
+
+      function formatReceiptTime(value) {
+        if (!value) return '处理时间未知';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '处理时间未知';
+        return '处理于 ' + date.toLocaleString();
       }
 
       function locateAnnotation(item) {
@@ -3775,12 +3793,71 @@ main.rw-layout-wide {
         launcher?.setAttribute('aria-expanded', String(open));
       }
 
-      async function copyText(text) {
-        if (!text) return;
+      function ensureRoundId() {
+        const embeddedRoundId = embeddedReviewPack?.roundId;
+        if (handoffState?.roundId) return handoffState.roundId;
+        handoffState = {
+          ...(handoffState || {}),
+          roundId: embeddedRoundId || 'round-' + Date.now().toString(36),
+          baseReceiptRoundId: reviewReceipt?.roundId || '',
+          status: 'draft',
+          updatedAt: new Date().toISOString()
+        };
+        saveHandoffState();
+        return handoffState.roundId;
+      }
+
+      function markDraftChanged() {
+        const roundId = ensureRoundId();
+        handoffState = {
+          ...(handoffState || {}),
+          roundId,
+          baseReceiptRoundId: reviewReceipt?.roundId || '',
+          status: 'draft',
+          count: annotations.length,
+          updatedAt: new Date().toISOString()
+        };
+        saveHandoffState();
+      }
+
+      async function copyAnnotationsForAgent() {
+        if (!annotations.length) {
+          showToast('当前没有可交接的批注');
+          return;
+        }
+        const reconciliation = reconcileAnnotationTargets();
+        if (reconciliation.relocated.length) {
+          saveAnnotations();
+          syncAnnotatedState();
+          renderAnnotations();
+        }
+        if (reconciliation.unresolved.length) {
+          setSidebarOpen(true);
+          showToast('有 ' + reconciliation.unresolved.length + ' 条批注无法定位，请先重新关联');
+          return;
+        }
+        const roundId = ensureRoundId();
+        const copied = await copyText(buildMarkdownPack(), '已复制 ' + annotations.length + ' 条批注，粘贴给 Agent 即可');
+        if (!copied) return;
+        handoffState = {
+          ...(handoffState || {}),
+          roundId,
+          baseReceiptRoundId: reviewReceipt?.roundId || '',
+          status: 'copied',
+          count: annotations.length,
+          copiedAt: new Date().toISOString()
+        };
+        saveHandoffState();
+        updateRoundStatus();
+      }
+
+      async function copyText(text, successMessage = '已复制 Markdown') {
+        if (!text) return false;
         try {
           if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
           await navigator.clipboard.writeText(text);
-          showToast('已复制 Markdown');
+          showToast(successMessage);
+          return true;
         } catch (error) {
           copyTextarea.value = text;
           copyBackdrop.classList.add('show');
@@ -3788,10 +3865,11 @@ main.rw-layout-wide {
             copyTextarea.focus();
             copyTextarea.select();
           }, 0);
+          return false;
         }
       }
 
-      // 把当前批注包直接写入 HTML，成功覆盖或另存后即可把该文件交给 Agent。
+      // HTML 保存是跨会话和归档的备用交接方式；日常主路径优先复制批注给 Agent。
       async function saveReviewHtml() {
         const reconciliation = reconcileAnnotationTargets();
         if (reconciliation.relocated.length) {
@@ -3801,9 +3879,10 @@ main.rw-layout-wide {
         }
         if (reconciliation.unresolved.length) {
           setSidebarOpen(true);
-          showToast('有 ' + reconciliation.unresolved.length + ' 条评论无法定位，请先重新关联');
+          showToast('有 ' + reconciliation.unresolved.length + ' 条批注无法定位，请先重新关联');
           return;
         }
+        ensureRoundId();
         const currentName = currentFileName();
         const result = await saveHtmlFile({
           suggestedName: currentName,
@@ -3812,18 +3891,26 @@ main.rw-layout-wide {
         });
         if (result === 'saved') {
           clearStoredAnnotations();
+          handoffState = {
+            ...(handoffState || {}),
+            status: 'saved',
+            count: annotations.length,
+            savedAt: new Date().toISOString()
+          };
+          saveHandoffState();
+          updateRoundStatus();
         }
         if (result === 'saved') {
-          showToast('批注已写入 HTML，可将该文件交给 Agent');
+          showToast('已保存批注版 HTML，可将该文件交给 Agent');
         }
         if (result === 'downloaded') {
-          showToast('已发起批注版下载，原页草稿仍保留');
+          showToast('已发起批注版下载；请确认文件落盘后再交给 Agent');
         }
       }
 
-      // 发布版只保留正文；默认另存，避免覆盖唯一的评论版。
+      // 发布版只保留正文；默认另存，避免覆盖唯一的批注版。
       async function exportPublicHtml() {
-        const shouldExport = confirm('导出不含批注的发布版 HTML。\n\n确定：选择保存位置，建议另存，避免覆盖评论版。\n取消：取消导出。');
+        const shouldExport = confirm('导出不含批注和处理回执的发布版 HTML。\n\n确定：选择保存位置，建议另存。\n取消：取消导出。');
         if (!shouldExport) return;
         const currentName = currentFileName();
         const publicName = fileNameWithSuffix(currentName, '_public');
@@ -3832,8 +3919,8 @@ main.rw-layout-wide {
           fallbackName: publicName,
           buildHtml: buildPublicHtml
         });
-        if (result === 'saved') showToast('已导出无批注版');
-        if (result === 'downloaded') showToast('浏览器不支持直接保存，已下载无批注版');
+        if (result === 'saved') showToast('已导出发布版');
+        if (result === 'downloaded') showToast('浏览器不支持直接保存，已发起发布版下载');
       }
 
       // 先取得文件句柄再构建大 HTML，保护浏览器要求的用户激活；不支持时退化为下载。
@@ -3857,10 +3944,10 @@ main.rw-layout-wide {
         return 'downloaded';
       }
 
-      // 保存评论版时清理瞬时 UI，正文高亮会在重新打开后由内嵌批注重新生成。
+      // 保存批注版时清理瞬时 UI，正文高亮会在重新打开后由内嵌批注重新生成。
       function buildReviewedHtml() {
         const clone = document.documentElement.cloneNode(true);
-        clone.querySelectorAll('[data-qa-review-data]').forEach(el => el.remove());
+        clone.querySelectorAll('[data-qa-review-data], [data-qa-review-receipt]').forEach(el => el.remove());
         clone.querySelectorAll('.qa-sidebar.open').forEach(el => el.classList.remove('open'));
         clone.querySelectorAll('.qa-selection-popover.show, .qa-context-menu.show, .qa-composer.show, .qa-copy-backdrop.show').forEach(el => el.classList.remove('show'));
         clone.querySelectorAll('mark.qa-highlight').forEach(unwrapElement);
@@ -3884,6 +3971,7 @@ main.rw-layout-wide {
 
         let result = '<!doctype html>\n' + clone.outerHTML;
         result = stripEmbeddedReviewBlock(result);
+        result = stripReviewReceiptBlock(result);
         const reviewBlock = buildEmbeddedReviewBlock();
         result = result.includes('</head>')
           ? result.replace('</head>', reviewBlock + '\n</head>')
@@ -3895,7 +3983,7 @@ main.rw-layout-wide {
       function buildEmbeddedReviewBlock() {
         const json = serializeReviewPack(buildJsonPack());
         return [
-          '  <!' + '-- ' + embeddedReviewStartMarker + ': Agent 读取并逐条处理以下评论结果。 --' + '>',
+          '  <!' + '-- ' + embeddedReviewStartMarker + ': Agent 读取并逐条处理以下批注。 --' + '>',
           '  <' + 'script type="application/json" id="qaEmbeddedReviewData" data-qa-review-data>',
           json.split('\n').map(line => '  ' + line).join('\n'),
           '  </' + 'script>',
@@ -3930,9 +4018,24 @@ main.rw-layout-wide {
         return result;
       }
 
+      // 新一轮交接会替换上一轮回执；发布版也复用该函数物理剥离内部处理状态。
+      function stripReviewReceiptBlock(html) {
+        let result = String(html || '');
+        const startToken = '<!' + '-- ' + reviewReceiptStartMarker;
+        const endToken = reviewReceiptEndMarker + ' --' + '>';
+        let start = result.indexOf(startToken);
+        while (start >= 0) {
+          const end = result.indexOf(endToken, start);
+          if (end < 0) break;
+          result = result.slice(0, start) + result.slice(end + endToken.length);
+          start = result.indexOf(startToken);
+        }
+        return result;
+      }
+
       function buildPublicHtml() {
         const clone = document.documentElement.cloneNode(true);
-        clone.querySelectorAll('[data-qa-ui], [data-qa-script], [data-qa-review-data]').forEach(el => el.remove());
+        clone.querySelectorAll('[data-qa-ui], [data-qa-script], [data-qa-review-data], [data-qa-review-receipt]').forEach(el => el.remove());
         clone.querySelectorAll('style').forEach(style => {
           style.textContent = style.textContent.replace(/\/\* QA_ANNOTATION_CSS_START:[\s\S]*?QA_ANNOTATION_CSS_END \*\//g, '');
         });
@@ -3944,6 +4047,7 @@ main.rw-layout-wide {
         clone.querySelector('body')?.classList.remove('qa-panel-open');
         let result = '<!doctype html>\n' + clone.outerHTML;
         result = stripEmbeddedReviewBlock(result);
+        result = stripReviewReceiptBlock(result);
         result = result.replace(/\n?\s*<!-- QA_ANNOTATION_HTML_START:[\s\S]*?QA_ANNOTATION_HTML_END -->/g, '');
         result = result.replace(/\n?\s*<!-- QA_ANNOTATION_SCRIPT_START -->[\s\S]*?<!-- QA_ANNOTATION_SCRIPT_END -->/g, '');
         result = result.replace(/\n{3,}/g, '\n\n');
@@ -3964,13 +4068,15 @@ main.rw-layout-wide {
 
       function buildMarkdownPack() {
         const lines = [];
-        lines.push('# HTML 报告批注提问包');
+        const roundId = annotations.length ? ensureRoundId() : '';
+        lines.push('# HTML 报告批注包');
         lines.push('');
         lines.push('报告：' + reportTitle);
         lines.push('文件名：' + reportFileName);
         lines.push('绝对路径：' + (reportAbsolutePath || '无法从当前浏览器环境获取'));
         lines.push('File URL：' + (reportFileUrl || '无法从当前浏览器环境获取'));
-        lines.push('导出时间：' + new Date().toLocaleString());
+        lines.push('轮次：' + (roundId || '无'));
+        lines.push('交接时间：' + new Date().toLocaleString());
         lines.push('批注数量：' + annotations.length);
         lines.push('');
         if (!annotations.length) {
@@ -3978,8 +4084,9 @@ main.rw-layout-wide {
           return lines.join('\n');
         }
         annotations.slice().reverse().forEach((item, idx) => {
-          lines.push('## ' + (item.kind || '提问') + ' ' + (idx + 1));
+          lines.push('## 批注 ' + (idx + 1));
           lines.push('');
+          lines.push('- ID：' + (item.id || 'unknown'));
           lines.push('- 章节：' + (item.sectionTitle || '未命名章节'));
           lines.push('- 位置：' + (item.blockId || 'unknown'));
           lines.push('- 时间：' + (item.createdAt || ''));
@@ -3994,17 +4101,16 @@ main.rw-layout-wide {
             if (item.contextAfter) lines.push('- 后文：' + item.contextAfter);
           }
           lines.push('');
-          lines.push((isNoteKind(item.kind) ? '我的注释：' : '我的问题：'));
+          lines.push('我的批注：');
           lines.push('');
           lines.push(item.text || item.question || '');
           lines.push('');
-          lines.push('请 Agent 处理：');
-          lines.push('');
-          lines.push(isNoteKind(item.kind)
-            ? '请结合原文和上下文判断这条注释是否合理，并给出报告修改建议。'
-            : '请结合原文、上下文和报告结论解释这个问题。如果原报告存在表达不清、逻辑跳跃、证据不足或结论错误，请指出并给出修改建议。');
-          lines.push('');
         });
+        lines.push('## Agent 处理要求');
+        lines.push('');
+        lines.push('1. 逐条处理以上批注，直接修改“绝对路径”指向的同一份 HTML；不另建结果副本。');
+        lines.push('2. 处理完成后运行：`python3 skills/html-report/scripts/inject_annotation_mode.py "' + reportAbsolutePath + '" --processed-round "' + roundId + '" --processed-count ' + annotations.length + ' --content-changed yes`；若正文未改，把 `yes` 改为 `no`。');
+        lines.push('3. 运行 `python3 skills/html-report/scripts/check_html_report.py "' + reportAbsolutePath + '" --require-review-receipt`；回复实际修改路径、处理条数及未采纳项。');
         return lines.join('\n');
       }
 
@@ -4012,6 +4118,7 @@ main.rw-layout-wide {
         return {
           type: 'AgentQuestionPack',
           version: '0.3.0',
+          roundId: ensureRoundId(),
           reportTitle,
           reportFileName,
           reportAbsolutePath,
@@ -4026,8 +4133,9 @@ main.rw-layout-wide {
           delivery: {
             mode: 'embedded-html',
             status: 'ready-for-agent',
-            instruction: '以当前承载此包的 HTML 为回写目标；逐条处理 annotations；完成后删除评论区块，重新运行 inject_annotation_mode.py，再运行不带 --require-review-pack 的 check_html_report.py。'
+            instruction: '以当前承载此包的 HTML 为回写目标；逐条处理 annotations；完成后运行 inject_annotation_mode.py --processed 写入 AgentReviewReceipt，再运行 check_html_report.py --require-review-receipt。'
           },
+          submittedAt: new Date().toISOString(),
           exportedAt: new Date().toISOString(),
           annotations
         };
@@ -4036,9 +4144,8 @@ main.rw-layout-wide {
       function buildSinglePrompt(targetOrItem) {
         const item = targetOrItem || {};
         const selected = item.selectedText || item.blockText || '';
-        const kind = item.kind || '提问';
         const lines = [
-          '# HTML 报告单条' + kind,
+          '# HTML 报告单条批注',
           '',
           '报告：' + reportTitle,
           '文件名：' + reportFileName,
@@ -4051,13 +4158,8 @@ main.rw-layout-wide {
           ''
         ];
         quoteMarkdown(selected).forEach(line => lines.push(line));
-        lines.push('', isNoteKind(kind) ? '我的注释：' : '我的问题：', '', item.text || item.question || '', '', '请结合上下文处理。');
+        lines.push('', '我的批注：', '', item.text || item.question || '', '', '请结合原文和上下文处理。');
         return lines.join('\n');
-      }
-
-      function isNoteKind(kind) {
-        // 兼容旧评论包中的“批注”，新建内容统一使用更简洁的“注释”。
-        return kind === '注释' || kind === '批注';
       }
 
       function quoteMarkdown(text) {
@@ -4066,7 +4168,7 @@ main.rw-layout-wide {
         return normalized.split('\n').map(line => '> ' + line);
       }
 
-      function loadAnnotations() {
+      function loadAnnotations(fallbackPack) {
         for (const key of storageKeys) {
           try {
             const stored = localStorage.getItem(key);
@@ -4086,10 +4188,10 @@ main.rw-layout-wide {
               }
             }
           } catch (error) {
-            // 单个 localStorage 键不可用或损坏时继续尝试兼容键和 HTML 内嵌评论包。
+            // 单个 localStorage 键不可用或损坏时继续尝试兼容键和 HTML 内嵌批注包。
           }
         }
-        return normalizeAnnotations(readEmbeddedReviewPack()?.annotations);
+        return normalizeAnnotations(fallbackPack?.annotations);
       }
 
       // 内嵌包只作为无本地更新时的持久化来源，显式清空的 [] 不会被旧批注复活。
@@ -4099,15 +4201,49 @@ main.rw-layout-wide {
         try {
           const pack = JSON.parse(node.textContent);
           if (pack?.type !== 'AgentQuestionPack' || !Array.isArray(pack.annotations)) return null;
+          if (pack.delivery?.status && pack.delivery.status !== 'ready-for-agent') return null;
           return pack;
         } catch (error) {
           return null;
         }
       }
 
-      // 丢弃损坏的非对象条目，避免侧栏渲染读取无效字段。
+      function readEmbeddedReviewReceipt() {
+        const node = document.getElementById('qaEmbeddedReviewReceipt');
+        if (!node?.textContent) return null;
+        try {
+          const receipt = JSON.parse(node.textContent);
+          if (receipt?.type !== 'AgentReviewReceipt' || !Array.isArray(receipt.results)) return null;
+          return receipt;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      // 旧包继续读取，但所有可见内容和新交接都收敛成统一“批注”语义。
       function normalizeAnnotations(items) {
-        return Array.isArray(items) ? items.filter(item => item && typeof item === 'object') : [];
+        return Array.isArray(items)
+          ? items.filter(item => item && typeof item === 'object').map(item => ({ ...item, kind: '批注' }))
+          : [];
+      }
+
+      function loadHandoffState() {
+        try {
+          const value = localStorage.getItem(handoffStorageKey);
+          if (value === null) return null;
+          const parsed = JSON.parse(value);
+          return parsed && typeof parsed === 'object' ? parsed : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function saveHandoffState() {
+        try {
+          localStorage.setItem(handoffStorageKey, JSON.stringify(handoffState || {}));
+        } catch (error) {
+          // 回执仍由 HTML 持久化；浏览器禁用 localStorage 时只丢失复制中的临时状态。
+        }
       }
 
       function saveAnnotations() {
@@ -4115,17 +4251,17 @@ main.rw-layout-wide {
           localStorage.setItem(storageKey, JSON.stringify(annotations));
           storageKeys.filter(key => key !== storageKey).forEach(key => localStorage.removeItem(key));
         } catch (error) {
-          // file:// 下 localStorage 行为因浏览器而异，内嵌评论版和 Markdown 是可靠兜底。
+          // file:// 下 localStorage 行为因浏览器而异，内嵌批注版和 Markdown 是可靠兜底。
         }
       }
 
-      // 直接保存成功后让磁盘内嵌包成为下次打开的基线，Agent 清除该区块后不会残留旧批注。
+      // 直接保存成功后让磁盘内嵌包成为下次打开的基线；Agent 回写时由回执阻止旧批注复活。
       function clearStoredAnnotations() {
         storageKeys.forEach(key => {
           try {
             localStorage.removeItem(key);
           } catch (error) {
-            // localStorage 不可用不影响已经写入磁盘的评论结果。
+            // localStorage 不可用不影响已经写入磁盘的批注结果。
           }
         });
       }
@@ -4151,7 +4287,7 @@ main.rw-layout-wide {
         return /\.html?$/i.test(name) ? name : 'report.html';
       }
 
-      // 下载兜底使用区分评论版/发布版的文件名，避免浏览器静默覆盖错误文件。
+      // 下载兜底使用区分批注版/发布版的文件名，避免浏览器静默覆盖错误文件。
       function fileNameWithSuffix(fileName, suffix) {
         const match = String(fileName || 'report.html').match(/^(.*?)(\.html?)$/i);
         const base = match ? match[1] : 'report';

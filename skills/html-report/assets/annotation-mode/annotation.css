@@ -1,5 +1,5 @@
 
-    /* QA_ANNOTATION_CSS_START: 离线评论模式，导出发布版时会被移除。 */
+    /* QA_ANNOTATION_CSS_START: 离线批注模式，导出发布版时会被移除。 */
     :root {
       --qa-accent: #2563eb;
       --qa-accent-soft: #eff6ff;
@@ -269,64 +269,52 @@
       font-weight: 900;
     }
     .qa-help { margin: 0; color: var(--qa-muted); font-size: 12px; line-height: 1.55; }
+    .qa-round-status {
+      min-height: 42px;
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+    .qa-round-status.is-processed { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    .qa-round-status.is-partial { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+    .qa-round-status.is-failed { border-color: #fecaca; background: #fff1f2; color: #991b1b; }
+    .qa-round-status small { display: block; margin-top: 2px; color: inherit; font-weight: 600; opacity: .78; }
     .qa-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 8px;
       margin-top: 12px;
     }
-    .qa-actions .qa-wide { grid-column: 1 / -1; }
-    .qa-filter-bar {
-      display: flex;
-      gap: 6px;
-      padding: 9px 12px;
-      border-bottom: 1px solid var(--qa-border);
-      background: #ffffff;
-      overflow-x: auto;
+    .qa-actions .qa-wide { width: 100%; }
+    .qa-more {
+      border-top: 1px solid var(--qa-border);
+      padding-top: 6px;
     }
-    .qa-filter-btn {
-      appearance: none;
-      display: inline-flex;
-      flex: 1 0 auto;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      min-width: 76px;
-      min-height: 32px;
-      padding: 5px 9px;
-      border: 1px solid var(--qa-border);
-      border-radius: 8px;
-      background: #ffffff;
+    .qa-more summary {
+      padding: 6px 2px;
       color: #475569;
       cursor: pointer;
-      font: inherit;
       font-size: 12px;
       font-weight: 800;
-      white-space: nowrap;
     }
-    .qa-filter-btn:hover,
-    .qa-filter-btn.active {
-      border-color: rgba(37, 99, 235, .38);
-      background: var(--qa-accent-soft);
-      color: #1d4ed8;
+    .qa-more-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding-top: 4px;
     }
-    .qa-filter-btn:focus-visible,
+    .qa-more-actions .qa-wide { grid-column: 1 / -1; }
     .qa-quote-link:focus-visible {
       outline: 3px solid rgba(37, 99, 235, .24);
       outline-offset: 1px;
     }
-    .qa-filter-count {
-      min-width: 18px;
-      padding: 2px 5px;
-      border-radius: 999px;
-      background: #e2e8f0;
-      color: #475569;
-      font-size: 11px;
-      line-height: 1.1;
-      text-align: center;
-    }
-    .qa-filter-btn.active .qa-filter-count { background: #bfdbfe; color: #1e40af; }
-    .qa-save-review-btn {
+    .qa-copy-agent-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -334,22 +322,30 @@
       min-height: 42px;
       box-shadow: 0 10px 24px rgba(37, 99, 235, .18);
     }
-    .qa-save-review-btn svg {
+    .qa-copy-agent-btn svg {
       width: 16px;
       height: 16px;
       stroke-width: 2.4;
+    }
+    .qa-copy-agent-btn:disabled {
+      border-color: #cbd5e1;
+      background: #e2e8f0;
+      color: #64748b;
+      box-shadow: none;
+      cursor: not-allowed;
     }
     .qa-list {
       flex: 1;
       overflow: auto;
       padding: 12px;
+      border-top: 1px solid var(--qa-border);
       background: #f8fafc;
     }
     .qa-empty {
       margin: 18px 4px;
       padding: 18px;
       border: 1px dashed #cbd5e1;
-      border-radius: 12px;
+      border-radius: 8px;
       background: #ffffff;
       color: var(--qa-muted);
       font-size: 13px;
@@ -360,11 +356,10 @@
       padding: 12px;
       border: 1px solid var(--qa-border);
       border-left: 4px solid var(--qa-accent);
-      border-radius: 12px;
+      border-radius: 8px;
       background: #ffffff;
       box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
     }
-    .qa-card.kind-note { border-left-color: #0f766e; }
     .qa-card.location-missing {
       border-color: #f59e0b;
       border-left-color: #d97706;

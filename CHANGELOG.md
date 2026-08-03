@@ -1,3 +1,10 @@
+## [0.22.27] - 2026-08-03
+### Changed
+- html-report: 批注模式的可见术语统一为“批注”，移除提问/注释类型筛选和分流；选区、右键、侧栏、空态与发布操作使用同一套命名
+- html-report: 默认交接从“完成批注并保存 HTML”改为“复制批注给 Agent”，零批注时主操作明确禁用；`保存批注版 HTML` 降为备用，次级 Markdown/发布/清空操作收进更多菜单
+- html-report: 新增轮次状态和 `AgentReviewReceipt`；Agent 可通过 `inject_annotation_mode.py --processed` 或 `--processed-round` 写回处理条数、正文是否修改、时间与章节，并用 `check_html_report.py --require-review-receipt` 验证
+- html-report: 发布版同步物理剥离待处理包、处理回执和本地路径；运行时、校验器、组件测试、Gallery、eval 与文档契约同步更新，skill 从 `0.7.6` 升级到 `0.7.7`，插件升级到 `0.22.27`
+
 ## [0.22.26] - 2026-08-03
 ### Changed
 - html-report: 自动定位失败的批注增加手动“重新关联”闭环；用户在 `<main>` 正文中选择新原文后可复用原批注完成锚点迁移，保留 `id`、内容、类型和创建时间，不再要求删除重建

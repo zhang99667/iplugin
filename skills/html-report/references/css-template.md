@@ -99,8 +99,8 @@ python3 skills/html-report/scripts/assemble_report.py --list-components
 Review Workspace 由自己的构建脚本输出正文结构、数据和唯一 runtime；统一装配器只补它的
 依赖样式。多个 Workspace 时，第一个保留 runtime，后续使用 `--no-runtime`。
 
-评论模式是报告完成后的后处理模块。先装配并通过基础校验，再运行
-`scripts/inject_annotation_mode.py`；不要把评论模式拆成普通内容组件，也不要把它的资产登记到
+批注模式是报告完成后的后处理模块。先装配并通过基础校验，再运行
+`scripts/inject_annotation_mode.py`；不要把批注模式拆成普通内容组件，也不要把它的资产登记到
 页面组件注册表。
 
 ## 5. 完成前检查
