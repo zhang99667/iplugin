@@ -1040,7 +1040,10 @@ def check_annotation_mode(
         'class="qa-quote qa-quote-link"': "批注原文缺少直接定位正文的快捷入口",
         'id="qaCopyForAgent"': "批注侧栏缺少复制给 Agent 的主入口",
         'id="qaSaveReviewHtml"': "批注侧栏缺少 HTML 备用交接入口",
+        'class="qa-secondary-actions"': "保存批注版和导出发布版必须并排展示",
+        'aria-label="保存批注版 HTML（备用）"': "保存批注版入口必须保留备用 HTML 交接语义",
         'id="qaExportPublic">导出发布版</button>': "发布版按钮文案必须与批注交接动作区分",
+        'id="qaClearAll">清空本轮</button>': "清空本轮必须作为侧栏直接可见操作",
         "qa-copy-agent-btn": "复制批注给 Agent 必须作为醒目的主按钮展示",
         "copyAnnotationsForAgent": "批注模式缺少剪贴板主交接逻辑",
         "saveReviewHtml": "批注模式缺少保存批注版的备用交互逻辑",
@@ -1145,6 +1148,16 @@ def check_annotation_mode(
                 errors.append("选中文本气泡唯一操作必须是“添加批注”")
         if "qaFilterBar" in annotation_scope or "data-qa-filter" in annotation_scope:
             errors.append("批注主流程不再要求用户按“提问/注释”分类，请移除类型筛选")
+        secondary_actions_match = re.search(
+            r'<div\b[^>]*\bclass=["\'][^"\']*\bqa-secondary-actions\b[^"\']*["\'][^>]*>(.*?)</div>',
+            annotation_scope,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if not secondary_actions_match or not all(
+            fragment in secondary_actions_match.group(1)
+            for fragment in ('id="qaSaveReviewHtml"', 'id="qaExportPublic"')
+        ):
+            errors.append("保存批注版和导出发布版必须位于同一个直接可见的并排操作组")
 
     save_review_start = annotation_scope.find("async function saveReviewHtml()")
     save_review_end = annotation_scope.find("// 发布版只保留正文", save_review_start)
@@ -1184,6 +1197,9 @@ def check_annotation_mode(
         forbidden_fragments["导出无批注版"] = "发布动作统一命名为“导出发布版”"
         forbidden_fragments["publish-mode"] = "右上角入口职责必须稳定，不能保留零批注发布模式"
         forbidden_fragments["请删除后在新位置重新添加"] = "失效批注必须提供重新关联入口，不能要求删除重建"
+        forbidden_fragments['id="qaCopyMarkdown"'] = "复制给 Agent 已覆盖 Markdown 交接，不再保留重复的复制 Markdown 按钮"
+        forbidden_fragments['id="qaDownloadMarkdown"'] = "批注侧栏不再提供下载 Markdown 按钮"
+        forbidden_fragments['<details class="qa-more">'] = "常用文件操作和清空本轮必须直接展示，不再收进更多操作"
     for fragment, message in forbidden_fragments.items():
         if fragment in annotation_scope:
             errors.append(message)
@@ -1195,7 +1211,8 @@ def check_annotation_mode(
         ".qa-sidebar": "批注模式缺少右侧栏样式",
         ".qa-round-status": "批注侧栏缺少持久轮次状态样式",
         ".qa-copy-agent-btn": "复制批注主操作缺少稳定样式",
-        ".qa-more-actions": "批注侧栏缺少收敛次级动作的更多菜单样式",
+        ".qa-secondary-actions": "保存批注版和导出发布版缺少并排布局样式",
+        ".qa-clear-btn": "清空本轮缺少直接可见的危险操作样式",
         ".qa-quote-link": "批注原文快捷定位缺少按钮样式",
         ".qa-highlight": "批注模式缺少选中文本高亮样式",
         ".qa-panel-open": "批注模式缺少右侧栏打开时的正文避让样式",
@@ -1219,6 +1236,14 @@ def check_annotation_mode(
             errors.append("批注卡片徽标必须禁止 flex 收缩和文字换行")
         if not css_rule_has(css, (".qa-section",), ("min-width: 0", "overflow-wrap: anywhere")):
             errors.append("批注卡片长章节标题必须承担收缩并允许换行，不能挤压左侧徽标")
+        if not css_rule_has(css, (".qa-card",), ("font-size: 12px",)):
+            errors.append("批注卡片基础字号应保持紧凑，避免侧栏内容显得过大")
+        if not css_rule_has(css, (".qa-question",), ("font-size: 12px",)):
+            errors.append("批注正文应使用紧凑字号，避免长意见占用过多侧栏空间")
+        if not css_rule_has(css, (".qa-quote",), ("font-size: 12px", "line-height: 1.55")):
+            errors.append("批注原文摘录应保持 12px 紧凑字号和稳定行高")
+        if not css_rule_has(css, (".qa-quote-link",), ("font-family: inherit",)):
+            errors.append("批注原文按钮只能继承字体族，不能覆盖摘录自身的字号和行高")
 
     errors.extend(check_embedded_review_pack(html, required=require_review_pack, block_ids=block_ids))
     errors.extend(check_embedded_review_receipt(html, required=require_review_receipt))

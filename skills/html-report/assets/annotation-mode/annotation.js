@@ -101,8 +101,6 @@
       });
       copyClose?.addEventListener('click', () => copyBackdrop.classList.remove('show'));
       copyForAgent?.addEventListener('click', copyAnnotationsForAgent);
-      document.getElementById('qaCopyMarkdown')?.addEventListener('click', () => copyText(buildMarkdownPack(), '已复制 Markdown'));
-      document.getElementById('qaDownloadMarkdown')?.addEventListener('click', () => downloadText(safeFileName(reportTitle) + '_annotations.md', buildMarkdownPack(), 'text/markdown'));
       document.getElementById('qaSaveReviewHtml')?.addEventListener('click', saveReviewHtml);
       document.getElementById('qaExportPublic')?.addEventListener('click', exportPublicHtml);
       document.getElementById('qaClearAll')?.addEventListener('click', () => {
@@ -608,7 +606,7 @@
               if (cancelAnnotationRebind()) renderAnnotations();
               openEditAnnotation(item, card);
             }
-            if (action === 'copy') copyText(buildSinglePrompt(item));
+            if (action === 'copy') copyText(buildSinglePrompt(item), '已复制此条批注');
             if (action === 'delete') {
               if (rebindAnnotationId === item.id) {
                 rebindAnnotationId = null;
@@ -854,7 +852,7 @@
         updateRoundStatus();
       }
 
-      async function copyText(text, successMessage = '已复制 Markdown') {
+      async function copyText(text, successMessage = '已复制') {
         if (!text) return false;
         try {
           if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
@@ -1324,10 +1322,6 @@
       function cssEscape(value) {
         if (window.CSS && CSS.escape) return CSS.escape(value || '');
         return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '\\$&');
-      }
-
-      function safeFileName(name) {
-        return String(name || 'html_report').replace(/[\\/:*?"<>|\s]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'html_report';
       }
     })();
   </script>

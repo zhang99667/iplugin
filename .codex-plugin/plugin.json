@@ -1,6 +1,6 @@
 {
   "name": "iplugin",
-  "version": "0.22.28",
+  "version": "0.22.29",
   "description": "toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、组件化 HTML 报告生成、多文件多版本 Review Workspace、图片/视频证据预览、支持复制交接与 Agent 处理回执的离线批注模式、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开",
   "author": {
     "name": "markz"

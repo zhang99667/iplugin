@@ -333,24 +333,20 @@
       margin-top: 12px;
     }
     .qa-actions .qa-wide { width: 100%; }
-    .qa-more {
-      border-top: 1px solid var(--qa-border);
-      padding-top: 6px;
-    }
-    .qa-more summary {
-      padding: 6px 2px;
-      color: #475569;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 800;
-    }
-    .qa-more-actions {
+    .qa-secondary-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
-      padding-top: 4px;
     }
-    .qa-more-actions .qa-wide { grid-column: 1 / -1; }
+    .qa-secondary-actions .qa-secondary-btn {
+      width: 100%;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .qa-clear-btn {
+      min-height: 32px;
+      background: #ffffff;
+    }
     .qa-quote-link:focus-visible {
       outline: 3px solid rgba(37, 99, 235, .24);
       outline-offset: 1px;
@@ -400,6 +396,7 @@
       border-radius: 8px;
       background: #ffffff;
       box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
+      font-size: 12px;
     }
     .qa-card.location-missing {
       border-color: #f59e0b;
@@ -460,11 +457,11 @@
       border-right: 0;
       border-bottom: 0;
       cursor: pointer;
-      font: inherit;
+      font-family: inherit;
       text-align: left;
     }
     .qa-quote-link:hover { background: #eff6ff; color: #1d4ed8; }
-    .qa-question { margin: 8px 0; color: #111827; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+    .qa-question { margin: 8px 0; color: #111827; font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
     .qa-location-warning {
       margin: 8px 0 0;
       padding: 8px 10px;
@@ -2966,16 +2963,11 @@ main.rw-layout-wide {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
           复制批注给 Agent
         </button>
-        <button class="qa-secondary-btn qa-wide" type="button" id="qaSaveReviewHtml">保存批注版 HTML（备用）</button>
-        <details class="qa-more">
-          <summary>更多操作</summary>
-          <div class="qa-more-actions">
-            <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
-            <button class="qa-secondary-btn" type="button" id="qaDownloadMarkdown">下载 Markdown</button>
-            <button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>
-            <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空本轮</button>
-          </div>
-        </details>
+        <div class="qa-secondary-actions" role="group" aria-label="批注文件操作">
+          <button class="qa-secondary-btn" type="button" id="qaSaveReviewHtml" aria-label="保存批注版 HTML（备用）" title="保存批注版 HTML（备用）">保存批注版</button>
+          <button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>
+        </div>
+        <button class="qa-danger-btn qa-clear-btn qa-wide" type="button" id="qaClearAll">清空本轮</button>
       </div>
     </div>
     <div class="qa-list" id="qaList"></div>
@@ -3098,8 +3090,6 @@ main.rw-layout-wide {
       });
       copyClose?.addEventListener('click', () => copyBackdrop.classList.remove('show'));
       copyForAgent?.addEventListener('click', copyAnnotationsForAgent);
-      document.getElementById('qaCopyMarkdown')?.addEventListener('click', () => copyText(buildMarkdownPack(), '已复制 Markdown'));
-      document.getElementById('qaDownloadMarkdown')?.addEventListener('click', () => downloadText(safeFileName(reportTitle) + '_annotations.md', buildMarkdownPack(), 'text/markdown'));
       document.getElementById('qaSaveReviewHtml')?.addEventListener('click', saveReviewHtml);
       document.getElementById('qaExportPublic')?.addEventListener('click', exportPublicHtml);
       document.getElementById('qaClearAll')?.addEventListener('click', () => {
@@ -3605,7 +3595,7 @@ main.rw-layout-wide {
               if (cancelAnnotationRebind()) renderAnnotations();
               openEditAnnotation(item, card);
             }
-            if (action === 'copy') copyText(buildSinglePrompt(item));
+            if (action === 'copy') copyText(buildSinglePrompt(item), '已复制此条批注');
             if (action === 'delete') {
               if (rebindAnnotationId === item.id) {
                 rebindAnnotationId = null;
@@ -3851,7 +3841,7 @@ main.rw-layout-wide {
         updateRoundStatus();
       }
 
-      async function copyText(text, successMessage = '已复制 Markdown') {
+      async function copyText(text, successMessage = '已复制') {
         if (!text) return false;
         try {
           if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
@@ -4321,10 +4311,6 @@ main.rw-layout-wide {
       function cssEscape(value) {
         if (window.CSS && CSS.escape) return CSS.escape(value || '');
         return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '\\$&');
-      }
-
-      function safeFileName(name) {
-        return String(name || 'html_report').replace(/[\\/:*?"<>|\s]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'html_report';
       }
     })();
   </script>

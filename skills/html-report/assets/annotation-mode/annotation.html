@@ -44,16 +44,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
           复制批注给 Agent
         </button>
-        <button class="qa-secondary-btn qa-wide" type="button" id="qaSaveReviewHtml">保存批注版 HTML（备用）</button>
-        <details class="qa-more">
-          <summary>更多操作</summary>
-          <div class="qa-more-actions">
-            <button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>
-            <button class="qa-secondary-btn" type="button" id="qaDownloadMarkdown">下载 Markdown</button>
-            <button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>
-            <button class="qa-danger-btn qa-wide" type="button" id="qaClearAll">清空本轮</button>
-          </div>
-        </details>
+        <div class="qa-secondary-actions" role="group" aria-label="批注文件操作">
+          <button class="qa-secondary-btn" type="button" id="qaSaveReviewHtml" aria-label="保存批注版 HTML（备用）" title="保存批注版 HTML（备用）">保存批注版</button>
+          <button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>
+        </div>
+        <button class="qa-danger-btn qa-clear-btn qa-wide" type="button" id="qaClearAll">清空本轮</button>
       </div>
     </div>
     <div class="qa-list" id="qaList"></div>

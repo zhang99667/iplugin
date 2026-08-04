@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.7.7
+version: 0.7.8
 tags:
   - report
   - html
@@ -83,7 +83,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 用户没有指定路径时，默认输出到桌面。
 - 文件名表意，例如 `review_report.html`、`rate_limiter_explainer.html`。
 - 批注模式只在用户明确需要时加入。可见术语统一为“批注”；右上角稳定打开侧栏，类型筛选移除，原文摘录和手动重新关联保留。
-- 侧栏以 `复制批注给 Agent` 为主操作，以 `保存批注版 HTML（备用）` 为次级操作；页面必须持久显示草稿、等待处理和 Agent 已处理状态。
+- 侧栏以 `复制批注给 Agent` 为主操作；`保存批注版` 与 `导出发布版` 并排直接展示，`清空本轮` 作为独立危险操作，不再提供重复的复制/下载 Markdown 按钮；页面必须持久显示草稿、等待处理和 Agent 已处理状态。
 - 备用内嵌包必须包含原 HTML 路径、`file://` URL 和 `roundId`，使用唯一 `#qaEmbeddedReviewData[data-qa-review-data]` 节点。
 - Agent 声明处理完成时，最终 HTML 必须包含唯一 `#qaEmbeddedReviewReceipt[data-qa-review-receipt]`，并通过 `--require-review-receipt`；不能只删除待处理包。
 - 批注版必须内置 `导出发布版`；发布版物理剥离批注 UI、JS、高亮、`data-block-id`、待处理包、处理回执和本地路径。

@@ -138,9 +138,86 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn("复制批注给 Agent", annotated)
         self.assertIn("保存批注版 HTML（备用）", annotated)
         self.assertIn('id="qaRoundStatus"', annotated)
+        self.assertIn('class="qa-secondary-actions"', annotated)
+        self.assertIn('aria-label="保存批注版 HTML（备用）"', annotated)
         self.assertIn('id="qaExportPublic">导出发布版</button>', annotated)
+        self.assertIn('id="qaClearAll">清空本轮</button>', annotated)
+        self.assertNotIn('id="qaCopyMarkdown"', annotated)
+        self.assertNotIn('id="qaDownloadMarkdown"', annotated)
+        self.assertNotIn('<details class="qa-more">', annotated)
+        self.assertIn("copyText(buildSinglePrompt(item), '已复制此条批注')", annotated)
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotated,
+                (".qa-card",),
+                ("font-size: 12px",),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotated,
+                (".qa-question",),
+                ("font-size: 12px",),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotated,
+                (".qa-quote",),
+                ("font-size: 12px", "line-height: 1.55"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotated,
+                (".qa-quote-link",),
+                ("font-family: inherit",),
+            )
+        )
         self.assertNotIn("完成批注", annotated)
         self.assertEqual([], self.validate_html(annotated))
+
+    def test_annotation_validator_rejects_reintroduced_action_clutter(self) -> None:
+        """重复 Markdown 入口或拆散文件操作时，校验器应阻止旧布局回归。"""
+
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-action-layout-report.html"),
+        )
+        broken = annotated.replace(
+            '<button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>',
+            "</div>"
+            '<button class="qa-secondary-btn" type="button" id="qaCopyMarkdown">复制 Markdown</button>'
+            '<button class="qa-secondary-btn" type="button" id="qaExportPublic">导出发布版</button>'
+            '<div class="qa-secondary-actions">',
+            1,
+        )
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("重复的复制 Markdown 按钮" in error for error in errors))
+        self.assertTrue(any("同一个直接可见的并排操作组" in error for error in errors))
+
+    def test_annotation_validator_rejects_oversized_card_text(self) -> None:
+        """批注卡片字号回退到偏大值时，校验器应给出明确错误。"""
+
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-card-font-report.html"),
+        )
+        broken = annotated.replace("font-size: 12px;\n    }\n    .qa-card.location-missing", "font-size: 13px;\n    }\n    .qa-card.location-missing", 1)
+        broken = broken.replace(
+            ".qa-question { margin: 8px 0; color: #111827; font-size: 12px;",
+            ".qa-question { margin: 8px 0; color: #111827; font-size: 13px;",
+            1,
+        )
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("批注卡片基础字号" in error for error in errors))
+        self.assertTrue(any("批注正文应使用紧凑字号" in error for error in errors))
 
     def test_annotation_validator_rejects_launcher_role_switching(self) -> None:
         """校验器必须阻止旧版“零条即导出”的职责切换重新混入资产。"""
