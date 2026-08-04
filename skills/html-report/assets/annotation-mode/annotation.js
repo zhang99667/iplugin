@@ -1,6 +1,7 @@
   <!-- QA_ANNOTATION_SCRIPT_START -->
   <script data-qa-script>
     (() => {
+      const iconQuestion = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 0 1 4.4 1.35c0 1.65-2.2 1.85-2.2 3.35"></path><path d="M12 17h.01"></path></svg>';
       const iconNote = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
       const annotationTargetSelector = 'p, li, tr, table, pre, .panel, .mini, .check, .flow-svg, h2, h3, section';
       const embeddedReviewStartMarker = 'QA_' + 'EMBEDDED_REVIEW_START';
@@ -29,6 +30,7 @@
       const list = document.getElementById('qaList');
       const roundStatus = document.getElementById('qaRoundStatus');
       const selectionPopover = document.getElementById('qaSelectionPopover');
+      const selectionQuestionAction = document.getElementById('qaSelectionQuestionAction');
       const selectionAction = document.getElementById('qaSelectionAction');
       const selectionActionLabel = document.getElementById('qaSelectionActionLabel');
       const contextMenu = document.getElementById('qaContextMenu');
@@ -53,7 +55,7 @@
         saveHandoffState();
       }
       let draftTarget = null;
-      let draftKind = '批注';
+      let draftKind = '评论';
       let editingAnnotationId = null;
       let lastContextTarget = null;
       let cachedSelectionTarget = null;
@@ -180,30 +182,40 @@
           finishAnnotationRebind(selectionTarget);
           return;
         }
-        if (action === 'note-selection') {
+        const kind = annotationKindForAction(action);
+        if (!kind) return;
+        if (action.endsWith('-selection')) {
           const target = selectionTarget || buildTargetFromElement(lastContextTarget);
-          openComposer(target, '批注');
+          openComposer(target, kind);
           return;
         }
-        if (action === 'note-block') {
-          openComposer(buildTargetFromElement(lastContextTarget), '批注');
+        if (action.endsWith('-block')) {
+          openComposer(buildTargetFromElement(lastContextTarget), kind);
           return;
         }
-        if (action === 'note-section') {
-          openComposer(buildTargetFromSection(lastContextTarget), '批注');
+        if (action.endsWith('-section')) {
+          openComposer(buildTargetFromSection(lastContextTarget), kind);
         }
+      }
+
+      function annotationKindForAction(action) {
+        if (String(action || '').startsWith('question-')) return '问题';
+        if (String(action || '').startsWith('comment-')) return '评论';
+        return '';
       }
 
       function openComposer(target, kind, options = {}) {
         if (!target) return;
         draftTarget = target;
-        draftKind = '批注';
+        draftKind = normalizeAnnotationKind(kind);
         editingAnnotationId = options.editingId || null;
-        const title = editingAnnotationId ? '编辑批注' : '添加批注';
-        composerTitle.innerHTML = iconNote + '<span>' + title + '</span>';
+        const title = (editingAnnotationId ? '编辑' : '添加') + draftKind;
+        composerTitle.innerHTML = (isCommentKind(draftKind) ? iconNote : iconQuestion) + '<span>' + title + '</span>';
         composerExcerpt.textContent = truncate(target.selectedText || target.blockText || '', 84);
         composerText.value = options.initialText || '';
-        composerText.placeholder = '写下需要 Agent 处理的内容';
+        composerText.placeholder = isCommentKind(draftKind)
+          ? '写下需要 Agent 关注或修改的内容'
+          : '写下希望 Agent 回答的问题';
         positionComposer(target);
         composer.classList.add('show');
         setTimeout(() => composerText.focus(), 0);
@@ -257,7 +269,7 @@
           renderAnnotations();
           closeComposer();
           setSidebarOpen(true);
-          showToast('已更新批注');
+          showToast('已更新' + draftKind);
           return;
         }
         const item = {
@@ -285,7 +297,7 @@
         renderAnnotations();
         closeComposer();
         setSidebarOpen(true);
-        showToast('已添加批注');
+        showToast('已添加' + draftKind);
       }
 
       function buildTargetFromSelection() {
@@ -416,11 +428,13 @@
       }
 
       function showContextMenu(x, y) {
-        const menuWidth = 210;
-        const menuHeight = 230;
-        contextMenu.style.left = Math.min(x, window.innerWidth - menuWidth - 8) + 'px';
-        contextMenu.style.top = Math.min(y, window.innerHeight - menuHeight - 8) + 'px';
+        contextMenu.style.left = Math.max(8, x) + 'px';
+        contextMenu.style.top = Math.max(8, y) + 'px';
         contextMenu.classList.add('show');
+        // 六个类型化动作需要按真实尺寸贴边，避免靠近视口底部时溢出
+        const rect = contextMenu.getBoundingClientRect();
+        contextMenu.style.left = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8)) + 'px';
+        contextMenu.style.top = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8)) + 'px';
       }
 
       function hideFloatingUi() {
@@ -558,16 +572,17 @@
         updateRoundStatus();
         if (!list) return;
         if (!annotations.length) {
-          list.innerHTML = '<div class="qa-empty">当前没有待处理批注。选中文本后添加批注，积累一轮后统一交给 Agent。</div>';
+          list.innerHTML = '<div class="qa-empty">当前没有待处理批注。选中文本后添加问题或评论，积累一轮后统一交给 Agent。</div>';
           return;
         }
         list.innerHTML = annotations.map(item => {
           const locationMissing = !findAnnotationElementById(item);
           const rebinding = locationMissing && rebindAnnotationId === item.id;
+          const kind = normalizeAnnotationKind(item.kind);
           return `
-          <article class="qa-card ${locationMissing ? 'location-missing' : ''} ${rebinding ? 'rebinding' : ''}" data-qa-id="${escapeAttr(item.id)}">
+          <article class="qa-card ${isCommentKind(kind) ? 'kind-comment' : ''} ${locationMissing ? 'location-missing' : ''} ${rebinding ? 'rebinding' : ''}" data-qa-id="${escapeAttr(item.id)}">
             <div class="qa-card-head">
-              <span class="qa-kind">批注</span>
+              <span class="qa-kind">${escapeHtml(kind)}</span>
               <span class="qa-section">${escapeHtml(item.sectionTitle || '未命名章节')}</span>
             </div>
             <button class="qa-quote qa-quote-link" type="button" data-qa-card-action="locate" title="点击原文定位到正文">${escapeHtml(truncate(item.selectedText || item.blockText || '', 520))}</button>
@@ -634,7 +649,7 @@
           blockText: item.blockText,
           contextBefore: item.contextBefore,
           contextAfter: item.contextAfter
-        }, '批注', {
+        }, normalizeAnnotationKind(item.kind), {
           editingId: item.id,
           initialText: item.text || item.question || ''
         });
@@ -667,11 +682,13 @@
       }
 
       function updateSelectionActionMode() {
-        if (!selectionAction || !selectionActionLabel) return;
+        if (!selectionAction || !selectionActionLabel || !selectionQuestionAction) return;
         const rebinding = Boolean(rebindAnnotationId);
-        selectionAction.dataset.qaAction = rebinding ? 'rebind-selection' : 'note-selection';
-        selectionAction.title = rebinding ? '将批注关联到当前选区' : '添加批注';
-        selectionActionLabel.textContent = rebinding ? '重新关联' : '添加批注';
+        selectionQuestionAction.hidden = rebinding;
+        selectionAction.classList.toggle('primary', rebinding);
+        selectionAction.dataset.qaAction = rebinding ? 'rebind-selection' : 'comment-selection';
+        selectionAction.title = rebinding ? '将批注关联到当前选区' : '添加评论';
+        selectionActionLabel.textContent = rebinding ? '重新关联' : '评论';
       }
 
       // 只替换定位字段，保留 id、批注正文、类型、创建时间和来源路径，避免手动迁移变成删除重建。
@@ -1085,9 +1102,11 @@
           return lines.join('\n');
         }
         annotations.slice().reverse().forEach((item, idx) => {
-          lines.push('## 批注 ' + (idx + 1));
+          const kind = normalizeAnnotationKind(item.kind);
+          lines.push('## ' + kind + ' ' + (idx + 1));
           lines.push('');
           lines.push('- ID：' + (item.id || 'unknown'));
+          lines.push('- 类型：' + kind);
           lines.push('- 章节：' + (item.sectionTitle || '未命名章节'));
           lines.push('- 位置：' + (item.blockId || 'unknown'));
           lines.push('- 时间：' + (item.createdAt || ''));
@@ -1102,7 +1121,7 @@
             if (item.contextAfter) lines.push('- 后文：' + item.contextAfter);
           }
           lines.push('');
-          lines.push('我的批注：');
+          lines.push(isCommentKind(kind) ? '我的评论：' : '我的问题：');
           lines.push('');
           lines.push(item.text || item.question || '');
           lines.push('');
@@ -1145,13 +1164,15 @@
       function buildSinglePrompt(targetOrItem) {
         const item = targetOrItem || {};
         const selected = item.selectedText || item.blockText || '';
+        const kind = normalizeAnnotationKind(item.kind);
         const lines = [
-          '# HTML 报告单条批注',
+          '# HTML 报告单条' + kind,
           '',
           '报告：' + reportTitle,
           '文件名：' + reportFileName,
           '绝对路径：' + (item.reportAbsolutePath || reportAbsolutePath || '无法从当前浏览器环境获取'),
           'File URL：' + (item.reportFileUrl || reportFileUrl || '无法从当前浏览器环境获取'),
+          '类型：' + kind,
           '章节：' + (item.sectionTitle || '未命名章节'),
           '位置：' + (item.blockId || 'unknown'),
           '',
@@ -1159,7 +1180,7 @@
           ''
         ];
         quoteMarkdown(selected).forEach(line => lines.push(line));
-        lines.push('', '我的批注：', '', item.text || item.question || '', '', '请结合原文和上下文处理。');
+        lines.push('', isCommentKind(kind) ? '我的评论：' : '我的问题：', '', item.text || item.question || '', '', '请结合原文和上下文处理。');
         return lines.join('\n');
       }
 
@@ -1221,10 +1242,24 @@
         }
       }
 
-      // 旧包继续读取，但所有可见内容和新交接都收敛成统一“批注”语义。
+      // 旧包继续读取，并映射到当前稳定的“问题 / 评论”两类语义
+      function normalizeAnnotationKind(kind) {
+        const value = String(kind || '').trim();
+        if (value === '问题' || value === '提问') return '问题';
+        if (value === '评论' || value === '注释' || value === '批注') return '评论';
+        return '评论';
+      }
+
+      function isCommentKind(kind) {
+        return normalizeAnnotationKind(kind) === '评论';
+      }
+
       function normalizeAnnotations(items) {
         return Array.isArray(items)
-          ? items.filter(item => item && typeof item === 'object').map(item => ({ ...item, kind: '批注' }))
+          ? items.filter(item => item && typeof item === 'object').map(item => ({
+            ...item,
+            kind: normalizeAnnotationKind(item.kind)
+          }))
           : [];
       }
 

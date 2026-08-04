@@ -60,6 +60,7 @@
       border-radius: 999px;
     }
     .qa-selection-popover.show { display: inline-flex; }
+    .qa-selection-popover [hidden] { display: none !important; }
     .qa-bubble-btn {
       appearance: none;
       display: inline-flex;
@@ -387,7 +388,8 @@
       font-weight: 900;
       white-space: nowrap;
     }
-    .qa-card.kind-note .qa-kind { background: #ccfbf1; color: #115e59; }
+    .qa-card.kind-comment { border-left-color: #0f766e; }
+    .qa-card.kind-comment .qa-kind { background: #ccfbf1; color: #115e59; }
     .qa-section {
       min-width: 0;
       color: var(--qa-muted);

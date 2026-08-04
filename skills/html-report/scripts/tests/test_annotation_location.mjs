@@ -37,10 +37,60 @@ const buildResolver = new Function(
   + "; return { findAnnotationElementByText };",
 );
 const { findAnnotationElementByText } = buildResolver();
+const buildAnnotationKindHelpers = new Function(
+  extractFunction("normalizeAnnotationKind")
+  + extractFunction("isCommentKind")
+  + extractFunction("annotationKindForAction")
+  + "; return { normalizeAnnotationKind, isCommentKind, annotationKindForAction };",
+);
+const {
+  normalizeAnnotationKind,
+  isCommentKind,
+  annotationKindForAction,
+} = buildAnnotationKindHelpers();
 const buildAnnotationNormalizer = new Function(
-  extractFunction("normalizeAnnotations") + "; return { normalizeAnnotations };",
+  extractFunction("normalizeAnnotationKind")
+  + extractFunction("normalizeAnnotations")
+  + "; return { normalizeAnnotations };",
 );
 const { normalizeAnnotations } = buildAnnotationNormalizer();
+const runMarkdownPack = new Function(
+  "annotations",
+  "reportTitle",
+  "reportFileName",
+  "reportAbsolutePath",
+  "reportFileUrl",
+  "function ensureRoundId() { return 'round-test'; }"
+  + "function normalizeText(value) { return String(value || '').replace(/\\s+/g, ' ').trim(); }"
+  + extractFunction("normalizeAnnotationKind")
+  + extractFunction("isCommentKind")
+  + extractFunction("quoteMarkdown")
+  + extractFunction("buildMarkdownPack")
+  + "; return buildMarkdownPack();",
+);
+const runSinglePrompt = new Function(
+  "item",
+  "reportTitle",
+  "reportFileName",
+  "reportAbsolutePath",
+  "reportFileUrl",
+  "function normalizeText(value) { return String(value || '').replace(/\\s+/g, ' ').trim(); }"
+  + extractFunction("normalizeAnnotationKind")
+  + extractFunction("isCommentKind")
+  + extractFunction("quoteMarkdown")
+  + extractFunction("buildSinglePrompt")
+  + "; return buildSinglePrompt(item);",
+);
+const runJsonPack = new Function(
+  "annotations",
+  "reportTitle",
+  "reportFileName",
+  "reportAbsolutePath",
+  "reportFileUrl",
+  "function ensureRoundId() { return 'round-test'; }"
+  + extractFunction("buildJsonPack")
+  + "; return buildJsonPack();",
+);
 const runRoundStatus = new Function(
   "annotations",
   "handoffState",
@@ -91,11 +141,60 @@ const normalizedKinds = normalizeAnnotations([
   { id: "old-question", kind: "提问" },
   { id: "old-note", kind: "注释" },
   { id: "old-annotation", kind: "批注" },
+  { id: "current-question", kind: "问题" },
+  { id: "current-comment", kind: "评论" },
 ]);
 assert.deepEqual(
   normalizedKinds.map(item => item.kind),
-  ["批注", "批注", "批注"],
-  "旧类型只做数据兼容，所有可见和新交接语义必须统一为批注",
+  ["问题", "评论", "评论", "问题", "评论"],
+  "旧类型应兼容映射，当前问题和评论应保持幂等",
+);
+for (const scope of ["selection", "block", "section"]) {
+  assert.equal(annotationKindForAction(`question-${scope}`), "问题", `${scope} 问题动作必须保留类型`);
+  assert.equal(annotationKindForAction(`comment-${scope}`), "评论", `${scope} 评论动作必须保留类型`);
+}
+assert.equal(annotationKindForAction("unknown"), "", "未知动作不能静默创建评论");
+assert.equal(normalizeAnnotationKind("问题"), "问题", "问题类型归一应保持幂等");
+assert.equal(normalizeAnnotationKind("评论"), "评论", "评论类型归一应保持幂等");
+assert.equal(isCommentKind("批注"), true, "旧批注应按评论样式展示");
+
+const handoffText = runMarkdownPack(
+  [
+    { id: "q-1", kind: "问题", text: "为什么这样设计", selectedText: "原文一" },
+    { id: "q-2", kind: "评论", text: "建议精简表达", selectedText: "原文二" },
+  ],
+  "报告",
+  "report.html",
+  "/tmp/report.html",
+  "file:///tmp/report.html",
+);
+assert.match(handoffText, /- 类型：问题/, "批量交接必须标明问题类型");
+assert.match(handoffText, /我的问题：/, "批量交接必须保留问题语义");
+assert.match(handoffText, /- 类型：评论/, "批量交接必须标明评论类型");
+assert.match(handoffText, /我的评论：/, "批量交接必须保留评论语义");
+
+const singleComment = runSinglePrompt(
+  { kind: "评论", text: "建议精简表达", selectedText: "原文" },
+  "报告",
+  "report.html",
+  "/tmp/report.html",
+  "file:///tmp/report.html",
+);
+assert.match(singleComment, /^# HTML 报告单条评论/m, "单条复制标题必须保留评论类型");
+assert.match(singleComment, /类型：评论/, "单条复制必须显式输出评论类型");
+assert.match(singleComment, /我的评论：/, "单条复制必须保留评论语义");
+
+const embeddedPack = runJsonPack(
+  [{ kind: "问题" }, { kind: "评论" }],
+  "报告",
+  "report.html",
+  "/tmp/report.html",
+  "file:///tmp/report.html",
+);
+assert.deepEqual(
+  embeddedPack.annotations.map(item => item.kind),
+  ["问题", "评论"],
+  "AgentQuestionPack 必须保留规范化后的问题和评论类型",
 );
 
 
@@ -160,7 +259,7 @@ assert.equal(populatedLauncher.attributes["aria-label"], "打开报告批注，�
 /** 重新关联只替换锚点字段，批注身份、正文和创建时间必须保持不变。 */
 const originalAnnotation = {
   id: "q-old",
-  kind: "提问",
+  kind: "问题",
   text: "原问题内容",
   createdAt: "2026-08-03T00:00:00.000Z",
   blockId: "old-b001",

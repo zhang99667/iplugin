@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -73,9 +74,14 @@ class ReportComponentTest(unittest.TestCase):
         popover_start = annotated.index('id="qaSelectionPopover"')
         popover_end = annotated.index("</div>", popover_start)
         popover = annotated[popover_start:popover_end]
-        self.assertEqual(1, popover.count("<button"))
-        self.assertIn('data-qa-action="note-selection"', popover)
-        self.assertIn('id="qaSelectionActionLabel">添加批注</span>', popover)
+        self.assertEqual(2, popover.count("<button"))
+        self.assertIn('data-qa-action="question-selection"', popover)
+        self.assertIn('id="qaSelectionQuestionLabel">问题</span>', popover)
+        self.assertIn('data-qa-action="comment-selection"', popover)
+        self.assertIn('id="qaSelectionActionLabel">评论</span>', popover)
+        self.assertIn("normalizeAnnotationKind", annotated)
+        self.assertIn('<span class="qa-kind">${escapeHtml(kind)}</span>', annotated)
+        self.assertIn("}, normalizeAnnotationKind(item.kind), {", annotated)
         self.assertEqual([], self.validate_html(annotated))
 
     def test_annotation_rebind_contract_is_present(self) -> None:
@@ -91,6 +97,7 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn("startAnnotationRebind", annotated)
         self.assertIn("buildReboundAnnotation", annotated)
         self.assertIn("main.contains(target.element)", annotated)
+        self.assertIn("selectionQuestionAction.hidden = rebinding", annotated)
         self.assertIn("按 Esc 取消", annotated)
         self.assertNotIn("请删除后在新位置重新添加", annotated)
         self.assertEqual([], self.validate_html(annotated))
@@ -254,7 +261,124 @@ class ReportComponentTest(unittest.TestCase):
 
         errors = self.validate_html(broken)
 
-        self.assertTrue(any("移除类型筛选" in error for error in errors))
+        self.assertTrue(any("不再保留类型筛选" in error for error in errors))
+
+    def test_annotation_validator_rejects_single_type_popover(self) -> None:
+        """选区气泡退回单一添加批注入口时，校验器应阻止回归。"""
+
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/annotation-single-type-popover-report.html"),
+        )
+        broken = re.sub(
+            r'\s*<button class="qa-bubble-btn primary"[^>]*id="qaSelectionQuestionAction"[\s\S]*?</button>',
+            "",
+            annotated,
+            count=1,
+        ).replace(
+            'data-qa-action="comment-selection" title="添加评论"',
+            'data-qa-action="note-selection" title="添加批注"',
+            1,
+        ).replace(
+            'id="qaSelectionActionLabel">评论</span>',
+            'id="qaSelectionActionLabel">添加批注</span>',
+            1,
+        )
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("问题”和“评论”两个按钮" in error for error in errors))
+        self.assertTrue(any("单一“添加批注”" in error for error in errors))
+
+    def test_previous_single_type_review_pack_remains_accepted(self) -> None:
+        """上一版单入口 HTML 的待处理包仍应能被 Agent 接收。"""
+
+        assembled, _ = assemble_report.assemble_html(
+            self.report_html("", '<p data-block-id="root-b001">报告正文</p>')
+        )
+        annotated = inject_annotation_mode.inject_annotation_mode(
+            assembled,
+            Path("/tmp/legacy-single-type-review-pack.html"),
+        )
+        legacy = re.sub(
+            r'\s*<button class="qa-bubble-btn primary"[^>]*id="qaSelectionQuestionAction"[\s\S]*?</button>',
+            "",
+            annotated,
+            count=1,
+        ).replace(
+            'data-qa-action="comment-selection" title="添加评论"',
+            'data-qa-action="note-selection" title="添加批注"',
+            1,
+        ).replace(
+            'id="qaSelectionActionLabel">评论</span>',
+            'id="qaSelectionActionLabel">添加批注</span>',
+            1,
+        ).replace(
+            "annotationKindForAction",
+            "legacyKindRoute",
+        ).replace(
+            "normalizeAnnotationKind",
+            "legacyKindNormalize",
+        ).replace(
+            "lines.push('- 类型：' + kind);",
+            "lines.push('- 旧类型：批注');",
+        ).replace(
+            ".qa-card.kind-comment",
+            ".qa-card.kind-note",
+        )
+        pack = {
+            "type": "AgentQuestionPack",
+            "version": "0.3.0",
+            "roundId": "round-legacy-single-type",
+            "reportTitle": "报告",
+            "source": {
+                "fileName": "legacy.html",
+                "absolutePath": "/tmp/legacy.html",
+                "fileUrl": "file:///tmp/legacy.html",
+            },
+            "delivery": {
+                "mode": "embedded-html",
+                "status": "ready-for-agent",
+                "instruction": (
+                    "处理后运行 inject_annotation_mode.py --processed，"
+                    "再运行 check_html_report.py --require-review-receipt"
+                ),
+            },
+            "submittedAt": "2026-08-04T00:00:00Z",
+            "exportedAt": "2026-08-04T00:00:00Z",
+            "annotations": [
+                {
+                    "id": "q-legacy",
+                    "sectionTitle": "正文",
+                    "blockId": "root-b001",
+                    "selectedText": "报告正文",
+                    "blockText": "报告正文",
+                    "contextBefore": "",
+                    "contextAfter": "",
+                    "kind": "批注",
+                    "text": "旧版批注",
+                    "createdAt": "2026-08-04T00:00:00Z",
+                }
+            ],
+        }
+        pack_block = "\n".join(
+            (
+                "<!-- QA_EMBEDDED_REVIEW_START: Agent 读取并逐条处理以下批注。 -->",
+                '<script type="application/json" id="qaEmbeddedReviewData" data-qa-review-data>',
+                inject_annotation_mode.serialize_raw_json(pack),
+                "</script>",
+                "<!-- QA_EMBEDDED_REVIEW_END -->",
+            )
+        )
+        with_pack = legacy.replace("</head>", pack_block + "\n</head>", 1)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "legacy.html"
+            path.write_text(with_pack, encoding="utf-8")
+            errors, _ = check_html_report.validate_with_warnings(path, require_review_pack=True)
+
+        self.assertEqual([], errors)
 
     def test_annotation_processed_receipt_is_persistent_and_valid(self) -> None:
         """Agent 回写后必须保留可校验回执，不能只让待处理批注无痕消失。"""

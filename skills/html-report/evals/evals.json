@@ -90,7 +90,7 @@
       "id": 6,
       "name": "annotation-mode-roundtrip-receipt",
       "prompt": "请把输入的普通 HTML 报告升级为离线批注版：先运行 check_html_report.py 校验原始 HTML，通过后使用 inject_annotation_mode.py 注入批注模式，再重新运行 check_html_report.py。输出批注版 HTML 路径，并说明统一的批注术语、复制批注给 Agent 主入口、备用 HTML 交接、AgentReviewReceipt 处理回执和导出发布版入口是否存在。不要手写批注 JS。",
-      "expected_output": "生成或更新批注版 HTML，并通过注入前和注入后的校验。页面统一使用批注术语，选区气泡只有一个添加批注入口；右上角稳定打开侧栏，侧栏以复制批注给 Agent 为主操作、保存批注版 HTML 为备用，并持久区分草稿、待处理和 Agent 已处理状态。Agent 回写后可生成 AgentReviewReceipt 并通过 --require-review-receipt，发布版会剥离批注和回执。",
+      "expected_output": "生成或更新批注版 HTML，并通过注入前和注入后的校验。批注作为工作区总称，单条内容分为问题和评论；选区气泡直接提供两个入口。右上角稳定打开侧栏，侧栏以复制批注给 Agent 为主操作、保存批注版 HTML 为备用，并持久区分草稿、待处理和 Agent 已处理状态。Agent 回写后可生成 AgentReviewReceipt 并通过 --require-review-receipt，发布版会剥离批注和回执。",
       "files": [
         "evals/fixtures/annotation_source_report.html",
         "evals/fixtures/annotation_review_notes.md"
@@ -98,13 +98,14 @@
       "expectations": [
         "执行记录或报告说明中体现原始 HTML 先通过 check_html_report.py。",
         "批注模式由 skills/html-report/scripts/inject_annotation_mode.py 注入，而不是手写批注脚本。",
-        "选中文本后的轻量气泡只保留一个添加批注按钮，右键只按作用范围区分，不并列展示提问和注释类型。",
+        "选中文本后的轻量气泡直接提供问题和评论两个按钮；右键在选中内容、本段和本节三个范围下也能分别创建问题或评论。",
         "批注输入浮层的提交按钮内显示 Ctrl/⌘ + Enter 快捷键标识，并保留 aria-keyshortcuts。",
         "批注卡片徽标保持横排且不参与 flex 收缩，长章节标题换行时不能把徽标挤成竖排。",
         "注入后再次通过 check_html_report.py。",
         "右上角固定为批注侧栏入口，零条显示“批注”，有批注时显示数量徽标，不能切换为发布版导出。",
-        "批注侧栏不再提供全部/提问/注释类型筛选；旧 kind 归一显示为批注，点击原文摘录仍可定位正文。",
+        "批注侧栏不提供全部/问题/评论类型筛选；旧提问归一为问题，旧注释和批注归一为评论，点击原文摘录仍可定位正文。",
         "批注版以复制批注给 Agent 为主操作，不再提供重复的复制/下载 Markdown 按钮；保存批注版与导出发布版并排直接展示，清空本轮作为独立危险操作。",
+        "复制批注给 Agent、复制此条和 AgentQuestionPack 都保留规范化后的问题/评论类型，不能重新统一成无类型批注。",
         "页面持久显示本轮草稿、已复制待处理和 Agent 已处理状态；不能把文件保存或短暂 toast 当作 Agent 已完成。",
         "备用保存必须生成唯一、安全转义且带 roundId 的 AgentQuestionPack；Agent 回写后移除待处理包并写入唯一 AgentReviewReceipt。",
         "同一路径报告重新生成导致旧 blockId 失效时，只迁移原文唯一命中的批注；无法安全定位的批注明确提示并阻止保存。",

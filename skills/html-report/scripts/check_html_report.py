@@ -1105,8 +1105,13 @@ def check_annotation_mode(
         required_fragments["findAnnotationElementByText"] = "批注模式缺少按原文唯一匹配旧批注位置的回退逻辑"
         required_fragments["reconciliation.unresolved.length"] = "批注模式交接前必须阻止无法定位的批注进入交接内容"
         required_fragments["原文已变化，当前报告中无法安全定位"] = "批注卡片必须明确提示正文变化导致的定位失效"
+        required_fragments['id="qaSelectionQuestionAction"'] = "选区气泡缺少问题入口"
+        required_fragments['id="qaSelectionQuestionLabel"'] = "问题入口缺少稳定文案节点"
         required_fragments['id="qaSelectionAction"'] = "批注模式缺少可切换的选区操作入口"
         required_fragments['id="qaSelectionActionLabel"'] = "选区操作入口缺少可更新的文案节点"
+        required_fragments["annotationKindForAction"] = "批注模式缺少问题/评论入口到类型的映射逻辑"
+        required_fragments["normalizeAnnotationKind"] = "批注模式缺少旧类型到问题/评论的兼容映射"
+        required_fragments["lines.push('- 类型：' + kind)"] = "Markdown 批注包必须逐条标明问题或评论类型"
         required_fragments["rebindAnnotationId"] = "批注模式缺少当前重新关联批注的临时状态"
         required_fragments["startAnnotationRebind"] = "失效批注卡片缺少进入手动重新关联的入口"
         required_fragments["cancelAnnotationRebind"] = "重新关联模式缺少不改数据的取消路径"
@@ -1115,6 +1120,9 @@ def check_annotation_mode(
         required_fragments["updateSelectionActionMode"] = "选区气泡缺少重新关联模式文案切换"
         required_fragments["按 Esc 取消"] = "重新关联模式必须提供 Esc 取消提示"
         required_fragments["main.contains(target.element)"] = "重新关联必须限制在当前报告正文内"
+        required_fragments["selectionQuestionAction.hidden = rebinding"] = "重新关联时必须隐藏问题入口，避免把类型选择误当成重新关联"
+        required_fragments["value === '问题' || value === '提问'"] = "旧提问类型必须兼容映射为问题"
+        required_fragments["value === '评论' || value === '注释' || value === '批注'"] = "旧注释和批注类型必须兼容映射为评论"
     for fragment, message in required_fragments.items():
         if fragment not in annotation_scope:
             errors.append(message)
@@ -1139,15 +1147,25 @@ def check_annotation_mode(
             errors.append("批注模式缺少选中文本气泡")
         else:
             popover_html = popover_match.group(1)
-            if len(re.findall(r"<button\b", popover_html, re.IGNORECASE)) != 1:
-                errors.append("选中文本气泡必须只保留一个“添加批注”按钮")
-            if 'data-qa-action="note-selection"' not in popover_html or not re.search(
-                r'<span\b[^>]*\bid=["\']qaSelectionActionLabel["\'][^>]*>\s*添加批注\s*</span>',
-                popover_html,
-            ):
-                errors.append("选中文本气泡唯一操作必须是“添加批注”")
+            if len(re.findall(r"<button\b", popover_html, re.IGNORECASE)) != 2:
+                errors.append("选中文本气泡必须直接提供“问题”和“评论”两个按钮")
+            expected_actions = {
+                "question-selection": ("qaSelectionQuestionLabel", "问题"),
+                "comment-selection": ("qaSelectionActionLabel", "评论"),
+            }
+            for action, (label_id, label) in expected_actions.items():
+                action_match = re.search(
+                    rf'<button\b[^>]*\bdata-qa-action=["\']{re.escape(action)}["\'][^>]*>(.*?)</button>',
+                    popover_html,
+                    re.DOTALL | re.IGNORECASE,
+                )
+                if not action_match or not re.search(
+                    rf'<span\b[^>]*\bid=["\']{label_id}["\'][^>]*>\s*{label}\s*</span>',
+                    action_match.group(1),
+                ):
+                    errors.append(f"选中文本气泡缺少可直接点击的“{label}”入口")
         if "qaFilterBar" in annotation_scope or "data-qa-filter" in annotation_scope:
-            errors.append("批注主流程不再要求用户按“提问/注释”分类，请移除类型筛选")
+            errors.append("问题/评论在创建时选择即可，批注侧栏不再保留类型筛选")
         secondary_actions_match = re.search(
             r'<div\b[^>]*\bclass=["\'][^"\']*\bqa-secondary-actions\b[^"\']*["\'][^>]*>(.*?)</div>',
             annotation_scope,
@@ -1192,7 +1210,9 @@ def check_annotation_mode(
         forbidden_fragments['<span class="qa-mode-chip">审核模式</span>'] = "批注模式标签不能使用旧名称“审核模式”"
         forbidden_fragments['<span class="qa-mode-chip">评论模式</span>'] = "可见模式名称必须统一为“批注模式”"
         forbidden_fragments['id="qaSelectionActionLabel">注释</span>'] = "选区入口不能继续使用“注释”"
-        forbidden_fragments['data-qa-filter='] = "批注主流程不再保留提问/注释类型筛选"
+        forbidden_fragments['id="qaSelectionActionLabel">添加批注</span>'] = "选区入口不能再次收敛为单一“添加批注”"
+        forbidden_fragments['data-qa-action="note-selection"'] = "选区入口必须使用明确的问题/评论动作"
+        forbidden_fragments['data-qa-filter='] = "问题/评论在创建时选择，侧栏不再保留类型筛选"
         forbidden_fragments["完成批注"] = "文件保存不等于 Agent 已处理，不能继续使用“完成批注”"
         forbidden_fragments["导出无批注版"] = "发布动作统一命名为“导出发布版”"
         forbidden_fragments["publish-mode"] = "右上角入口职责必须稳定，不能保留零批注发布模式"
@@ -1222,6 +1242,8 @@ def check_annotation_mode(
         required_css[".qa-copy-agent-btn:disabled"] = "零批注主交接按钮缺少明确的禁用样式"
         required_css[".qa-card.location-missing"] = "批注模式缺少失效定位卡片的警示样式"
         required_css[".qa-location-warning"] = "批注模式缺少失效定位提示样式"
+        required_css[".qa-card.kind-comment"] = "评论卡片缺少与问题区分的左侧标识"
+        required_css[".qa-card.kind-comment .qa-kind"] = "评论卡片缺少与问题区分的徽标样式"
         required_css[".qa-card.rebinding"] = "批注模式缺少重新关联中的卡片状态样式"
         required_css[".qa-mini-btn.rebind"] = "失效批注缺少重新关联按钮样式"
     for fragment, message in required_css.items():
@@ -1244,6 +1266,8 @@ def check_annotation_mode(
             errors.append("批注原文摘录应保持 12px 紧凑字号和稳定行高")
         if not css_rule_has(css, (".qa-quote-link",), ("font-family: inherit",)):
             errors.append("批注原文按钮只能继承字体族，不能覆盖摘录自身的字号和行高")
+        if ".qa-selection-popover [hidden]" not in compact_css:
+            errors.append("重新关联时必须能稳定隐藏问题入口，只保留重新关联动作")
 
     errors.extend(check_embedded_review_pack(html, required=require_review_pack, block_ids=block_ids))
     errors.extend(check_embedded_review_receipt(html, required=require_review_receipt))
