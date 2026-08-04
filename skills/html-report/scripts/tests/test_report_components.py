@@ -158,6 +158,12 @@ class ReportComponentTest(unittest.TestCase):
         self.assertNotIn('id="qaDownloadMarkdown"', annotated)
         self.assertNotIn('<details class="qa-more">', annotated)
         self.assertIn("copyText(buildSinglePrompt(item), '已复制此条批注')", annotated)
+        save_start = annotated.index("async function saveReviewHtml()")
+        save_end = annotated.index("// 发布版只保留正文", save_start)
+        save_scope = annotated[save_start:save_end]
+        self.assertIn("suggestedName: currentName", save_scope)
+        self.assertIn("fallbackName: currentName", save_scope)
+        self.assertNotIn("reviewFallbackFileName", save_scope)
         self.assertTrue(
             check_html_report.css_rule_has(
                 annotated,

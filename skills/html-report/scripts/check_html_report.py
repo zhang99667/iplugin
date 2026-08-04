@@ -1048,7 +1048,7 @@ def check_annotation_mode(
         "copyAnnotationsForAgent": "批注模式缺少剪贴板主交接逻辑",
         "saveReviewHtml": "批注模式缺少保存批注版的备用交互逻辑",
         "saveHtmlFile": "批注版和发布版必须复用统一的 HTML 保存/下载回退逻辑",
-        "reviewFallbackFileName": "下载批注版必须使用与当前草稿不同的默认文件名，避免本地状态碰撞",
+        "fallbackName: currentName": "批注版下载兜底必须沿用当前 HTML 文件名，方便用户覆盖原文件",
         "buildReviewedHtml": "批注模式缺少含批注 HTML 构建逻辑",
         "buildEmbeddedReviewBlock": "批注模式缺少 AgentQuestionPack 内嵌逻辑",
         "serializeReviewPack": "批注模式缺少内嵌 JSON 安全序列化逻辑",

@@ -918,7 +918,7 @@
         const currentName = currentFileName();
         const result = await saveHtmlFile({
           suggestedName: currentName,
-          fallbackName: reviewFallbackFileName(currentName),
+          fallbackName: currentName,
           buildHtml: buildReviewedHtml
         });
         if (result === 'saved') {
@@ -971,7 +971,7 @@
             if (error && error.name === 'AbortError') return 'cancelled';
           }
         }
-        // 不支持 File System Access API 的浏览器无法静默覆盖本地文件，只能下载当前文件名作为兜底。
+        // 不支持 File System Access API 的浏览器无法静默覆盖本地文件，只能发起同名下载作为兜底。
         downloadText(fallbackName, buildHtml(), 'text/html');
         return 'downloaded';
       }
@@ -1372,12 +1372,6 @@
         const base = match ? match[1] : 'report';
         const extension = match ? match[2] : '.html';
         return (base.endsWith(suffix) ? base : base + suffix) + extension;
-      }
-
-      // 已是 _reviewed 的页面再次走下载兜底时改用 _copy，避免默认文件名与当前草稿路径碰撞。
-      function reviewFallbackFileName(fileName) {
-        const reviewedName = fileNameWithSuffix(fileName, '_reviewed');
-        return reviewedName === fileName ? fileNameWithSuffix(fileName, '_copy') : reviewedName;
       }
 
       function normalizeText(text) {

@@ -94,7 +94,7 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         "selectionQuestionAction.hidden = rebinding",
         "annotationKindForAction",
         "normalizeAnnotationKind",
-        "reviewFallbackFileName",
+        "fallbackName: currentName",
     ),
 }
 HTML_REPORT_ANNOTATION_FORBIDDEN = {
@@ -114,6 +114,7 @@ HTML_REPORT_ANNOTATION_FORBIDDEN = {
         "matchesAnnotationFilter",
         "updateAnnotationFilterControls",
         "annotationFilter",
+        "reviewFallbackFileName",
     ),
 }
 HTML_REPORT_REVIEW_WORKSPACE_ASSETS = {

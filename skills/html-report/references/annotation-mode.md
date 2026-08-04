@@ -87,7 +87,7 @@ File URL：file:///Users/.../report.html
 - 新一轮待处理包必须移除上一轮 `AgentReviewReceipt`，避免页面同时显示“等待处理”和“已处理”。
 - 同一路径正文变化时，初始化和交接前按原文、上下文与章节做唯一匹配迁移；不能唯一定位的批注明确标记并阻止交接。
 - `localStorage` 数组存在时优先使用，即使是 `[]`；继续兼容旧版生成期绝对路径存储键。
-- 支持 File System Access API 时弹保存选择；不支持时下载 `_reviewed`，当前文件已是 `_reviewed` 时使用 `_copy`。
+- 支持 File System Access API 时弹保存选择并默认使用当前文件名；不支持时也发起与当前 HTML 同名的下载，用户可在浏览器下载提示中覆盖原文件。
 - 只有 `writable.close()` 成功才能清理旧草稿。下载只能提示“已发起，请确认落盘”，并保留原页草稿。
 
 `AgentQuestionPack.delivery` 必须保持 `mode: embedded-html`、`status: ready-for-agent`，并要求 Agent 完成后运行 `inject_annotation_mode.py --processed` 和 `check_html_report.py --require-review-receipt`。非空包中的每个 `blockId` 必须在当前 `<main>` 中恰好命中一次。
