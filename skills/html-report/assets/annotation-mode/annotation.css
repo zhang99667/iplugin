@@ -324,12 +324,18 @@
       height: 16px;
       stroke-width: 2.4;
     }
-    .qa-copy-agent-btn:disabled {
+    .qa-copy-agent-btn:disabled,
+    .qa-copy-agent-btn[aria-disabled="true"] {
       border-color: #cbd5e1;
       background: #e2e8f0;
       color: #64748b;
       box-shadow: none;
       cursor: not-allowed;
+    }
+    .qa-copy-agent-btn[aria-disabled="true"]:hover {
+      border-color: #cbd5e1;
+      background: #e2e8f0;
+      color: #64748b;
     }
     .qa-list {
       flex: 1;

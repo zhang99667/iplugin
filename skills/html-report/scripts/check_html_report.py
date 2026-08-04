@@ -1076,6 +1076,7 @@ def check_annotation_mode(
         "editingAnnotationId": "批注模式编辑已有批注时必须记录当前编辑目标",
         "updatedAt": "批注模式编辑已有批注后必须记录更新时间",
         "injectedReportMeta": "批注模式必须在生成时注入原 HTML 路径元数据，避免打开方式改变后丢失绝对路径",
+        "resolveReportSource": "批注模式必须区分当前 file URL 与生成期路径，避免移动文件后交接到旧副本",
         "reportAbsolutePath": "批注模式导出包必须包含原 HTML 绝对路径",
         "reportFileUrl": "批注模式导出包必须包含 file URL",
         "File URL：": "Markdown 批注包必须写入 file URL，方便 Agent 回查原文件",
@@ -1089,6 +1090,7 @@ def check_annotation_mode(
         "isComposerSubmitShortcut": "批注输入浮层缺少快捷键提交判断",
         "event.metaKey || event.ctrlKey": "批注输入浮层必须同时支持 ⌘ + Enter 和 Ctrl + Enter",
         "!event.isComposing": "批注输入浮层必须避开输入法组字阶段，防止 Enter 误提交",
+        "getOrCreateToast": "批注模式必须自行提供可见提示节点，不能依赖报告预先存在固定 toast",
     }
     # 接收上一版本已保存的批注包时允许旧 UI 文案；处理完成并重新注入后，普通校验强制升级新名称。
     if not require_review_pack:
@@ -1100,7 +1102,11 @@ def check_annotation_mode(
         required_fragments['<kbd class="qa-shortcut-hint" aria-hidden="true">Ctrl/⌘ + Enter</kbd>'] = "批注提交按钮必须显示 Ctrl/⌘ + Enter 快捷键提示"
         required_fragments["复制批注给 Agent"] = "批注侧栏必须以剪贴板交接作为主操作"
         required_fragments["保存批注版 HTML（备用）"] = "批注侧栏必须明确 HTML 文件交接只是备用路径"
-        required_fragments["copyForAgent.disabled = count === 0"] = "零批注时必须禁用主交接按钮，避免展示无效主操作"
+        required_fragments['aria-disabled="true"'] = "零批注时主交接按钮必须保留明确禁用语义"
+        required_fragments["copyForAgent.setAttribute('aria-disabled', String(unavailable))"] = "主交接按钮必须随批注数量更新禁用语义"
+        required_fragments["当前没有可交接的批注，请先添加问题或评论"] = "零批注时点击主交接按钮必须解释不可用原因"
+        required_fragments["protocol === 'file:'"] = "file URL 报告必须优先使用当前打开路径作为 Agent 回写目标"
+        required_fragments["document.querySelector('.toast')"] = "批注提示必须能复用报告已有的通用 toast"
         required_fragments["reconcileAnnotationTargets"] = "批注模式必须在加载和交接前迁移或识别失效的正文定位"
         required_fragments["findAnnotationElementByText"] = "批注模式缺少按原文唯一匹配旧批注位置的回退逻辑"
         required_fragments["reconciliation.unresolved.length"] = "批注模式交接前必须阻止无法定位的批注进入交接内容"
@@ -1239,7 +1245,7 @@ def check_annotation_mode(
     }
     if not require_review_pack:
         required_css[".qa-shortcut-hint"] = "批注提交按钮缺少可见快捷键提示样式"
-        required_css[".qa-copy-agent-btn:disabled"] = "零批注主交接按钮缺少明确的禁用样式"
+        required_css['.qa-copy-agent-btn[aria-disabled="true"]'] = "零批注主交接按钮缺少明确的禁用样式"
         required_css[".qa-card.location-missing"] = "批注模式缺少失效定位卡片的警示样式"
         required_css[".qa-location-warning"] = "批注模式缺少失效定位提示样式"
         required_css[".qa-card.kind-comment"] = "评论卡片缺少与问题区分的左侧标识"

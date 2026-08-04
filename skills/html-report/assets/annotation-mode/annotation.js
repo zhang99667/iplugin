@@ -10,15 +10,23 @@
       const reviewReceiptEndMarker = 'QA_' + 'AGENT_REVIEW_RECEIPT_END';
       const injectedReportMeta = __QA_REPORT_META__;
       const reportTitle = (document.querySelector('.doc-header h1')?.innerText || document.title || 'HTML 报告').trim();
-      const reportFileName = injectedReportMeta.fileName || currentFileName();
-      const runtimePath = decodeURIComponent(location.pathname || '');
-      const reportAbsolutePath = injectedReportMeta.absolutePath || runtimePath;
-      const reportFileUrl = injectedReportMeta.fileUrl || location.href || '';
-      // 另存的批注版用运行时路径隔离 localStorage，同时继续把生成期绝对路径保留给 Agent 回查来源。
+      const reportSource = resolveReportSource(
+        injectedReportMeta,
+        location.pathname,
+        location.href,
+        location.protocol
+      );
+      const runtimePath = reportSource.runtimePath;
+      const reportFileName = reportSource.isLocalFile
+        ? currentFileName()
+        : injectedReportMeta.fileName || currentFileName();
+      const reportAbsolutePath = reportSource.absolutePath;
+      const reportFileUrl = reportSource.fileUrl;
+      // file:// 报告可能被移动或重命名，交接使用当前路径，旧注入路径只负责迁移历史草稿
       const storageKeyPrefix = 'agent-report-annotations:';
       const storageKey = storageKeyPrefix + (runtimePath || reportAbsolutePath) + ':' + reportTitle;
-      // 旧版优先使用生成期绝对路径；保留迁移键，避免 HTTP 预览和 Windows file URL 升级后找不到草稿。
-      const legacyStorageKey = storageKeyPrefix + (reportAbsolutePath || location.pathname) + ':' + reportTitle;
+      const legacyStoragePath = injectedReportMeta.absolutePath || reportAbsolutePath || location.pathname;
+      const legacyStorageKey = storageKeyPrefix + legacyStoragePath + ':' + reportTitle;
       const storageKeys = Array.from(new Set([storageKey, legacyStorageKey]));
       const handoffStorageKey = 'agent-report-handoff:' + (runtimePath || reportAbsolutePath) + ':' + reportTitle;
       const main = document.querySelector('main');
@@ -736,8 +744,14 @@
           launcherCount.textContent = count > 0 ? String(count) : '';
           launcherCount.hidden = count === 0;
         }
-        // 零批注时禁用主交接动作，避免用高亮按钮承诺一个实际不存在的操作。
-        if (copyForAgent) copyForAgent.disabled = count === 0;
+        // 保留可解释的禁用态，点击时仍能提示需要先添加问题或评论
+        if (copyForAgent) {
+          const unavailable = count === 0;
+          copyForAgent.setAttribute('aria-disabled', String(unavailable));
+          copyForAgent.title = unavailable
+            ? '请先添加问题或评论后再复制给 Agent'
+            : '复制本轮批注给 Agent';
+        }
         launcher?.setAttribute('aria-label', count > 0
           ? '打开报告批注，当前 ' + count + ' 条'
           : '打开报告批注');
@@ -840,7 +854,7 @@
 
       async function copyAnnotationsForAgent() {
         if (!annotations.length) {
-          showToast('当前没有可交接的批注');
+          showToast('当前没有可交接的批注，请先添加问题或评论');
           return;
         }
         const reconciliation = reconcileAnnotationTargets();
@@ -1302,9 +1316,21 @@
         });
       }
 
+      function getOrCreateToast() {
+        let toast = document.getElementById('toast') || document.querySelector('.toast');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.className = 'toast';
+          document.body.appendChild(toast);
+        }
+        if (!toast.id) toast.id = 'toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        return toast;
+      }
+
       function showToast(message) {
-        const toast = document.getElementById('toast');
-        if (!toast) return;
+        const toast = getOrCreateToast();
         toast.textContent = message || '已复制';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 1600);
@@ -1321,6 +1347,23 @@
       function currentFileName() {
         const name = decodeURIComponent(location.pathname.split('/').pop() || 'report.html');
         return /\.html?$/i.test(name) ? name : 'report.html';
+      }
+
+      function resolveReportSource(meta, currentPath, currentUrl, protocol) {
+        const runtimePath = decodeURIComponent(currentPath || '');
+        const runtimeUrl = String(currentUrl || '').split('#')[0];
+        const injectedMeta = meta && typeof meta === 'object' ? meta : {};
+        const isLocalFile = protocol === 'file:' && Boolean(runtimePath);
+        return {
+          runtimePath,
+          isLocalFile,
+          absolutePath: isLocalFile
+            ? runtimePath
+            : injectedMeta.absolutePath || runtimePath,
+          fileUrl: isLocalFile
+            ? runtimeUrl
+            : injectedMeta.fileUrl || runtimeUrl
+        };
       }
 
       // 下载兜底使用区分批注版/发布版的文件名，避免浏览器静默覆盖错误文件。

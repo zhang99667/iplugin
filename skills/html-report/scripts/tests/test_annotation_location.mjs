@@ -54,6 +54,16 @@ const buildAnnotationNormalizer = new Function(
   + "; return { normalizeAnnotations };",
 );
 const { normalizeAnnotations } = buildAnnotationNormalizer();
+const buildReportSourceResolver = new Function(
+  extractFunction("resolveReportSource")
+  + "; return { resolveReportSource };",
+);
+const { resolveReportSource } = buildReportSourceResolver();
+const runToastResolver = new Function(
+  "document",
+  extractFunction("getOrCreateToast")
+  + "; return getOrCreateToast();",
+);
 const runMarkdownPack = new Function(
   "annotations",
   "reportTitle",
@@ -158,6 +168,63 @@ assert.equal(normalizeAnnotationKind("问题"), "问题", "问题类型归一应
 assert.equal(normalizeAnnotationKind("评论"), "评论", "评论类型归一应保持幂等");
 assert.equal(isCommentKind("批注"), true, "旧批注应按评论样式展示");
 
+const movedLocalReport = resolveReportSource(
+  {
+    absolutePath: "/tmp/old-report.html",
+    fileUrl: "file:///tmp/old-report.html",
+  },
+  "/Users/markz/Desktop/new-report.html",
+  "file:///Users/markz/Desktop/new-report.html#section",
+  "file:",
+);
+assert.equal(
+  movedLocalReport.absolutePath,
+  "/Users/markz/Desktop/new-report.html",
+  "移动后的 file URL 必须使用当前文件路径作为 Agent 回写目标",
+);
+assert.equal(
+  movedLocalReport.fileUrl,
+  "file:///Users/markz/Desktop/new-report.html",
+  "交接 file URL 必须去掉仅用于页面定位的 hash",
+);
+
+const httpPreviewReport = resolveReportSource(
+  {
+    absolutePath: "/tmp/source-report.html",
+    fileUrl: "file:///tmp/source-report.html",
+  },
+  "/preview/report.html",
+  "http://localhost:8000/report.html",
+  "http:",
+);
+assert.equal(
+  httpPreviewReport.absolutePath,
+  "/tmp/source-report.html",
+  "HTTP 预览必须继续使用生成期注入的本地绝对路径",
+);
+
+const appendedToasts = [];
+const toastAttributes = {};
+const createdToast = runToastResolver({
+  getElementById() { return null; },
+  querySelector() { return null; },
+  createElement() {
+    return {
+      id: "",
+      className: "",
+      setAttribute(name, value) { toastAttributes[name] = value; },
+    };
+  },
+  body: {
+    appendChild(node) { appendedToasts.push(node); },
+  },
+});
+assert.equal(createdToast.id, "toast", "批注运行时必须为新提示节点补充稳定 id");
+assert.equal(createdToast.className, "toast", "新提示节点必须复用报告通用 toast 样式");
+assert.equal(appendedToasts.length, 1, "报告没有 toast 时批注运行时必须自行创建");
+assert.equal(toastAttributes.role, "status", "批注提示必须向辅助技术声明状态语义");
+assert.equal(toastAttributes["aria-live"], "polite", "批注提示必须使用非打断式播报");
+
 const handoffText = runMarkdownPack(
   [
     { id: "q-1", kind: "问题", text: "为什么这样设计", selectedText: "原文一" },
@@ -231,28 +298,36 @@ function launcherState(count) {
   const launcherLabel = { textContent: "" };
   const launcherCount = { textContent: "", hidden: false };
   const attributes = {};
+  const copyAttributes = {};
   const launcher = {
     setAttribute(name, value) {
       attributes[name] = value;
     },
   };
-  const copyForAgent = { disabled: false };
+  const copyForAgent = {
+    title: "",
+    setAttribute(name, value) {
+      copyAttributes[name] = value;
+    },
+  };
   runLauncherUpdate(Array.from({ length: count }), launcherLabel, launcherCount, launcher, copyForAgent);
-  return { launcherLabel, launcherCount, attributes, copyForAgent };
+  return { launcherLabel, launcherCount, attributes, copyAttributes, copyForAgent };
 }
 
 
 const emptyLauncher = launcherState(0);
 assert.equal(emptyLauncher.launcherLabel.textContent, "批注", "零条时入口仍应显示批注");
 assert.equal(emptyLauncher.launcherCount.hidden, true, "零条时应隐藏数量徽标");
-assert.equal(emptyLauncher.copyForAgent.disabled, true, "零条时主交接按钮必须禁用");
+assert.equal(emptyLauncher.copyAttributes["aria-disabled"], "true", "零条时主交接按钮必须声明禁用语义");
+assert.match(emptyLauncher.copyForAgent.title, /请先添加问题或评论/, "零条时主交接按钮必须解释不可用原因");
 assert.equal(emptyLauncher.attributes["aria-label"], "打开报告批注", "零条入口应说明打开批注工作区");
 
 const populatedLauncher = launcherState(3);
 assert.equal(populatedLauncher.launcherLabel.textContent, "批注", "有批注时入口文案也不能改变职责");
 assert.equal(populatedLauncher.launcherCount.textContent, "3", "数量徽标应反映当前批注数");
 assert.equal(populatedLauncher.launcherCount.hidden, false, "有批注时应显示数量徽标");
-assert.equal(populatedLauncher.copyForAgent.disabled, false, "有批注时主交接按钮必须可用");
+assert.equal(populatedLauncher.copyAttributes["aria-disabled"], "false", "有批注时主交接按钮必须恢复可用语义");
+assert.equal(populatedLauncher.copyForAgent.title, "复制本轮批注给 Agent", "有批注时主交接按钮应说明实际动作");
 assert.equal(populatedLauncher.attributes["aria-label"], "打开报告批注，当前 3 条", "有批注时应补充可访问数量");
 
 
