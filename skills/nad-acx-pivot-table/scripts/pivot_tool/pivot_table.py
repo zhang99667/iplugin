@@ -89,26 +89,58 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
 
     # ── rowItems ─────────────────────────────────────────────────
     row_items_xml = ""
+    row_item_count = 0
     if row_indices:
         # 计算行项数量：枚举值数 + grand total
         first_row_field = row_indices[0]
         if first_row_field in fm.enumerated_items:
             field_name = config.all_field_names()[first_row_field]
             if layout.row_item_order and field_name in layout.row_item_order:
-                num_row_items = len(layout.row_item_order[field_name])
+                first_items = [
+                    v for v in layout.row_item_order[field_name]
+                    if v in fm.enumerated_items[first_row_field]
+                ]
             else:
-                num_row_items = len(fm.enumerated_items[first_row_field])
+                first_items = list(fm.enumerated_items[first_row_field])
         else:
-            num_row_items = 2  # fallback
+            first_items = []
 
-        items = []
-        for i in range(num_row_items):
-            if i == 0:
-                items.append("<i><x/></i>")
-            else:
-                items.append(f'<i><x v="{i}"/></i>')
-        items.append('<i t="grand"><x/></i>')
-        row_items_xml = f'<rowItems count="{num_row_items + 1}">{"".join(items)}</rowItems>'
+        if len(row_indices) > 1 and first_items:
+            # 多级行字段：每个第一层值下展开第二层值
+            second_row_field = row_indices[1]
+            second_items = (
+                list(fm.enumerated_items.get(second_row_field, []))
+                if second_row_field in fm.enumerated_items
+                else []
+            )
+            items = []
+            for first_idx in range(len(first_items)):
+                # 第一层组头行
+                items.append(
+                    "<i><x/></i>" if first_idx == 0 else f'<i><x v="{first_idx}"/></i>'
+                )
+                # 第二层子行
+                for second_idx in range(len(second_items)):
+                    if second_idx == 0:
+                        items.append('<i r="1"><x/></i>')
+                    else:
+                        items.append(f'<i r="1"><x v="{second_idx}"/></i>')
+            items.append('<i t="grand"><x/></i>')
+            row_item_count = len(items)
+            row_items_xml = (
+                f'<rowItems count="{row_item_count}">{"".join(items)}</rowItems>'
+            )
+        else:
+            num_row_items = len(first_items) if first_items else 2
+            items = []
+            for i in range(num_row_items):
+                if i == 0:
+                    items.append("<i><x/></i>")
+                else:
+                    items.append(f'<i><x v="{i}"/></i>')
+            items.append('<i t="grand"><x/></i>')
+            row_item_count = len(items)
+            row_items_xml = f'<rowItems count="{row_item_count}">{"".join(items)}</rowItems>'
 
     # ── pageFields (筛选字段) ─────────────────────────────────────
     page_fields_xml = ""
@@ -166,12 +198,8 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
 
     # ── location ─────────────────────────────────────────────────
     # 估算枚举行项数；最终范围还会额外包含 grand total。
-    if row_indices and row_indices[0] in fm.enumerated_items:
-        field_name = config.all_field_names()[row_indices[0]]
-        if layout.row_item_order and field_name in layout.row_item_order:
-            num_data_rows = len(layout.row_item_order[field_name])
-        else:
-            num_data_rows = len(fm.enumerated_items[row_indices[0]])
+    if row_item_count:
+        num_data_rows = row_item_count - 1
     else:
         num_data_rows = 2
 

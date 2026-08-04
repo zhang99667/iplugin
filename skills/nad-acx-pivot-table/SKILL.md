@@ -1,6 +1,6 @@
 ---
 name: nad-acx-pivot-table
-version: 0.1.4
+version: 0.1.5
 description: 专用于生成商业 AB 实验数据分析透视表 xlsx 文件（通过手拼 OOXML XML，绕过 openpyxl 不支持创建透视表的限制）。支持单个 CSV/TXT/XLSX 文件自动生成，以及多个 CSV/TXT/XLSX 文件合并生成（如多天数据合并）。TXT 必须是带表头的分隔符文本（支持逗号、Tab、分号、竖线分隔）。输入文件必须包含以下标准字段：exp_id、event_day、eshow、click、charge、tcharge、conv；部分常见别名（如 total_target_charge → tcharge、total_conv → conv、eshows → eshow 等）会被内置别名表自动映射，未登记的别名可通过 --field-map 手动指定，或由 Step 4b 子串建议自动探测，详见 SKILL.md Step 4。TRIGGER when：用户说"透视表"、"pivot table"、"数据透视"、"AB 测试报表"、"生成 xlsx 透视表"、"合并 csv/txt 生成分析"、"商业 AB 实验数据透视表"、"给这个文件生成透视表"、"合并 Downloads 前 N 个 csv/txt 生成透视表"、"合并最近 N 个 csv/txt 生成透视表"、"用 xxx.csv/xxx.txt 生成透视表"、"合并这 N 个 csv/txt 文件生成透视表，实验名是 xxx"（用户在同一句话里同时给出文件范围 + 实验名，应跳过所有 AskUserQuestion 直接生成），或任何提到"生成/合并"+"透视表/数据透视/AB 实验报表"的自然语言描述（无论是否显式说"商业"或文件路径）。DO NOT TRIGGER when：用户只需读取/展示数据内容、或生成普通格式 xlsx（无透视功能）、或字段语义完全不属于商业 AB 实验数据。
 tags: [excel, pivot-table, xlsx, commercial-ads, ab-test, nad, acx]
 autoInstall: true
@@ -570,6 +570,41 @@ cd "$SCRIPTS" && python3 -m pivot_tool old_pivot.xlsx new_data.txt -p commercial
 ```
 
 **注意**: 仅支持读取由本工具生成的 xlsx（包含"原始数据" sheet）。如果 xlsx 来自其他来源，sheet 名称可能不同，需通过 `read_file(path, sheet_name="...")` Python 接口指定。
+
+### 多业务合并（一个实验号多个业务方）
+
+当同一实验号下有多个业务方 CSV，且需要放进同一个 xlsx（每个业务 2 个 sheet：透视 + 明细）时，
+使用 `merge_pivots` 模块，不再手拼多透视表工作簿：
+
+```bash
+cd "$SCRIPTS" && python3 -m pivot_tool.merge_pivots \
+  health_cover.csv health_cover.json \
+  health_mall.csv health_mall.json \
+  fengchao.csv fengchao.json \
+  agent.csv agent.json \
+  exposure.csv exposure.json \
+  lead_live.csv lead_live.json \
+  -o "【0801-0803】【166762】WebPanel半屏统一_原生数据透视表.xlsx"
+```
+
+- 输入为 `CSV 配置` 交替传参，顺序即工作簿 sheet 顺序
+- 每个业务必须有自己的 JSON 配置（`data_sheet_name`/`pivot_sheet_name` 用业务名区分）
+- 0 行 CSV 会生成空透视表占位，不会导致 Excel 报错
+- 生成后建议用 Excel 打开验证；LibreOffice 对 6 个以上原生透视表的兼容性有限，可能只显示部分透视表，但 Excel 正常
+
+编程接口：
+
+```python
+from pivot_tool.merge_pivots import create_multi_business_pivot
+
+create_multi_business_pivot(
+    [
+        ("health_cover.csv", "health_cover.json"),
+        ("agent.csv", "agent.json"),
+    ],
+    "output.xlsx",
+)
+```
 
 ### 自定义透视表配置
 

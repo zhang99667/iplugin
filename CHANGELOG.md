@@ -882,3 +882,14 @@
 - code-reading: 代码阅读与执行链路追踪
 - html-report: HTML 报告生成
 - sql-exp-replace: SQL 实验号与日期批量替换
+## [0.22.28] - 2026-08-04
+### Added
+- nad-acx-pivot-table: 新增 `merge_pivots` 多业务合并能力，同一实验号多个业务方可合并为一个多 sheet 原生透视表工作簿
+- nad-acx-pivot-table: 多业务工作簿支持空数据业务占位，0 行 CSV 不再生成可能触发 Excel 修复提示的空 pivotTable/cache
+
+### Fixed
+- nad-acx-pivot-table: 修复多业务合并时所有 pivotTable 的 `cacheId` 均为 0、与 workbook `pivotCaches` 不一致导致 Excel 报内容损坏的问题
+- nad-acx-pivot-table: 修复多级行字段（`exp_id` + `event_day`）的 `rowItems` 生成，避免相对差列 `#N/A`
+- nad-acx-pivot-table: `merge_pivots` 仅声明实际存在的 cache/pivotTable 部件，消除 `[Content_Types].xml` 悬空引用
+
+## [0.22.27] - 2026-08-03
