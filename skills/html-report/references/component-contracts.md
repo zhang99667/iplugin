@@ -79,15 +79,29 @@ flowvideo/FlowVideoHelper.kt:1050-1070
 
 代码、日志、配置和 ASCII 片段使用 `scripts/highlight_code.py` 生成 `.code-wrap`；真实 unified
 diff 使用 `--diff-view` 生成每文件独立的 `.diff-card.diff-viewer`。不要手写高亮 token、复制
-runtime 或 diff 表格。
+runtime 或 diff 表格。普通代码块的 `.code-toolbar` 使用 `span` 作为稳定工具栏，复制按钮在
+悬停代码块或键盘聚焦时显示，`.code-lang` 语言标签始终贴在工具栏最右侧；触摸设备不依赖
+hover，继续保留可操作的复制按钮。
 
 ```bash
 python3 skills/html-report/scripts/highlight_code.py --lang kotlin snippet.kt
 python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view patch.diff
 ```
 
+生成的普通代码块结构如下，语言名使用规范化后的可读标签，不直接暴露原始别名：
+
+```html
+<div class="code-wrap" data-code-lang="python">
+  <span class="code-toolbar" role="group" aria-label="代码工具栏">
+    <button class="copy-btn" type="button">复制</button>
+    <span class="code-lang" data-code-lang="python">Python</span>
+  </span>
+  <pre><code class="language-python">...</code></pre>
+</div>
+```
+
 `diff-viewer` 依赖 `code-block`，装配器会自动加入静态 token 样式。复制按钮只是增强；没有
-JS 时源码仍保持可读和可选中。
+JS 时源码仍保持可读和可选中，旧版 `.code-wrap` 也会由 runtime 补齐工具栏和语言标签。
 
 ## 6. 图片与灯箱
 

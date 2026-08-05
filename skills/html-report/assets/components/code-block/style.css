@@ -39,13 +39,43 @@ pre code {
   min-width: 0;
 }
 .code-wrap pre {
-  padding-top: 38px;
+  padding-top: 42px;
   overflow-x: auto;
 }
-.copy-btn {
+.code-toolbar {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.code-lang {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  max-width: min(42vw, 150px);
+  padding: 3px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(169, 181, 175, .24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .08);
+  color: #c1cec8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copy-btn {
+  /* 未加载脚本时保留旧版绝对定位，确保历史报告仍可复制 */
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-height: 32px;
   padding: 4px 10px;
   font-size: 12px;
   background: rgba(255, 255, 255, .10);
@@ -53,11 +83,28 @@ pre code {
   border: 1px solid rgba(143, 165, 156, .22);
   border-radius: 6px;
   cursor: pointer;
+  /* 保留 Tab 停位，仅用透明度隐藏，键盘聚焦才能唤回 */
   opacity: 0;
-  transition: opacity .15s;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition: opacity .15s, transform .15s;
 }
 .code-wrap:hover .copy-btn,
-.code-wrap:focus-within .copy-btn { opacity: 1; }
+.code-wrap:focus-within .copy-btn,
+.copy-btn:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+.copy-btn:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+.code-toolbar .copy-btn {
+  position: static;
+  top: auto;
+  right: auto;
+}
 .copy-btn.copied { color: #83b986; border-color: #83b986; }
 .tok-key { color: #d955a2; font-weight: 700; }
 .tok-str { color: #83b986; }
@@ -79,7 +126,11 @@ pre code {
   width: 100%;
 }
 @media (hover: none) {
-  .copy-btn { opacity: 1; }
+  .copy-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
 }
 
 @media print {

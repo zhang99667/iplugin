@@ -537,6 +537,102 @@ class ReportComponentTest(unittest.TestCase):
             self.assertNotEqual(0, rejected.returncode)
             self.assertIn("回执 roundId 与 HTML 内嵌批注包不一致", rejected.stderr)
 
+    def test_code_block_renders_language_label_and_hover_copy_contract(self) -> None:
+        """代码块应展示可读语言名，并把复制按钮交给悬停和键盘焦点控制"""
+
+        css = self.component_css("base", "code-block")
+        rendered = highlight_code.render_code_wrap('print("hello")', "python")
+        html = self.report_html(css, rendered)
+
+        self.assertIn('data-code-lang="python"', rendered)
+        self.assertIn('class="code-toolbar"', rendered)
+        self.assertIn('class="code-lang" data-code-lang="python"', rendered)
+        self.assertIn('aria-label="代码语言：Python">Python</span>', rendered)
+        self.assertIn('class="copy-btn"', rendered)
+        self.assertLess(rendered.index('class="copy-btn"'), rendered.index('class="code-lang"'))
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".code-wrap:hover .copy-btn", ".code-wrap:focus-within .copy-btn"),
+                ("opacity: 1", "pointer-events: auto", "transform: none"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".copy-btn",),
+                ("opacity: 0", "pointer-events: none", "transition: opacity .15s, transform .15s"),
+            )
+        )
+        self.assertNotIn("visibility: hidden", css)
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".code-toolbar",),
+                ("pointer-events: none", "position: absolute", "right: 8px"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".code-toolbar .copy-btn",),
+                ("position: static",),
+            )
+        )
+        self.assertEqual([], self.validate_html(html))
+
+    def test_code_block_language_aliases_and_no_copy_keep_label(self) -> None:
+        """别名统一成规范语言名，关闭复制按钮时仍保留右上角语言标签"""
+
+        expected_labels = {
+            "json": ("json", "JSON"),
+            "js": ("js", "JavaScript"),
+            "ts": ("ts", "TypeScript"),
+            "kt": ("kotlin", "Kotlin"),
+            "objective-c": ("objc", "Objective-C"),
+            "yml": ("yaml", "YAML"),
+            "sh": ("bash", "Shell"),
+        }
+        for alias, (normalized, label) in expected_labels.items():
+            with self.subTest(alias=alias):
+                rendered = highlight_code.render_code_wrap("value = 1", alias)
+                self.assertIn(f'aria-label="代码语言：{label}">{label}</span>', rendered)
+                self.assertIn(f'class="language-{normalized}"', rendered)
+                if alias != normalized:
+                    self.assertNotIn(f'class="language-{alias}"', rendered)
+
+        no_copy = highlight_code.render_code_wrap("plain text", "python", copy_button=False)
+        self.assertIn('class="code-lang" data-code-lang="python"', no_copy)
+        self.assertIn(">Python</span>", no_copy)
+        self.assertNotIn("copy-btn", no_copy)
+
+    def test_code_block_runtime_keeps_legacy_markup_readable(self) -> None:
+        """旧报告没有工具栏时，runtime 仍会补齐语言标签并迁移复制按钮"""
+
+        runtime = (SKILL_DIR / "assets" / "components" / "code-block" / "runtime.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("languageFromCodeWrap", runtime)
+        self.assertIn("decorateCodeBlock", runtime)
+        self.assertIn("codeWrap.insertBefore(toolbar, codeWrap.firstChild)", runtime)
+        self.assertIn("toolbar.insertBefore(copyButton, label)", runtime)
+        self.assertIn("languageAliases", runtime)
+
+    def test_validator_rejects_incomplete_new_code_block_chrome(self) -> None:
+        """带新标记的代码块缺少语言标签时应被门禁拦截"""
+
+        css = self.component_css("base", "code-block")
+        rendered = highlight_code.render_code_wrap("print(1)", "python")
+        broken = rendered.replace(
+            '    <span class="code-lang" data-code-lang="python" aria-label="代码语言：Python">Python</span>\n',
+            "",
+            1,
+        )
+
+        errors = self.validate_html(self.report_html(css, broken))
+
+        self.assertTrue(any(".code-wrap 缺少 .code-lang 语言标签" in error for error in errors))
+
     def test_annotation_kind_badge_without_stable_width_is_rejected(self) -> None:
         assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
         annotated = inject_annotation_mode.inject_annotation_mode(

@@ -23,6 +23,18 @@ DIFF_VIEWER_RE = re.compile(r'<section\b[^>]*class=["\'][^"\']*\bdiff-viewer\b[^
 CSS_RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}", re.DOTALL)
 DIFF_META_ROW_RE = re.compile(r'<tr\b[^>]*class=["\'][^"\']*\bdiff-meta\b[^"\']*["\'][^>]*>.*?</tr>', re.DOTALL)
 LANG_RE = re.compile(r'\blanguage-([a-zA-Z0-9_-]+)\b')
+CODE_TOOLBAR_RE = re.compile(
+    r'<(?:span|div)\b[^>]*class=["\'][^"\']*\bcode-toolbar\b[^"\']*["\']',
+    re.DOTALL,
+)
+CODE_LANG_RE = re.compile(
+    r'<(?:span|div)\b[^>]*class=["\'][^"\']*\bcode-lang\b[^"\']*["\']',
+    re.DOTALL,
+)
+CODE_LANG_ATTR_RE = re.compile(
+    r'^<div\b[^>]*\bdata-code-lang\s*=',
+    re.DOTALL | re.IGNORECASE,
+)
 TOKEN_SPAN_RE = re.compile(r'<span\b[^>]*\bclass=["\'][^"\']*\b(tok-[a-zA-Z0-9_-]+)\b[^"\']*["\'][^>]*>.*?</span>', re.DOTALL)
 INLINE_STYLE_RE = re.compile(r'<span\b[^>]*\bstyle=["\'][^"\']+["\']', re.DOTALL)
 COPY_BTN_RE = re.compile(r'<button\b[^>]*class=["\'][^"\']*\bcopy-btn\b[^"\']*["\']', re.DOTALL)
@@ -662,6 +674,14 @@ def check_code_wrap_blocks(html: str, css: str) -> list[str]:
                 errors.append(f"第 {index} 个 .code-wrap 使用 {', '.join(missing_classes)}，但 CSS 缺少对应 token 样式，代码会显示成未高亮")
         if not COPY_BTN_RE.search(block):
             errors.append(f"第 {index} 个 .code-wrap 缺少 .copy-btn 复制按钮")
+        # 新生成的代码块带 data-code-lang；旧报告没有该标记时交给 runtime 渐进增强。
+        if CODE_LANG_ATTR_RE.search(block) or CODE_TOOLBAR_RE.search(block):
+            if not CODE_TOOLBAR_RE.search(block):
+                errors.append(f"第 {index} 个 .code-wrap 缺少 .code-toolbar 工具栏")
+            if not CODE_LANG_RE.search(block):
+                errors.append(f"第 {index} 个 .code-wrap 缺少 .code-lang 语言标签")
+            if not css_rule_has(css, (".code-lang",), ("white-space: nowrap", "text-overflow: ellipsis")):
+                errors.append(f"第 {index} 个 .code-wrap 的语言标签缺少截断保护")
     return errors
 
 

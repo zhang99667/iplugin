@@ -141,6 +141,32 @@ HTML_REPORT_REVIEW_WORKSPACE_ASSETS = {
         "assemble_html",
     ),
 }
+HTML_REPORT_CODE_BLOCK_ASSETS = {
+    SKILLS_DIR / "html-report" / "assets" / "components" / "code-block" / "style.css": (
+        ".code-toolbar",
+        ".code-lang",
+        ".code-wrap:hover .copy-btn",
+        ".code-wrap:focus-within .copy-btn",
+        ".copy-btn:focus-visible",
+        "@media (hover: none)",
+    ),
+    SKILLS_DIR / "html-report" / "assets" / "components" / "code-block" / "runtime.js": (
+        "HTML_REPORT_CODE_BLOCK_RUNTIME_START",
+        "HTML_REPORT_CODE_BLOCK_RUNTIME_END",
+        "languageLabels",
+        "languageAliases",
+        "languageFromCodeWrap",
+        "decorateCodeBlock",
+        "toolbar.insertBefore(copyButton, label)",
+    ),
+    SKILLS_DIR / "html-report" / "scripts" / "highlight_code.py": (
+        "LANGUAGE_LABELS",
+        "def language_label(",
+        'data-code-lang="{normalized_lang}"',
+        'class="code-toolbar"',
+        'class="code-lang"',
+    ),
+}
 HTML_REPORT_COMPONENT_ROOT = SKILLS_DIR / "html-report" / "assets" / "components"
 HTML_REPORT_COMPONENT_REGISTRY = HTML_REPORT_COMPONENT_ROOT / "registry.json"
 
@@ -1074,6 +1100,24 @@ def check_html_report_review_workspace_assets() -> CheckResult:
     return result
 
 
+def check_html_report_code_block_assets() -> CheckResult:
+    """检查代码块语言标签和悬停复制所需的生成、样式与运行时资产"""
+
+    result = CheckResult("HTML report code-block assets are valid")
+    for path, required_fragments in HTML_REPORT_CODE_BLOCK_ASSETS.items():
+        if not path.is_file():
+            result.details.append(f"{rel(path)} does not exist")
+            continue
+        source = read_text(path)
+        for fragment in required_fragments:
+            if fragment not in source:
+                result.details.append(f"{rel(path)} is missing {fragment}")
+        if path.suffix == ".js" and "</script>" in source.lower():
+            # runtime 会被原样内联进页面，结束标签会提前截断脚本。
+            result.details.append(f"{rel(path)} must not contain a literal </script>")
+    return result
+
+
 def check_html_report_component_assets() -> CheckResult:
     """检查组件注册表、依赖和资产完整性，保证装配器输入是一致的单一真源。"""
 
@@ -1211,6 +1255,7 @@ def main() -> int:
         check_skill_evals(skills),
         check_html_report_annotation_assets(),
         check_html_report_component_assets(),
+        check_html_report_code_block_assets(),
         check_html_report_review_workspace_assets(),
     ]
 

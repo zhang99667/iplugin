@@ -92,6 +92,32 @@ LANG_ALIASES = {
     "patch": "diff",
 }
 
+LANGUAGE_LABELS = {
+    "bash": "Shell",
+    "c": "C",
+    "cpp": "C++",
+    "diff": "Diff",
+    "go": "Go",
+    "ini": "INI",
+    "java": "Java",
+    "js": "JavaScript",
+    "json": "JSON",
+    "kotlin": "Kotlin",
+    "markdown": "Markdown",
+    "objc": "Objective-C",
+    "php": "PHP",
+    "python": "Python",
+    "ruby": "Ruby",
+    "rust": "Rust",
+    "sql": "SQL",
+    "swift": "Swift",
+    "toml": "TOML",
+    "ts": "TypeScript",
+    "text": "Text",
+    "xml": "XML",
+    "yaml": "YAML",
+}
+
 KEYWORDS = {
     "kotlin": {
         "as",
@@ -891,6 +917,13 @@ def normalize_lang(lang: str) -> str:
     return normalized
 
 
+def language_label(lang: str) -> str:
+    """把规范化语言名转换成代码块右上角的可读标签"""
+
+    normalized = normalize_lang(lang)
+    return LANGUAGE_LABELS.get(normalized, normalized.upper())
+
+
 def language_registry() -> dict[str, object]:
     """输出语言注册表，让文档、校验脚本和测试只依赖这一份清单。"""
 
@@ -1425,12 +1458,21 @@ def highlight_with_engine(source: str, lang: str, engine: str) -> str:
 def render_code_wrap(source: str, lang: str, copy_button: bool = True, engine: str = "builtin") -> str:
     """输出可直接嵌入报告正文的 .code-wrap 片段。"""
 
-    highlighted = highlight_with_engine(source, lang, engine)
-    button = '\n  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>' if copy_button else ""
+    normalized_lang = normalize_lang(lang)
+    highlighted = highlight_with_engine(source, normalized_lang, engine)
+    label = html.escape(language_label(normalized_lang))
+    button = (
+        '    <button class="copy-btn" type="button" aria-label="复制代码">复制</button>\n'
+        if copy_button
+        else ""
+    )
     return (
-        '<div class="code-wrap">\n'
-        f'  <pre><code class="language-{lang}">{highlighted}</code></pre>'
-        f"{button}\n"
+        f'<div class="code-wrap" data-code-lang="{normalized_lang}">\n'
+        '  <span class="code-toolbar" role="group" aria-label="代码工具栏">\n'
+        f"{button}"
+        f'    <span class="code-lang" data-code-lang="{normalized_lang}" aria-label="代码语言：{label}">{label}</span>\n'
+        '  </span>\n'
+        f'  <pre><code class="language-{normalized_lang}">{highlighted}</code></pre>\n'
         "</div>"
     )
 

@@ -931,13 +931,43 @@ pre code {
   min-width: 0;
 }
 .code-wrap pre {
-  padding-top: 38px;
+  padding-top: 42px;
   overflow-x: auto;
 }
-.copy-btn {
+.code-toolbar {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.code-lang {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  max-width: min(42vw, 150px);
+  padding: 3px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(169, 181, 175, .24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .08);
+  color: #c1cec8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copy-btn {
+  /* 未加载脚本时保留旧版绝对定位，确保历史报告仍可复制 */
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-height: 32px;
   padding: 4px 10px;
   font-size: 12px;
   background: rgba(255, 255, 255, .10);
@@ -945,11 +975,28 @@ pre code {
   border: 1px solid rgba(143, 165, 156, .22);
   border-radius: 6px;
   cursor: pointer;
+  /* 保留 Tab 停位，仅用透明度隐藏，键盘聚焦才能唤回 */
   opacity: 0;
-  transition: opacity .15s;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition: opacity .15s, transform .15s;
 }
 .code-wrap:hover .copy-btn,
-.code-wrap:focus-within .copy-btn { opacity: 1; }
+.code-wrap:focus-within .copy-btn,
+.copy-btn:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+.copy-btn:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+.code-toolbar .copy-btn {
+  position: static;
+  top: auto;
+  right: auto;
+}
 .copy-btn.copied { color: #83b986; border-color: #83b986; }
 .tok-key { color: #d955a2; font-weight: 700; }
 .tok-str { color: #83b986; }
@@ -971,7 +1018,11 @@ pre code {
   width: 100%;
 }
 @media (hover: none) {
-  .copy-btn { opacity: 1; }
+  .copy-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
 }
 
 @media print {
@@ -2070,7 +2121,11 @@ main.rw-layout-wide {
 
       <section class="gallery-section" id="code">
         <h2>Code Block</h2>
-        <div class="code-wrap">
+        <div class="code-wrap" data-code-lang="python">
+  <span class="code-toolbar" role="group" aria-label="代码工具栏">
+    <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
+    <span class="code-lang" data-code-lang="python" aria-label="代码语言：Python">Python</span>
+  </span>
   <pre><code class="language-python"><span class="tok-key">from</span> pathlib <span class="tok-key">import</span> Path
 
 <span class="tok-key">def</span> <span class="tok-fn">build_report</span>(source: Path, output: Path) -&gt; <span class="tok-key">None</span>:
@@ -2081,7 +2136,6 @@ main.rw-layout-wide {
     output.<span class="tok-fn">write_text</span>(assembled, encoding=<span class="tok-str">&quot;utf-8&quot;</span>)
     <span class="tok-fn">print</span>(<span class="tok-str">f&quot;components={{&#x27;,&#x27;.join(components)}}&quot;</span>)
 </code></pre>
-  <button class="copy-btn" type="button" aria-label="复制代码">复制</button>
 </div>
         <h2>Diff Viewer</h2>
         <section class="diff-card diff-viewer">
@@ -2675,7 +2729,123 @@ main.rw-layout-wide {
   if (root.dataset.htmlReportCodeBlockReady === 'true') return;
   root.dataset.htmlReportCodeBlockReady = 'true';
 
+  const languageLabels = {
+    bash: 'Shell',
+    c: 'C',
+    cpp: 'C++',
+    diff: 'Diff',
+    go: 'Go',
+    ini: 'INI',
+    java: 'Java',
+    js: 'JavaScript',
+    json: 'JSON',
+    kotlin: 'Kotlin',
+    markdown: 'Markdown',
+    objc: 'Objective-C',
+    php: 'PHP',
+    python: 'Python',
+    ruby: 'Ruby',
+    rust: 'Rust',
+    sql: 'SQL',
+    swift: 'Swift',
+    toml: 'TOML',
+    ts: 'TypeScript',
+    text: 'Text',
+    xml: 'XML',
+    yaml: 'YAML'
+  };
+  const languageAliases = {
+    kt: 'kotlin',
+    kts: 'kotlin',
+    cxx: 'cpp',
+    javascript: 'js',
+    jsx: 'js',
+    typescript: 'ts',
+    tsx: 'ts',
+    'c++': 'cpp',
+    cc: 'cpp',
+    hpp: 'cpp',
+    hh: 'cpp',
+    hxx: 'cpp',
+    'objective-c': 'objc',
+    objectivec: 'objc',
+    'obj-c': 'objc',
+    m: 'objc',
+    mm: 'objc',
+    h: 'objc',
+    'objective-c++': 'objc',
+    'obj-c++': 'objc',
+    rs: 'rust',
+    rb: 'ruby',
+    md: 'markdown',
+    mkd: 'markdown',
+    mdown: 'markdown',
+    py: 'python',
+    html: 'xml',
+    xhtml: 'xml',
+    svg: 'xml',
+    plist: 'xml',
+    yml: 'yaml',
+    conf: 'yaml',
+    config: 'yaml',
+    properties: 'yaml',
+    sh: 'bash',
+    shell: 'bash',
+    zsh: 'bash',
+    txt: 'text',
+    mysql: 'sql',
+    hive: 'sql',
+    spark: 'sql',
+    jsonc: 'json',
+    tml: 'toml',
+    cfg: 'ini',
+    patch: 'diff'
+  };
+
   let toastTimer = 0;
+
+  function languageFromCodeWrap(codeWrap) {
+    const explicit = String(codeWrap.dataset.codeLang || '').trim().toLowerCase();
+    if (explicit) return explicit;
+    const code = codeWrap.querySelector('code[class*="language-"]');
+    const match = String(code?.className || '').match(/\blanguage-([a-z0-9_+.-]+)/i);
+    return match ? match[1].toLowerCase() : 'text';
+  }
+
+  function languageLabel(language) {
+    const normalized = languageAliases[language] || language;
+    return languageLabels[normalized] || normalized.toUpperCase();
+  }
+
+  function decorateCodeBlock(codeWrap) {
+    const rawLanguage = languageFromCodeWrap(codeWrap);
+    const language = languageAliases[rawLanguage] || rawLanguage;
+    let toolbar = codeWrap.querySelector('.code-toolbar');
+    if (!toolbar) {
+      // 用 span 工具栏避免旧版代码块的非贪婪 div 解析边界被嵌套容器截断
+      toolbar = document.createElement('span');
+      toolbar.className = 'code-toolbar';
+      toolbar.setAttribute('role', 'group');
+      toolbar.setAttribute('aria-label', '代码工具栏');
+      codeWrap.insertBefore(toolbar, codeWrap.firstChild);
+    }
+
+    let label = toolbar.querySelector('.code-lang');
+    if (!label) {
+      label = document.createElement('span');
+      label.className = 'code-lang';
+      toolbar.appendChild(label);
+    }
+    label.textContent = languageLabel(language);
+    label.dataset.codeLang = language;
+    label.setAttribute('aria-label', '代码语言：' + languageLabel(language));
+
+    const copyButton = codeWrap.querySelector('.copy-btn');
+    if (copyButton && copyButton.parentElement !== toolbar) {
+      // 只迁移旧按钮，不覆盖报告作者可能放入工具栏的其他操作
+      toolbar.insertBefore(copyButton, label);
+    }
+  }
 
   function showToast(message) {
     let toast = document.querySelector('.toast');
@@ -2716,6 +2886,8 @@ main.rw-layout-wide {
     }
     return fallbackCopy(text);
   }
+
+  document.querySelectorAll('.code-wrap').forEach(decorateCodeBlock);
 
   document.addEventListener('click', async event => {
     const button = event.target.closest('.copy-btn');

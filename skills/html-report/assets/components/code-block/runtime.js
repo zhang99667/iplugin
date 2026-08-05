@@ -4,7 +4,123 @@
   if (root.dataset.htmlReportCodeBlockReady === 'true') return;
   root.dataset.htmlReportCodeBlockReady = 'true';
 
+  const languageLabels = {
+    bash: 'Shell',
+    c: 'C',
+    cpp: 'C++',
+    diff: 'Diff',
+    go: 'Go',
+    ini: 'INI',
+    java: 'Java',
+    js: 'JavaScript',
+    json: 'JSON',
+    kotlin: 'Kotlin',
+    markdown: 'Markdown',
+    objc: 'Objective-C',
+    php: 'PHP',
+    python: 'Python',
+    ruby: 'Ruby',
+    rust: 'Rust',
+    sql: 'SQL',
+    swift: 'Swift',
+    toml: 'TOML',
+    ts: 'TypeScript',
+    text: 'Text',
+    xml: 'XML',
+    yaml: 'YAML'
+  };
+  const languageAliases = {
+    kt: 'kotlin',
+    kts: 'kotlin',
+    cxx: 'cpp',
+    javascript: 'js',
+    jsx: 'js',
+    typescript: 'ts',
+    tsx: 'ts',
+    'c++': 'cpp',
+    cc: 'cpp',
+    hpp: 'cpp',
+    hh: 'cpp',
+    hxx: 'cpp',
+    'objective-c': 'objc',
+    objectivec: 'objc',
+    'obj-c': 'objc',
+    m: 'objc',
+    mm: 'objc',
+    h: 'objc',
+    'objective-c++': 'objc',
+    'obj-c++': 'objc',
+    rs: 'rust',
+    rb: 'ruby',
+    md: 'markdown',
+    mkd: 'markdown',
+    mdown: 'markdown',
+    py: 'python',
+    html: 'xml',
+    xhtml: 'xml',
+    svg: 'xml',
+    plist: 'xml',
+    yml: 'yaml',
+    conf: 'yaml',
+    config: 'yaml',
+    properties: 'yaml',
+    sh: 'bash',
+    shell: 'bash',
+    zsh: 'bash',
+    txt: 'text',
+    mysql: 'sql',
+    hive: 'sql',
+    spark: 'sql',
+    jsonc: 'json',
+    tml: 'toml',
+    cfg: 'ini',
+    patch: 'diff'
+  };
+
   let toastTimer = 0;
+
+  function languageFromCodeWrap(codeWrap) {
+    const explicit = String(codeWrap.dataset.codeLang || '').trim().toLowerCase();
+    if (explicit) return explicit;
+    const code = codeWrap.querySelector('code[class*="language-"]');
+    const match = String(code?.className || '').match(/\blanguage-([a-z0-9_+.-]+)/i);
+    return match ? match[1].toLowerCase() : 'text';
+  }
+
+  function languageLabel(language) {
+    const normalized = languageAliases[language] || language;
+    return languageLabels[normalized] || normalized.toUpperCase();
+  }
+
+  function decorateCodeBlock(codeWrap) {
+    const rawLanguage = languageFromCodeWrap(codeWrap);
+    const language = languageAliases[rawLanguage] || rawLanguage;
+    let toolbar = codeWrap.querySelector('.code-toolbar');
+    if (!toolbar) {
+      // 用 span 工具栏避免旧版代码块的非贪婪 div 解析边界被嵌套容器截断
+      toolbar = document.createElement('span');
+      toolbar.className = 'code-toolbar';
+      toolbar.setAttribute('role', 'group');
+      toolbar.setAttribute('aria-label', '代码工具栏');
+      codeWrap.insertBefore(toolbar, codeWrap.firstChild);
+    }
+
+    let label = toolbar.querySelector('.code-lang');
+    if (!label) {
+      label = document.createElement('span');
+      label.className = 'code-lang';
+      toolbar.appendChild(label);
+    }
+    label.textContent = languageLabel(language);
+    label.dataset.codeLang = language;
+    label.setAttribute('aria-label', '代码语言：' + languageLabel(language));
+
+    const copyButton = codeWrap.querySelector('.copy-btn');
+    if (copyButton && copyButton.parentElement !== toolbar) {
+      // 只迁移旧按钮，不覆盖报告作者可能放入工具栏的其他操作
+      toolbar.insertBefore(copyButton, label);
+    }
+  }
 
   function showToast(message) {
     let toast = document.querySelector('.toast');
@@ -45,6 +161,8 @@
     }
     return fallbackCopy(text);
   }
+
+  document.querySelectorAll('.code-wrap').forEach(decorateCodeBlock);
 
   document.addEventListener('click', async event => {
     const button = event.target.closest('.copy-btn');
