@@ -145,10 +145,14 @@ HTML_REPORT_CODE_BLOCK_ASSETS = {
     SKILLS_DIR / "html-report" / "assets" / "components" / "code-block" / "style.css": (
         ".code-toolbar",
         ".code-lang",
+        "max-width: calc(100% - 16px)",
         ".code-wrap:hover .copy-btn",
         ".code-wrap:focus-within .copy-btn",
         ".copy-btn:focus-visible",
+        "flex: 0 0 auto",
+        "white-space: nowrap",
         "@media (hover: none)",
+        "color: #374151",
     ),
     SKILLS_DIR / "html-report" / "assets" / "components" / "code-block" / "runtime.js": (
         "HTML_REPORT_CODE_BLOCK_RUNTIME_START",

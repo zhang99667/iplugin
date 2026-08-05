@@ -109,15 +109,18 @@
     if (!label) {
       label = document.createElement('span');
       label.className = 'code-lang';
-      toolbar.appendChild(label);
     }
-    label.textContent = languageLabel(language);
+    // 每次初始化都把标签放到末尾，保证语言名称始终占据右上角
+    toolbar.appendChild(label);
+    codeWrap.dataset.codeLang = language;
+    const labelText = languageLabel(language);
+    label.textContent = labelText;
     label.dataset.codeLang = language;
-    label.setAttribute('aria-label', '代码语言：' + languageLabel(language));
+    label.setAttribute('aria-label', '代码语言：' + labelText);
 
     const copyButton = codeWrap.querySelector('.copy-btn');
-    if (copyButton && copyButton.parentElement !== toolbar) {
-      // 只迁移旧按钮，不覆盖报告作者可能放入工具栏的其他操作
+    if (copyButton) {
+      // 迁移并重排旧按钮，避免历史工具栏把复制按钮留在语言标签右侧
       toolbar.insertBefore(copyButton, label);
     }
   }

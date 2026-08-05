@@ -569,7 +569,14 @@ class ReportComponentTest(unittest.TestCase):
             check_html_report.css_rule_has(
                 css,
                 (".code-toolbar",),
-                ("pointer-events: none", "position: absolute", "right: 8px"),
+                ("pointer-events: none", "position: absolute", "right: 8px", "max-width: calc(100% - 16px)"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".copy-btn",),
+                ("flex: 0 0 auto", "white-space: nowrap"),
             )
         )
         self.assertTrue(
@@ -577,6 +584,13 @@ class ReportComponentTest(unittest.TestCase):
                 css,
                 (".code-toolbar .copy-btn",),
                 ("position: static",),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".code-lang",),
+                ("background: #ffffff", "color: #374151", "border-color: #d1d5db"),
             )
         )
         self.assertEqual([], self.validate_html(html))
@@ -601,10 +615,15 @@ class ReportComponentTest(unittest.TestCase):
                 if alias != normalized:
                     self.assertNotIn(f'class="language-{alias}"', rendered)
 
-        no_copy = highlight_code.render_code_wrap("plain text", "python", copy_button=False)
+        no_copy = highlight_code.render_code_wrap("print(1)", "python", copy_button=False)
         self.assertIn('class="code-lang" data-code-lang="python"', no_copy)
         self.assertIn(">Python</span>", no_copy)
+        self.assertIn('data-copy="false"', no_copy)
         self.assertNotIn("copy-btn", no_copy)
+        self.assertEqual(
+            [],
+            self.validate_html(self.report_html(self.component_css("base", "code-block"), no_copy)),
+        )
 
     def test_code_block_runtime_keeps_legacy_markup_readable(self) -> None:
         """旧报告没有工具栏时，runtime 仍会补齐语言标签并迁移复制按钮"""
@@ -617,6 +636,7 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn("codeWrap.insertBefore(toolbar, codeWrap.firstChild)", runtime)
         self.assertIn("toolbar.insertBefore(copyButton, label)", runtime)
         self.assertIn("languageAliases", runtime)
+        self.assertIn("toolbar.appendChild(label)", runtime)
 
     def test_validator_rejects_incomplete_new_code_block_chrome(self) -> None:
         """带新标记的代码块缺少语言标签时应被门禁拦截"""
@@ -632,6 +652,26 @@ class ReportComponentTest(unittest.TestCase):
         errors = self.validate_html(self.report_html(css, broken))
 
         self.assertTrue(any(".code-wrap 缺少 .code-lang 语言标签" in error for error in errors))
+
+    def test_validator_rejects_misordered_or_mismatched_code_block_chrome(self) -> None:
+        """新代码块工具栏顺序和语言元数据不一致时应被门禁拦截"""
+
+        css = self.component_css("base", "code-block")
+        rendered = highlight_code.render_code_wrap("print(1)", "python")
+        misordered = rendered.replace(
+            '    <button class="copy-btn" type="button" aria-label="复制代码">复制</button>\n'
+            '    <span class="code-lang" data-code-lang="python" aria-label="代码语言：Python">Python</span>',
+            '    <span class="code-lang" data-code-lang="python" aria-label="代码语言：Python">Python</span>\n'
+            '    <button class="copy-btn" type="button" aria-label="复制代码">复制</button>',
+            1,
+        )
+        mismatched = rendered.replace('data-code-lang="python"', 'data-code-lang="javascript"', 1)
+
+        misordered_errors = self.validate_html(self.report_html(css, misordered))
+        mismatched_errors = self.validate_html(self.report_html(css, mismatched))
+
+        self.assertTrue(any("工具栏顺序必须是复制按钮在前" in error for error in misordered_errors))
+        self.assertTrue(any("data-code-lang 与 language-xxx 不一致" in error for error in mismatched_errors))
 
     def test_annotation_kind_badge_without_stable_width_is_rejected(self) -> None:
         assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))

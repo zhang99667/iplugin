@@ -1461,13 +1461,14 @@ def render_code_wrap(source: str, lang: str, copy_button: bool = True, engine: s
     normalized_lang = normalize_lang(lang)
     highlighted = highlight_with_engine(source, normalized_lang, engine)
     label = html.escape(language_label(normalized_lang))
+    copy_marker = "" if copy_button else ' data-copy="false"'
     button = (
         '    <button class="copy-btn" type="button" aria-label="复制代码">复制</button>\n'
         if copy_button
         else ""
     )
     return (
-        f'<div class="code-wrap" data-code-lang="{normalized_lang}">\n'
+        f'<div class="code-wrap" data-code-lang="{normalized_lang}"{copy_marker}>\n'
         '  <span class="code-toolbar" role="group" aria-label="代码工具栏">\n'
         f"{button}"
         f'    <span class="code-lang" data-code-lang="{normalized_lang}" aria-label="代码语言：{label}">{label}</span>\n'

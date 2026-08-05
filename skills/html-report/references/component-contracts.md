@@ -102,6 +102,8 @@ python3 skills/html-report/scripts/highlight_code.py --lang diff --diff-view pat
 
 `diff-viewer` 依赖 `code-block`，装配器会自动加入静态 token 样式。复制按钮只是增强；没有
 JS 时源码仍保持可读和可选中，旧版 `.code-wrap` 也会由 runtime 补齐工具栏和语言标签。
+需要关闭复制时使用 `highlight_code.py --no-copy`，生成器会保留语言标签并在根节点写入
+`data-copy="false"`，校验器据此区分有意关闭和意外缺失。
 
 ## 6. 图片与灯箱
 

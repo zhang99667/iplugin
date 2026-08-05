@@ -24,15 +24,38 @@ CSS_RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}", re.DOTALL)
 DIFF_META_ROW_RE = re.compile(r'<tr\b[^>]*class=["\'][^"\']*\bdiff-meta\b[^"\']*["\'][^>]*>.*?</tr>', re.DOTALL)
 LANG_RE = re.compile(r'\blanguage-([a-zA-Z0-9_-]+)\b')
 CODE_TOOLBAR_RE = re.compile(
-    r'<(?:span|div)\b[^>]*class=["\'][^"\']*\bcode-toolbar\b[^"\']*["\']',
+    r'<span\b[^>]*class=["\'][^"\']*\bcode-toolbar\b[^"\']*["\']',
     re.DOTALL,
 )
 CODE_LANG_RE = re.compile(
-    r'<(?:span|div)\b[^>]*class=["\'][^"\']*\bcode-lang\b[^"\']*["\']',
+    r'<span\b[^>]*class=["\'][^"\']*\bcode-lang\b[^"\']*["\']',
     re.DOTALL,
 )
 CODE_LANG_ATTR_RE = re.compile(
     r'^<div\b[^>]*\bdata-code-lang\s*=',
+    re.DOTALL | re.IGNORECASE,
+)
+CODE_ROOT_LANG_VALUE_RE = re.compile(
+    r'^<div\b[^>]*\bdata-code-lang\s*=\s*["\']([^"\']+)["\']',
+    re.DOTALL | re.IGNORECASE,
+)
+CODE_CLASS_VALUE_RE = re.compile(
+    r'<code\b[^>]*\bclass=["\'][^"\']*\blanguage-([a-zA-Z0-9_+.-]+)\b[^"\']*["\']',
+    re.DOTALL | re.IGNORECASE,
+)
+CODE_LABEL_VALUE_RE = re.compile(
+    r'<span\b[^>]*\bclass=["\'][^"\']*\bcode-lang\b[^"\']*["\']'
+    r'[^>]*\bdata-code-lang=["\']([^"\']+)["\'][^>]*>(.*?)</span>',
+    re.DOTALL | re.IGNORECASE,
+)
+CODE_TOOLBAR_ORDER_RE = re.compile(
+    r'<span\b[^>]*class=["\'][^"\']*\bcode-toolbar\b[^"\']*["\'][^>]*>\s*'
+    r'(?:<button\b[^>]*class=["\'][^"\']*\bcopy-btn\b[^"\']*["\'][^>]*>.*?</button>\s*)?'
+    r'<span\b[^>]*class=["\'][^"\']*\bcode-lang\b[^"\']*["\'][^>]*>.*?</span>\s*</span>',
+    re.DOTALL | re.IGNORECASE,
+)
+COPY_DISABLED_ATTR_RE = re.compile(
+    r'^<div\b[^>]*\bdata-copy\s*=\s*["\']false["\']',
     re.DOTALL | re.IGNORECASE,
 )
 TOKEN_SPAN_RE = re.compile(r'<span\b[^>]*\bclass=["\'][^"\']*\b(tok-[a-zA-Z0-9_-]+)\b[^"\']*["\'][^>]*>.*?</span>', re.DOTALL)
@@ -672,14 +695,30 @@ def check_code_wrap_blocks(html: str, css: str) -> list[str]:
             missing_classes = sorted(class_name for class_name in token_classes if f".{class_name}" not in compact_css)
             if missing_classes:
                 errors.append(f"第 {index} 个 .code-wrap 使用 {', '.join(missing_classes)}，但 CSS 缺少对应 token 样式，代码会显示成未高亮")
-        if not COPY_BTN_RE.search(block):
+        copy_disabled = bool(COPY_DISABLED_ATTR_RE.search(block))
+        if not COPY_BTN_RE.search(block) and not copy_disabled:
             errors.append(f"第 {index} 个 .code-wrap 缺少 .copy-btn 复制按钮")
+        if copy_disabled and COPY_BTN_RE.search(block):
+            errors.append(f"第 {index} 个 .code-wrap 标记为关闭复制但仍包含 .copy-btn")
         # 新生成的代码块带 data-code-lang；旧报告没有该标记时交给 runtime 渐进增强。
-        if CODE_LANG_ATTR_RE.search(block) or CODE_TOOLBAR_RE.search(block):
+        has_generated_chrome = bool(CODE_LANG_ATTR_RE.search(block))
+        if has_generated_chrome or CODE_TOOLBAR_RE.search(block):
             if not CODE_TOOLBAR_RE.search(block):
                 errors.append(f"第 {index} 个 .code-wrap 缺少 .code-toolbar 工具栏")
             if not CODE_LANG_RE.search(block):
                 errors.append(f"第 {index} 个 .code-wrap 缺少 .code-lang 语言标签")
+            if has_generated_chrome and not CODE_TOOLBAR_ORDER_RE.search(block):
+                errors.append(f"第 {index} 个 .code-wrap 的工具栏顺序必须是复制按钮在前、语言标签在右")
+            if has_generated_chrome:
+                root_lang = CODE_ROOT_LANG_VALUE_RE.search(block)
+                code_lang = CODE_CLASS_VALUE_RE.search(block)
+                label_lang = CODE_LABEL_VALUE_RE.search(block)
+                if root_lang and code_lang and root_lang.group(1).lower() != code_lang.group(1).lower():
+                    errors.append(f"第 {index} 个 .code-wrap 的 data-code-lang 与 language-xxx 不一致")
+                if root_lang and label_lang and root_lang.group(1).lower() != label_lang.group(1).lower():
+                    errors.append(f"第 {index} 个 .code-wrap 的语言标签 data-code-lang 不一致")
+                if label_lang and not fragment_text(label_lang.group(2)).strip():
+                    errors.append(f"第 {index} 个 .code-wrap 的语言标签不能为空")
             if not css_rule_has(css, (".code-lang",), ("white-space: nowrap", "text-overflow: ellipsis")):
                 errors.append(f"第 {index} 个 .code-wrap 的语言标签缺少截断保护")
     return errors
