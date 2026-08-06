@@ -12,10 +12,10 @@
     },
     "interactions": {
       "category": "core",
-      "description": "details 和 toast 的通用样式",
+      "description": "details、toast 和回到顶部的通用交互",
       "dependencies": ["base"],
       "styles": ["interactions/style.css"],
-      "scripts": [],
+      "scripts": ["interactions/runtime.js"],
       "detect": {}
     },
     "table": {

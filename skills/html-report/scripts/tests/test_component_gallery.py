@@ -56,6 +56,8 @@ class ComponentGalleryTest(unittest.TestCase):
                 self.assertIn(component, declaration)
             self.assertIn("QA_ANNOTATION_CSS_START", html)
             self.assertIn("QA_ANNOTATION_SCRIPT_START", html)
+            self.assertIn('data-html-report-runtime="interactions"', html)
+            self.assertIn("button.className = 'back-to-top'", html)
 
 
 if __name__ == "__main__":

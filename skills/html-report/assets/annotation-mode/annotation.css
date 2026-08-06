@@ -9,6 +9,7 @@
       --qa-panel: #ffffff;
     }
     body.qa-panel-open { padding-right: 380px; }
+    body.qa-panel-open .back-to-top { right: 398px; }
     .qa-launcher {
       position: fixed;
       right: 18px;
@@ -529,6 +530,7 @@
     }
     @media (max-width: 960px) {
       body.qa-panel-open { padding-right: 0; }
+      body.qa-panel-open .back-to-top { display: none; }
       .qa-sidebar { width: min(100vw, 420px); }
       .qa-launcher { right: 12px; top: 12px; }
     }

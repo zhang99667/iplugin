@@ -45,6 +45,9 @@ HTML_REPORT_ANNOTATION_ASSETS = {
         ".qa-card.kind-comment .qa-kind",
         ".qa-card.rebinding",
         ".qa-mini-btn.rebind",
+        "body.qa-panel-open .back-to-top",
+        "right: 398px",
+        "body.qa-panel-open .back-to-top { display: none; }",
     ),
     SKILLS_DIR / "html-report" / "assets" / "annotation-mode" / "annotation.html": (
         "QA_ANNOTATION_HTML_START",
@@ -169,6 +172,30 @@ HTML_REPORT_CODE_BLOCK_ASSETS = {
         'data-code-lang="{normalized_lang}"',
         'class="code-toolbar"',
         'class="code-lang"',
+    ),
+}
+HTML_REPORT_INTERACTIONS_ASSETS = {
+    SKILLS_DIR / "html-report" / "assets" / "components" / "interactions" / "style.css": (
+        ".back-to-top",
+        ".back-to-top.is-visible",
+        ".back-to-top:focus-visible",
+        "env(safe-area-inset-right, 0px)",
+        "@media (prefers-reduced-motion: reduce)",
+        "@media print",
+    ),
+    SKILLS_DIR / "html-report" / "assets" / "components" / "interactions" / "runtime.js": (
+        "HTML_REPORT_INTERACTIONS_RUNTIME_START",
+        "HTML_REPORT_INTERACTIONS_RUNTIME_END",
+        "__HTML_REPORT_INTERACTIONS_READY__",
+        "document.querySelector('.back-to-top') || document.createElement('button')",
+        "window.scrollY > 360",
+        "window.requestAnimationFrame(syncVisibility)",
+        "window.addEventListener('scroll', scheduleVisibilitySync, { passive: true })",
+        "prefers-reduced-motion: reduce",
+        "window.scrollTo({ top: 0",
+        "button.tabIndex = visible ? 0 : -1",
+        "button.setAttribute('aria-hidden', String(!visible))",
+        "if (!button.isConnected) document.body.appendChild(button)",
     ),
 }
 HTML_REPORT_COMPONENT_ROOT = SKILLS_DIR / "html-report" / "assets" / "components"
@@ -1122,6 +1149,24 @@ def check_html_report_code_block_assets() -> CheckResult:
     return result
 
 
+def check_html_report_interactions_assets() -> CheckResult:
+    """检查默认交互组件的回到顶部样式和 runtime 契约"""
+
+    result = CheckResult("HTML report interactions assets are valid")
+    for path, required_fragments in HTML_REPORT_INTERACTIONS_ASSETS.items():
+        if not path.is_file():
+            result.details.append(f"{rel(path)} does not exist")
+            continue
+        source = read_text(path)
+        for fragment in required_fragments:
+            if fragment not in source:
+                result.details.append(f"{rel(path)} is missing {fragment}")
+        if path.suffix == ".js" and "</script>" in source.lower():
+            # runtime 会被原样内联进页面，结束标签会提前截断脚本
+            result.details.append(f"{rel(path)} must not contain a literal </script>")
+    return result
+
+
 def check_html_report_component_assets() -> CheckResult:
     """检查组件注册表、依赖和资产完整性，保证装配器输入是一致的单一真源。"""
 
@@ -1260,6 +1305,7 @@ def main() -> int:
         check_html_report_annotation_assets(),
         check_html_report_component_assets(),
         check_html_report_code_block_assets(),
+        check_html_report_interactions_assets(),
         check_html_report_review_workspace_assets(),
     ]
 

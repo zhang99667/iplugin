@@ -46,6 +46,114 @@ build_review_workspace = load_module(
 
 
 class ReportComponentTest(unittest.TestCase):
+    def test_default_interactions_add_accessible_back_to_top(self) -> None:
+        """默认交互组件应提供可访问、可降级的回到顶部按钮"""
+
+        source = self.report_html("", "<p>报告正文</p>")
+        assembled, components = assemble_report.assemble_html(source)
+        repeated, repeated_components = assemble_report.assemble_html(assembled)
+        css = self.component_css("interactions")
+        annotation_css = (
+            SKILL_DIR / "assets" / "annotation-mode" / "annotation.css"
+        ).read_text(encoding="utf-8")
+
+        self.assertEqual(["base", "interactions"], components)
+        self.assertEqual(components, repeated_components)
+        self.assertEqual(assembled, repeated)
+        self.assertEqual(1, assembled.count('data-html-report-runtime="interactions"'))
+        self.assertIn("HTML_REPORT_INTERACTIONS_RUNTIME_START", assembled)
+        self.assertIn("HTML_REPORT_INTERACTIONS_RUNTIME_END", assembled)
+        self.assertIn("button.className = 'back-to-top'", assembled)
+        self.assertIn("button.tabIndex = visible ? 0 : -1", assembled)
+        self.assertIn("button.setAttribute('aria-label', '回到顶部')", assembled)
+        self.assertIn("button.setAttribute('aria-hidden', String(!visible))", assembled)
+        self.assertIn("const visible = window.scrollY > 360", assembled)
+        self.assertIn("window.requestAnimationFrame(syncVisibility)", assembled)
+        self.assertIn(
+            "window.addEventListener('scroll', scheduleVisibilitySync, { passive: true })",
+            assembled,
+        )
+        self.assertIn("window.matchMedia('(prefers-reduced-motion: reduce)')", assembled)
+        self.assertIn("window.scrollTo({ top: 0", assembled)
+        self.assertIn("window.__HTML_REPORT_INTERACTIONS_READY__", assembled)
+        self.assertIn("document.querySelector('.back-to-top') || document.createElement('button')", assembled)
+        self.assertNotIn("htmlReportInteractionsReady", assembled)
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".back-to-top",),
+                ("position: fixed", "opacity: 0", "pointer-events: none"),
+            )
+        )
+        self.assertIn("env(safe-area-inset-right, 0px)", css)
+        self.assertIn("env(safe-area-inset-bottom, 0px)", css)
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".back-to-top.is-visible",),
+                ("opacity: 1", "pointer-events: auto"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".back-to-top:focus-visible",),
+                ("outline:", "outline-offset: 3px"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotation_css,
+                ("body.qa-panel-open .back-to-top",),
+                ("right: 398px",),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                annotation_css,
+                ("body.qa-panel-open .back-to-top",),
+                ("display: none",),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".back-to-top",),
+                ("display: none !important",),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (".back-to-top",),
+                ("transition: none",),
+            )
+        )
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_validator_rejects_truncated_interactions_runtime(self) -> None:
+        assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
+        broken = assembled.replace(
+            "HTML_REPORT_INTERACTIONS_RUNTIME_END",
+            "HTML_REPORT_INTERACTIONS_RUNTIME_BROKEN",
+            1,
+        )
+
+        errors = self.validate_html(broken)
+
+        self.assertTrue(any("缺少完整性标记 HTML_REPORT_INTERACTIONS_RUNTIME_END" in error for error in errors))
+
+    def test_interactions_runtime_rebinds_exported_button(self) -> None:
+        completed = subprocess.run(
+            ["node", str(SKILL_DIR / "scripts" / "tests" / "test_interactions_runtime.mjs")],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(0, completed.returncode, completed.stdout + completed.stderr)
+        self.assertIn("PASS interactions runtime", completed.stdout)
+
     def test_annotation_submit_button_exposes_keyboard_shortcut(self) -> None:
         assembled, _ = assemble_report.assemble_html(self.report_html("", "<p>报告正文</p>"))
 

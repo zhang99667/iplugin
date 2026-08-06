@@ -21,7 +21,7 @@
 | 组件 | 自动检测标记 | 依赖 | 无 JS 回退 |
 | --- | --- | --- | --- |
 | `base` | 默认 | 无 | 完整正文 |
-| `interactions` | 默认 | `base` | `<details>` 原生可用 |
+| `interactions` | 默认 | `base` | `<details>` 原生可用；只失去回到顶部增强 |
 | `table` | `.table-wrap` | `base` | 普通表格可读、可横向滚动 |
 | `file-location` | `.file-location` / `.file-link` | `base` | `idea://` 链接仍可点击 |
 | `code-block` | `.code-wrap` / `.ascii-diagram` | `base`、`interactions` | 代码仍可选中；只失去复制按钮增强 |
@@ -33,6 +33,11 @@
 | `tabs` | `.report-tabs[data-tabs]` | `base` | 所有面板按顺序展示 |
 | `sortable-table` | `table.sortable` | `table` | 保留原始表格顺序 |
 | `review-workspace` | `.review-workspace` | `base`、`interactions`、`file-location`、`code-block` | 首文件静态快照可读 |
+
+`interactions` 是所有新报告都会装配的默认组件。runtime 在滚动超过 360px 后创建并显示右下角
+`.back-to-top` 按钮，点击返回页面顶部；按钮在短页面中不进入 Tab 顺序，尊重
+`prefers-reduced-motion`，打印时隐藏。导出的批注版可能保留动态按钮，因此 runtime 使用
+`window` 级防重复标记并复用已有节点，确保重新打开后重新绑定事件。
 
 ## 3. 普通表格
 
