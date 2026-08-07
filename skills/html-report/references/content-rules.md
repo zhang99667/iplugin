@@ -112,7 +112,7 @@
 - 已运行 `scripts/check_html_report.py`，不存在外部 CSS/JS 依赖、未渲染的 Markdown 行内代码、裸 `<pre><code>`、缺少复制按钮、缺少必要静态高亮结构或 token CSS 的代码块，且页面包含 viewport、窄屏、横向滚动和打印样式。
 - 如果报告使用图片或视频，已通过 `scripts/check_html_report.py` 检查本地媒体相对路径、图片 `alt`、视频 `controls` 和响应式保护；脚本输出的媒体 warning 已按需要处理。
 - 涉及代码改动的报告已经提供变更标识：新增行、删除行、修改行、上下文行可区分；真实 unified diff 使用 `.diff-card.diff-viewer` 固定样式，保留 `.diff-header`、`.diff-scroll`、`.diff-table`、old/new 行号列和左侧红绿变更轨道；没有把旧代码和新代码混在一起，也没有把 raw diff 放进普通 `.code-wrap`。
-- 文件路径和行号以单个 `{path}:{line}`、`{path}:{start}-{end}` 或 `{path}:{line}:{column}` chip 展示；有绝对路径时已加 `idea://open` 超链接；没有把路径和行号拆成两个 chip，也没有把行号范围另起一行。超长路径的展示文本可用 `...` 省略中间目录，但保留仓库/模块语义、文件名和行号，完整定位保存在 `href` 与 `title` 中。
+- 文件路径和行号以单个 `{path}:{line}`、`{path}:{start}-{end}` 或 `{path}:{line}:{column}` chip 展示；有绝对路径时已按技术方案平台统一选择 IDE，Android 方案使用 `idea://open`，iOS 方案使用 `xcode://open`，同一方案内不按源码语言切换；没有把路径和行号拆成两个 chip，也没有把行号范围另起一行。超长路径的展示文本可用 `...` 省略中间目录，但保留仓库/模块语义、文件名和行号，完整定位保存在 `href` 与 `title` 中。
 - 没有行号的长文件路径同样不能完整撑满卡片；已使用 `.path` chip 或等价结构截断展示，并通过 `title` 或上下文保留完整文件/方法指向。
 - ASCII 架构图在浏览器中保持缩进、连线和横向滚动，不出现自动换行导致的错位。
 - 大段次要内容已按需折叠，主线内容仍可连续阅读。

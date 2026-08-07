@@ -1,6 +1,6 @@
 # Review Workspace 组件
 
-Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件的 2 到 3 份完整源码快照。它复用“三方代码 Review”报告里的核心体验：文件导航、结论筛选、多版本并排、同步滚动、差异聚焦、参考行跳转、全文复制、IDEA 打开和本地已审阅进度。
+Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件的 2 到 3 份完整源码快照。它复用“三方代码 Review”报告里的核心体验：文件导航、结论筛选、多版本并排、同步滚动、差异聚焦、参考行跳转、全文复制、IDE 打开和本地已审阅进度。
 
 它是代码评审报告的按需增强组件，不是所有代码报告的默认结构。
 
@@ -69,12 +69,14 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
 
 ## 规格格式
 
-最小示例：
+最小示例。这里的 `default_ide: "idea"` 来自 Android 技术方案上下文，与文件的
+`language` 或扩展名无关：
 
 ```json
 {
   "workspace_id": "feed-review-v1",
-  "title": "三方 Review Workspace",
+  "title": "Android 三方 Review Workspace",
+  "default_ide": "idea",
   "versions": [
     {
       "id": "baseline",
@@ -107,7 +109,7 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
       "path": "lib-ad-feed/.../FeedAdTools.java",
       "display_path": "FeedAdTools.java:88",
       "absolute_path": "/absolute/path/FeedAdTools.java",
-      "idea_line": 88,
+      "ide_line": 88,
       "group": "lib_ad",
       "status": {
         "id": "diff-fix",
@@ -181,6 +183,7 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
 | `workspace_id` | 是 | 小写稳定 ID；用于 DOM 和默认本地审阅状态 key |
 | `title` | 否 | standalone 预览标题；正式报告章节标题仍由报告正文控制 |
 | `storage_key` | 否 | 自定义 `localStorage` key；默认由 `workspace_id` 生成 |
+| `default_ide` | 否 | 技术方案统一 IDE，只允许 `idea` / `xcode`；Android 方案设为 `idea`，iOS 方案设为 `xcode`，应用于 Workspace 内所有未显式覆盖的文件 |
 | `versions` | 是 | 2 到 3 个版本，顺序就是窗格顺序 |
 | `legend` | 否 | `focus` / `primary` / `secondary` 三类标记说明 |
 | `files` | 是 | 非空文件数组 |
@@ -193,8 +196,10 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
 | `filename` | 是 | 文件名 |
 | `path` | 否 | 搜索和回退展示用路径 |
 | `display_path` | 否 | 页面短标签；默认 `文件名:行号`，同名消歧最多增加一级父目录 |
-| `absolute_path` | 否 | 必须是绝对路径；有值时构建 `idea://open` 链接，相对路径只放在 `path` |
-| `idea_line` | 否 | IDEA 跳转行；缺省时优先取右侧较新版本的首个 `focus` 行 |
+| `absolute_path` | 否 | 必须是绝对路径；有值时按所选 IDE 构建 `idea://open` 或 `xcode://open` 链接，相对路径只放在 `path` |
+| `ide` | 否 | 文件级 IDE 显式覆盖，只允许 `idea` / `xcode` |
+| `ide_line` | 否 | IDE 跳转行；缺省时优先取右侧较新版本的首个 `focus` 行 |
+| `idea_line` | 否 | 旧规格兼容字段，等价于 `ide_line`；新规格不要继续使用，两者同时存在时必须一致 |
 | `group` / `repo` | 否 | 文件列表里的仓库、模块或分组 |
 | `status` | 否 | 筛选状态；包含 `id`、`label`、`tone` |
 | `relation` | 否 | 版本整体关系，例如 `B = M ≠ W` |
@@ -210,6 +215,17 @@ Review Workspace 用于在单文件 HTML 代码评审报告中审阅多个文件
 - `success`
 - `warning`
 - `danger`
+
+IDE 选择顺序：
+
+1. 文件级 `ide` 显式覆盖。
+2. 使用顶层 `default_ide`：Android 技术方案设为 `idea`，iOS 技术方案设为 `xcode`。
+3. 不根据源码语言或扩展名推断 IDE；混合端方案通过文件级 `ide` 标明文件所属端。
+4. 没有 `default_ide` 且文件未显式设置时，为兼容历史行为回退 IDEA。
+
+Builder 新产物只写通用 `ideHref`。新版 runtime 和校验器仍可读取历史报告中的 `ideaHref`；
+需要把新 Xcode Workspace 片段加入旧报告时，应同时重新生成首个带 runtime 的 Workspace，
+避免旧 runtime 继续显示固定的 IDEA 按钮文案。
 
 ### 每个版本的源码字段
 
@@ -253,7 +269,7 @@ git show backup/ref:path/to/File.kt
 - 900px 以下改为文件导航在上、版本窗格单列。
 - 打印时隐藏工具栏、文件导航和复制按钮，按版本纵向输出静态源码。
 - 重要结论必须在 Workspace 外的普通正文中出现，不能只藏在需要 JS 的交互区。
-- IDE 跳转显示短标签，完整路径和行号保留在 `href` / `title`；静态快照与 runtime 切换后的结构必须一致。
+- IDE 跳转显示短标签，完整路径和行号保留在 `href` / `title`；工具栏按当前文件动态显示“IDEA 打开”或“Xcode 打开”，静态快照与 runtime 切换后的结构必须一致。
 
 ## 预览与回归
 

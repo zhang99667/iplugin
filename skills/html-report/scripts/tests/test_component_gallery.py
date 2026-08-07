@@ -58,6 +58,13 @@ class ComponentGalleryTest(unittest.TestCase):
             self.assertIn("QA_ANNOTATION_SCRIPT_START", html)
             self.assertIn('data-html-report-runtime="interactions"', html)
             self.assertIn("button.className = 'back-to-top'", html)
+            self.assertIn("idea://open?file=/repo/demo/android/native/AndroidBridge.h", html)
+            self.assertIn("xcode://open?file=/repo/demo/ios/native/IOSBridge.h", html)
+            self.assertIn('"ideKind":"xcode"', html)
+            self.assertIn('"ideHref":"xcode://open?file=/repo/demo/ios/shared/SharedReportBuilder.kt', html)
+            self.assertNotIn('"ideaHref":"xcode://', html)
+            self.assertIn('data-rw-role="ide"', html)
+            self.assertIn("`${label} 打开`", html)
 
 
 if __name__ == "__main__":

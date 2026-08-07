@@ -133,6 +133,11 @@ FILE_LOCATION_LINK_RE = re.compile(
 
 TEXT_LIKE_LANGS = {"markdown", "text", "txt", "log", "logs", "plain", "plaintext"}
 MEDIA_EXTENSIONS = {".apng", ".avif", ".gif", ".jpeg", ".jpg", ".m4v", ".mov", ".mp4", ".ogg", ".ogv", ".png", ".svg", ".webm", ".webp"}
+IDE_LABELS = {"idea": "IDEA", "xcode": "Xcode"}
+
+
+def is_positive_ascii_integer(value: str) -> bool:
+    return bool(re.fullmatch(r"[1-9][0-9]*", value))
 
 
 def load_supported_langs() -> set[str]:
@@ -433,7 +438,7 @@ def is_media_url(url: str) -> bool:
 def local_resource_path(url: str, report_path: Path) -> Path | None:
     parsed = urlparse(html_lib.unescape(url))
     scheme = parsed.scheme.lower()
-    if scheme in {"about", "blob", "data", "http", "https", "idea", "javascript", "mailto"}:
+    if scheme in {"about", "blob", "data", "http", "https", "idea", "javascript", "mailto", "xcode"}:
         return None
     if parsed.netloc:
         return None
@@ -634,8 +639,13 @@ def check_file_location_links(source_html: str) -> list[str]:
         query = parse_qs(parsed_href.query)
         href_file = query.get("file", [""])[0]
         href_line = query.get("line", [""])[0]
-        if parsed_href.scheme != "idea" or parsed_href.netloc != "open" or not href_file or not href_line.isdigit():
-            errors.append(f"第 {index} 个文件定位链接缺少 idea:// 文件和起始行参数")
+        if (
+            parsed_href.scheme not in IDE_LABELS
+            or parsed_href.netloc != "open"
+            or not href_file
+            or not is_positive_ascii_integer(href_line)
+        ):
+            errors.append(f"第 {index} 个文件定位链接缺少 IDEA/Xcode 文件和起始行参数")
         elif not Path(href_file).is_absolute():
             errors.append(f"第 {index} 个文件定位链接 href 必须使用绝对路径")
         title_match_value = re.fullmatch(r"(.+):(\d+)(?:-(\d+))?", title)
@@ -645,7 +655,7 @@ def check_file_location_links(source_html: str) -> list[str]:
         title_file, title_start, title_end = title_match_value.groups()
         if href_file and href_file != title_file:
             errors.append(f"第 {index} 个文件定位链接 href 与 title 的完整路径不一致")
-        if href_line.isdigit() and href_line != title_start:
+        if is_positive_ascii_integer(href_line) and href_line != title_start:
             errors.append(f"第 {index} 个文件定位链接 href 起始行与 title 不一致")
         if label_match:
             label_path, label_start, label_end = label_match.groups()
@@ -913,9 +923,84 @@ def check_review_workspace_pack(pack: object, index: int, css: str) -> list[str]
             seen_file_ids.add(file_id)
         if not isinstance(file.get("filename"), str) or not file["filename"].strip():
             errors.append(f"{file_prefix} 缺少非空 filename")
-        idea_href = file.get("ideaHref", "")
-        if idea_href and (not isinstance(idea_href, str) or not idea_href.startswith("idea://open?")):
-            errors.append(f"{file_prefix} ideaHref 只能为空或使用 idea://open")
+        absolute_path = file.get("absolutePath", "")
+        if absolute_path and (
+            not isinstance(absolute_path, str)
+            or not Path(absolute_path).is_absolute()
+        ):
+            errors.append(f"{file_prefix} absolutePath 必须是绝对路径")
+        raw_ide_href = file.get("ideHref", "")
+        raw_legacy_idea_href = file.get("ideaHref", "")
+        if "ideHref" in file and not isinstance(raw_ide_href, str):
+            errors.append(f"{file_prefix} ideHref 必须是字符串")
+        if "ideaHref" in file and not isinstance(raw_legacy_idea_href, str):
+            errors.append(f"{file_prefix} ideaHref 必须是字符串")
+        ide_href = raw_ide_href if isinstance(raw_ide_href, str) else ""
+        legacy_idea_href = raw_legacy_idea_href if isinstance(raw_legacy_idea_href, str) else ""
+        if ide_href and legacy_idea_href and ide_href != legacy_idea_href:
+            errors.append(f"{file_prefix} ideHref 与兼容字段 ideaHref 不一致")
+        if not ide_href:
+            ide_href = legacy_idea_href
+
+        ide_kind = file.get("ideKind")
+        if ide_kind is not None and (not isinstance(ide_kind, str) or ide_kind not in IDE_LABELS):
+            errors.append(f"{file_prefix} ideKind 必须是 idea 或 xcode")
+        ide_label = file.get("ideLabel")
+        if ide_label is not None and (
+            not isinstance(ide_label, str)
+            or ide_label not in IDE_LABELS.values()
+        ):
+            errors.append(f"{file_prefix} ideLabel 必须是 IDEA 或 Xcode")
+        elif isinstance(ide_kind, str) and ide_kind in IDE_LABELS and ide_label != IDE_LABELS[ide_kind]:
+            errors.append(f"{file_prefix} ideLabel 与 ideKind 不一致")
+        if ide_href:
+            parsed_ide_href = urlparse(ide_href)
+            ide_query = parse_qs(parsed_ide_href.query)
+            ide_file = ide_query.get("file", [""])[0]
+            ide_line = ide_query.get("line", [""])[0]
+            if parsed_ide_href.scheme not in IDE_LABELS or parsed_ide_href.netloc != "open":
+                errors.append(f"{file_prefix} ideHref 只能使用 idea://open 或 xcode://open")
+            elif not ide_file or not Path(ide_file).is_absolute():
+                errors.append(f"{file_prefix} ideHref 必须包含绝对文件路径")
+            elif ide_line and not is_positive_ascii_integer(ide_line):
+                errors.append(f"{file_prefix} ideHref 的 line 必须是正整数")
+            elif not isinstance(absolute_path, str) or not absolute_path:
+                errors.append(f"{file_prefix} ideHref 存在时必须提供 absolutePath")
+            elif ide_file != absolute_path:
+                errors.append(f"{file_prefix} ideHref 与 absolutePath 不一致")
+            elif ide_line:
+                location_title = file.get("locationTitle")
+                display_path = file.get("displayPath")
+                title_match = (
+                    re.fullmatch(r"(.+):(\d+)(?:-(\d+))?", location_title)
+                    if isinstance(location_title, str)
+                    else None
+                )
+                display_match = (
+                    re.fullmatch(r"([^/<>\r\n]+(?:/[^/<>\r\n]+)?):(\d+)(?:-(\d+))?", display_path)
+                    if isinstance(display_path, str)
+                    else None
+                )
+                if not title_match:
+                    errors.append(f"{file_prefix} locationTitle 必须保留完整路径和行号")
+                elif title_match.group(1) != absolute_path or title_match.group(2) != ide_line:
+                    errors.append(f"{file_prefix} ideHref 与 locationTitle 不一致")
+                if not display_match:
+                    errors.append(f"{file_prefix} displayPath 必须使用短路径和行号")
+                else:
+                    visible_path, visible_start, visible_end = display_match.groups()
+                    expected_paths = {Path(absolute_path).name}
+                    parent_name = Path(absolute_path).parent.name
+                    if parent_name:
+                        expected_paths.add(f"{parent_name}/{Path(absolute_path).name}")
+                    if visible_path not in expected_paths or visible_start != ide_line:
+                        errors.append(f"{file_prefix} ideHref 与 displayPath 不一致")
+                    elif title_match and (visible_start, visible_end) != title_match.groups()[1:]:
+                        errors.append(f"{file_prefix} displayPath 与 locationTitle 行范围不一致")
+            if isinstance(ide_kind, str) and ide_kind in IDE_LABELS and parsed_ide_href.scheme != ide_kind:
+                errors.append(f"{file_prefix} ideKind 与 ideHref 协议不一致")
+            if isinstance(ide_label, str) and ide_label != IDE_LABELS.get(parsed_ide_href.scheme):
+                errors.append(f"{file_prefix} ideLabel 与 ideHref 协议不一致")
 
         file_versions = file.get("versions")
         if not isinstance(file_versions, dict):

@@ -1,3 +1,9 @@
+## [0.22.36] - 2026-08-07
+### Changed
+- html-report: 源码定位链接改为按技术方案平台统一选择 IDE，Android 方案内所有文件使用 IDEA，iOS 方案内所有文件使用 Xcode，不再按源码语言或扩展名切换
+- html-report: Review Workspace 使用通用 `ideKind` / `ideLabel` / `ideHref` 数据，工具栏按当前文件动态显示 IDEA 或 Xcode；输入继续兼容旧 `idea_line`，新版 runtime 与校验器继续读取历史 `ideaHref`
+- html-report: 校验器逐文件核对 IDE 协议、绝对路径、起始行和定位元数据，组件测试与 Gallery 同步覆盖跨语言平台默认、`idea://open` 和 `xcode://open`；skill 从 `0.7.14` 升级到 `0.7.15`，插件升级到 `0.22.36`
+
 ## [0.22.35] - 2026-08-06
 ### Added
 - html-report: 默认 `interactions` 组件新增右下角回到顶部按钮，滚动超过 360px 后显示，支持键盘焦点、移动端安全区和减少动态效果

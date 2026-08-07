@@ -2151,8 +2151,11 @@ main.rw-layout-wide {
         <h2>File Location</h2>
         <div class="gallery-inline">
           <a class="file-location file-link"
-             href="idea://open?file=/repo/demo/report/ReportBuilder.py&amp;line=128"
-             title="/repo/demo/report/ReportBuilder.py:128-146">ReportBuilder.py:128-146</a>
+             href="idea://open?file=/repo/demo/android/native/AndroidBridge.h&amp;line=128"
+             title="/repo/demo/android/native/AndroidBridge.h:128-146">AndroidBridge.h:128-146</a>
+          <a class="file-location file-link"
+             href="xcode://open?file=/repo/demo/ios/native/IOSBridge.h&amp;line=42"
+             title="/repo/demo/ios/native/IOSBridge.h:42-50">IOSBridge.h:42-50</a>
           <span class="path">relative/UnknownSource.kt:42</span>
         </div>
       </section>
@@ -2293,11 +2296,13 @@ main.rw-layout-wide {
       <section class="gallery-section" id="workspace">
         <h2>Review Workspace</h2>
         <section class="review-workspace" data-review-workspace data-workspace-id="component-gallery-workspace">
-  <div data-review-workspace-root><div class="rw-toolbar"><input class="rw-input rw-search" type="search" placeholder="筛选文件名、结论或路径" disabled /><select class="rw-input" disabled><option>全部结论</option></select><button class="rw-button is-active" type="button" disabled>同步滚动：开</button><button class="rw-button" type="button" disabled>只看差异：关</button><button class="rw-button" type="button" disabled>跳到参考行</button><span class="rw-toolbar-spacer"></span><span class="rw-progress">静态预览 · 1 个文件</span></div><div class="rw-body"><nav class="rw-file-nav" aria-label="文件列表"><div class="rw-file-item is-active"><span class="rw-file-name">ReportBuilder.py</span><span class="rw-file-sub"><span class="rw-status rw-tone-warning">已修改</span><span>gallery</span></span></div></nav><div class="rw-stage"><div class="rw-overview"><div class="rw-overview-top"><div><h3>ReportBuilder.py</h3><div class="rw-meta"><a class="file-location file-link path rw-path" href="idea://open?file=/repo/demo/report/ReportBuilder.py&amp;line=2" title="/repo/demo/report/ReportBuilder.py:2-3">ReportBuilder.py:2-3</a><span class="rw-status rw-tone-warning">已修改</span><span class="rw-relation">Before ≠ After</span></div></div><div class="rw-reference">参考行：2-3</div></div><p><b>结论：</b>修改后通过统一装配器生成报告。</p><p><b>处理：</b>核对组件声明与最终校验结果。</p></div><div class="rw-panes" style="--rw-pane-count:2"><div class="rw-code-pane"><header class="rw-pane-header"><div><span class="rw-pane-title">Before</span><span class="rw-pane-ref"> · 2 行</span></div><button class="rw-pane-copy" type="button" disabled>复制</button></header><div class="rw-code-scroll"><div class="rw-code-lines"><div class="rw-code-line rw-keep-line" data-line="1"><span class="rw-ln">1</span><span class="rw-src"><span class="tok-key">def</span> <span class="tok-fn">build</span>(html):</span></div>
-<div class="rw-code-line rw-mark-primary rw-focus-line rw-keep-line" data-line="2"><span class="rw-ln">2</span><span class="rw-src">    <span class="tok-key">return</span> html</span></div></div></div></div><div class="rw-code-pane"><header class="rw-pane-header"><div><span class="rw-pane-title">After</span><span class="rw-pane-ref"> · 3 行</span></div><button class="rw-pane-copy" type="button" disabled>复制</button></header><div class="rw-code-scroll"><div class="rw-code-lines"><div class="rw-code-line rw-keep-line" data-line="1"><span class="rw-ln">1</span><span class="rw-src"><span class="tok-key">def</span> <span class="tok-fn">build</span>(html):</span></div>
-<div class="rw-code-line rw-mark-primary rw-focus-line rw-keep-line" data-line="2"><span class="rw-ln">2</span><span class="rw-src">    assembled, _ = <span class="tok-fn">assemble_html</span>(html)</span></div>
-<div class="rw-code-line rw-mark-primary rw-keep-line" data-line="3"><span class="rw-ln">3</span><span class="rw-src">    <span class="tok-key">return</span> assembled</span></div></div></div></div></div><div class="rw-legend"><span class="rw-legend-item"><i class="rw-legend-dot rw-dot-focus"></i>参考行</span><span class="rw-legend-item"><i class="rw-legend-dot rw-dot-primary"></i>Before ↔ After 差异</span><span class="rw-legend-item"><i class="rw-legend-dot rw-dot-secondary"></i>补充差异</span></div></div></div></div>
-  <script type="application/json" data-review-workspace-data>{"workspaceId":"component-gallery-workspace","storageKey":"html-report-review-workspace:component-gallery-workspace","title":"Review Workspace","versions":[{"id":"before","label":"Before","jumpLabel":"Before","ref":""},{"id":"after","label":"After","jumpLabel":"After","ref":""}],"legend":{"focus":"参考行","primary":"Before ↔ After 差异","secondary":"补充差异"},"files":[{"id":"report-builder","filename":"ReportBuilder.py","path":"report/ReportBuilder.py","displayPath":"ReportBuilder.py:2-3","locationTitle":"/repo/demo/report/ReportBuilder.py:2-3","absolutePath":"/repo/demo/report/ReportBuilder.py","ideaHref":"idea://open?file=/repo/demo/report/ReportBuilder.py\u0026line=2","group":"gallery","status":{"id":"modified","label":"已修改","tone":"warning"},"relation":"Before ≠ After","conclusion":"修改后通过统一装配器生成报告。","action":"核对组件声明与最终校验结果。","reference":"参考行：2-3","versions":{"before":{"ref":"","language":"python","lines":["\u003cspan class=\"tok-key\"\u003edef\u003c/span\u003e \u003cspan class=\"tok-fn\"\u003ebuild\u003c/span\u003e(html):","    \u003cspan class=\"tok-key\"\u003ereturn\u003c/span\u003e html"],"marks":{"primary":[2],"secondary":[],"focus":[2],"context":[1,2]}},"after":{"ref":"","language":"python","lines":["\u003cspan class=\"tok-key\"\u003edef\u003c/span\u003e \u003cspan class=\"tok-fn\"\u003ebuild\u003c/span\u003e(html):","    assembled, _ = \u003cspan class=\"tok-fn\"\u003eassemble_html\u003c/span\u003e(html)","    \u003cspan class=\"tok-key\"\u003ereturn\u003c/span\u003e assembled"],"marks":{"primary":[2,3],"secondary":[],"focus":[2],"context":[1,2,3]}}}}]}</script>
+  <div data-review-workspace-root><div class="rw-toolbar"><input class="rw-input rw-search" type="search" placeholder="筛选文件名、结论或路径" disabled /><select class="rw-input" disabled><option>全部结论</option></select><button class="rw-button is-active" type="button" disabled>同步滚动：开</button><button class="rw-button" type="button" disabled>只看差异：关</button><button class="rw-button" type="button" disabled>跳到参考行</button><span class="rw-toolbar-spacer"></span><span class="rw-progress">静态预览 · 1 个文件</span></div><div class="rw-body"><nav class="rw-file-nav" aria-label="文件列表"><div class="rw-file-item is-active"><span class="rw-file-name">SharedReportBuilder.kt</span><span class="rw-file-sub"><span class="rw-status rw-tone-warning">已修改</span><span>gallery</span></span></div></nav><div class="rw-stage"><div class="rw-overview"><div class="rw-overview-top"><div><h3>SharedReportBuilder.kt</h3><div class="rw-meta"><a class="file-location file-link path rw-path" href="xcode://open?file=/repo/demo/ios/shared/SharedReportBuilder.kt&amp;line=2" title="/repo/demo/ios/shared/SharedReportBuilder.kt:2-3">SharedReportBuilder.kt:2-3</a><span class="rw-status rw-tone-warning">已修改</span><span class="rw-relation">Before ≠ After</span></div></div><div class="rw-reference">参考行：2-3</div></div><p><b>结论：</b>修改后通过统一装配器生成报告。</p><p><b>处理：</b>核对组件声明与最终校验结果。</p></div><div class="rw-panes" style="--rw-pane-count:2"><div class="rw-code-pane"><header class="rw-pane-header"><div><span class="rw-pane-title">Before</span><span class="rw-pane-ref"> · 3 行</span></div><button class="rw-pane-copy" type="button" disabled>复制</button></header><div class="rw-code-scroll"><div class="rw-code-lines"><div class="rw-code-line rw-keep-line" data-line="1"><span class="rw-ln">1</span><span class="rw-src"><span class="tok-key">fun</span> <span class="tok-fn">build</span>(html: <span class="tok-type">String</span>): <span class="tok-type">String</span> {</span></div>
+<div class="rw-code-line rw-mark-primary rw-focus-line rw-keep-line" data-line="2"><span class="rw-ln">2</span><span class="rw-src">    <span class="tok-key">return</span> html</span></div>
+<div class="rw-code-line rw-keep-line" data-line="3"><span class="rw-ln">3</span><span class="rw-src">}</span></div></div></div></div><div class="rw-code-pane"><header class="rw-pane-header"><div><span class="rw-pane-title">After</span><span class="rw-pane-ref"> · 4 行</span></div><button class="rw-pane-copy" type="button" disabled>复制</button></header><div class="rw-code-scroll"><div class="rw-code-lines"><div class="rw-code-line rw-keep-line" data-line="1"><span class="rw-ln">1</span><span class="rw-src"><span class="tok-key">fun</span> <span class="tok-fn">build</span>(html: <span class="tok-type">String</span>): <span class="tok-type">String</span> {</span></div>
+<div class="rw-code-line rw-mark-primary rw-focus-line rw-keep-line" data-line="2"><span class="rw-ln">2</span><span class="rw-src">    <span class="tok-key">val</span> assembled = <span class="tok-fn">assembleHtml</span>(html)</span></div>
+<div class="rw-code-line rw-mark-primary rw-keep-line" data-line="3"><span class="rw-ln">3</span><span class="rw-src">    <span class="tok-key">return</span> assembled</span></div>
+<div class="rw-code-line rw-keep-line" data-line="4"><span class="rw-ln">4</span><span class="rw-src">}</span></div></div></div></div></div><div class="rw-legend"><span class="rw-legend-item"><i class="rw-legend-dot rw-dot-focus"></i>参考行</span><span class="rw-legend-item"><i class="rw-legend-dot rw-dot-primary"></i>Before ↔ After 差异</span><span class="rw-legend-item"><i class="rw-legend-dot rw-dot-secondary"></i>补充差异</span></div></div></div></div>
+  <script type="application/json" data-review-workspace-data>{"workspaceId":"component-gallery-workspace","storageKey":"html-report-review-workspace:component-gallery-workspace","title":"Review Workspace","versions":[{"id":"before","label":"Before","jumpLabel":"Before","ref":""},{"id":"after","label":"After","jumpLabel":"After","ref":""}],"legend":{"focus":"参考行","primary":"Before ↔ After 差异","secondary":"补充差异"},"files":[{"id":"report-builder","filename":"SharedReportBuilder.kt","path":"ios/shared/SharedReportBuilder.kt","displayPath":"SharedReportBuilder.kt:2-3","locationTitle":"/repo/demo/ios/shared/SharedReportBuilder.kt:2-3","absolutePath":"/repo/demo/ios/shared/SharedReportBuilder.kt","ideKind":"xcode","ideLabel":"Xcode","ideHref":"xcode://open?file=/repo/demo/ios/shared/SharedReportBuilder.kt\u0026line=2","group":"gallery","status":{"id":"modified","label":"已修改","tone":"warning"},"relation":"Before ≠ After","conclusion":"修改后通过统一装配器生成报告。","action":"核对组件声明与最终校验结果。","reference":"参考行：2-3","versions":{"before":{"ref":"","language":"kotlin","lines":["\u003cspan class=\"tok-key\"\u003efun\u003c/span\u003e \u003cspan class=\"tok-fn\"\u003ebuild\u003c/span\u003e(html: \u003cspan class=\"tok-type\"\u003eString\u003c/span\u003e): \u003cspan class=\"tok-type\"\u003eString\u003c/span\u003e {","    \u003cspan class=\"tok-key\"\u003ereturn\u003c/span\u003e html","}"],"marks":{"primary":[2],"secondary":[],"focus":[2],"context":[1,2,3]}},"after":{"ref":"","language":"kotlin","lines":["\u003cspan class=\"tok-key\"\u003efun\u003c/span\u003e \u003cspan class=\"tok-fn\"\u003ebuild\u003c/span\u003e(html: \u003cspan class=\"tok-type\"\u003eString\u003c/span\u003e): \u003cspan class=\"tok-type\"\u003eString\u003c/span\u003e {","    \u003cspan class=\"tok-key\"\u003eval\u003c/span\u003e assembled = \u003cspan class=\"tok-fn\"\u003eassembleHtml\u003c/span\u003e(html)","    \u003cspan class=\"tok-key\"\u003ereturn\u003c/span\u003e assembled","}"],"marks":{"primary":[2,3],"secondary":[],"focus":[2],"context":[1,2,3,4]}}}}]}</script>
   <noscript><p>当前显示首文件静态快照；启用 JavaScript 后可切换文件和版本。</p></noscript>
 </section>
 <script data-review-workspace-runtime>
@@ -2316,6 +2321,16 @@ main.rw-layout-wide {
 
   function lineSet(values) {
     return new Set(Array.isArray(values) ? values : []);
+  }
+
+  function ideHref(file) {
+    // 新 runtime 优先读取 ideHref，并兼容历史报告中的 ideaHref
+    return file?.ideHref || file?.ideaHref || "";
+  }
+
+  function ideLabel(file) {
+    if (file?.ideLabel) return file.ideLabel;
+    return ideHref(file).startsWith("xcode://") ? "Xcode" : "IDEA";
   }
 
   function htmlToText(value) {
@@ -2416,7 +2431,7 @@ main.rw-layout-wide {
           <input class="rw-input rw-line-input" data-rw-role="jump-line" type="number"
             min="1" placeholder="行号" aria-label="跳转行号" />
           <button class="rw-button" data-rw-role="jump" type="button">跳转</button>
-          <button class="rw-button" data-rw-role="idea" type="button">IDEA 打开</button>
+          <button class="rw-button" data-rw-role="ide" type="button">IDE 打开</button>
           <button class="rw-button" data-rw-role="reviewed" type="button">标记已审阅</button>
           <span class="rw-toolbar-spacer"></span>
           <span class="rw-progress" data-rw-role="progress"></span>
@@ -2515,7 +2530,7 @@ main.rw-layout-wide {
       this.elements["jump-line"].addEventListener("keydown", event => {
         if (event.key === "Enter") this.jumpFromToolbar();
       });
-      this.elements.idea.addEventListener("click", () => this.openInIdea());
+      this.elements.ide.addEventListener("click", () => this.openInIde());
       this.elements.reviewed.addEventListener("click", () => this.toggleReviewed());
 
       this.mountPoint.querySelectorAll("[data-rw-copy-version]").forEach(button => {
@@ -2539,7 +2554,7 @@ main.rw-layout-wide {
       this.config.versions.forEach(version => this.renderLines(file, version));
       this.renderNav();
       this.updateReviewed();
-      this.updateIdeaButton(file);
+      this.updateIdeButton(file);
       if (jump) requestAnimationFrame(() => this.jumpToFocus());
     }
 
@@ -2552,13 +2567,14 @@ main.rw-layout-wide {
       titleGroup.appendChild(createElement("h3", "", file.filename));
 
       const meta = createElement("div", "rw-meta");
-      const path = createElement(file.ideaHref ? "a" : "span", "path rw-path", file.displayPath || file.path);
+      const href = ideHref(file);
+      const path = createElement(href ? "a" : "span", "path rw-path", file.displayPath || file.path);
       path.title = file.locationTitle || file.absolutePath || file.path || "";
-      if (file.ideaHref) {
+      if (href) {
         path.classList.add("file-link");
         // 有明确起始行时启用统一 IDE 定位组件；短标签与完整 title 均来自构建期校验数据。
-        if (file.ideaHref.includes("&line=")) path.classList.add("file-location");
-        path.href = file.ideaHref;
+        if (href.includes("&line=")) path.classList.add("file-location");
+        path.href = href;
       }
       meta.appendChild(path);
 
@@ -2733,14 +2749,18 @@ main.rw-layout-wide {
       }
     }
 
-    updateIdeaButton(file) {
-      this.elements.idea.disabled = !file.ideaHref;
-      this.elements.idea.title = file.ideaHref ? "在 IDEA 中打开当前文件" : "当前文件没有绝对路径";
+    updateIdeButton(file) {
+      const href = ideHref(file);
+      const label = ideLabel(file);
+      this.elements.ide.disabled = !href;
+      this.elements.ide.textContent = `${label} 打开`;
+      this.elements.ide.title = href ? `在 ${label} 中打开当前文件` : "当前文件没有绝对路径";
     }
 
-    openInIdea() {
+    openInIde() {
       const file = this.filesById.get(this.currentId);
-      if (file?.ideaHref) window.location.href = file.ideaHref;
+      const href = ideHref(file);
+      if (href) window.location.href = href;
     }
 
     toggleReviewed() {

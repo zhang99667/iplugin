@@ -139,14 +139,19 @@ HTML 报告是交付物，不只是桌面浏览器截图。生成时必须满足
 - **结构先于样式**：源码定位必须在一个元素里同时表达文件和行范围，不把路径与行号拆成两个 chip。
 - 可见标签默认只显示 `文件名:起始行-结束行`，例如 `FlowVideoHelper.kt:1050-1070`。单行定位显示 `FlowVideoHelper.kt:1050`。
 - 同页有同名文件、确实需要消歧时最多增加一级父目录，例如 `flowvideo/FlowVideoHelper.kt:1050-1070`；不要显示完整仓库路径，也不要用多级 `...` 路径撑宽正文。
-- 完整绝对路径和完整行范围放入 `title`。`href` 使用 `idea://open?file={encodedAbsolutePath}&line={startLine}`，范围跳到起始行；HTML 属性里的 `&` 写成 `&amp;`。
+- 先确定技术方案平台：Android 技术方案内所有文件统一使用 IDEA，iOS 技术方案内所有文件统一使用 Xcode，不根据单个文件的语言或扩展名切换。混合端方案按文件所属端显式选择；没有平台上下文时兼容回退 IDEA。
+- 完整绝对路径和完整行范围放入 `title`。IDEA 的 `href` 使用 `idea://open?file={encodedAbsolutePath}&line={startLine}`，Xcode 使用当前插件约定的 `xcode://open?file={encodedAbsolutePath}&line={startLine}`；范围都跳到起始行，HTML 属性里的 `&` 写成 `&amp;`。
 - 可见标签、`title` 和 `href` 的文件与起始行必须一致。路径包含空格、`#`、`?`、`&` 或非 ASCII 字符时，对 `file=` 参数做 URL 编码。
-- 只能拿到相对路径时使用不可点击的 `.path` 文本并保留必要定位，不编造不可用的 IDEA 链接。
+- 只能拿到相对路径时使用不可点击的 `.path` 文本并保留必要定位，不编造不可用的 IDE 链接。
 
 ```html
 <a class="file-location file-link"
-   href="idea://open?file=/repo/business/flowvideo/FlowVideoHelper.kt&amp;line=1050"
-   title="/repo/business/flowvideo/FlowVideoHelper.kt:1050-1070">FlowVideoHelper.kt:1050-1070</a>
+   href="idea://open?file=/repo/android/native/AndroidBridge.h&amp;line=1050"
+   title="/repo/android/native/AndroidBridge.h:1050-1070">AndroidBridge.h:1050-1070</a>
+
+<a class="file-location file-link"
+   href="xcode://open?file=/repo/ios/native/IOSBridge.h&amp;line=42"
+   title="/repo/ios/native/IOSBridge.h:42-50">IOSBridge.h:42-50</a>
 ```
 
 完整结构和校验规则见 `references/component-contracts.md` 的“IDE 文件定位”。

@@ -25,6 +25,7 @@ RUNTIME_PATH = SKILL_ROOT / "assets" / "review-workspace" / "workspace.js"
 ID_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 MARK_NAMES = ("primary", "secondary", "focus", "context")
 STATUS_TONES = {"neutral", "info", "success", "warning", "danger"}
+IDE_LABELS = {"idea": "IDEA", "xcode": "Xcode"}
 
 
 class SpecError(ValueError):
@@ -54,6 +55,27 @@ def optional_text(value: Any, default: str = "") -> str:
     if isinstance(value, str) and value.strip():
         return value.strip()
     return default
+
+
+def normalize_ide(value: Any, label: str) -> str:
+    """规范化可选 IDE 标识，空值表示继续使用技术方案默认值"""
+
+    if value is None or value == "":
+        return ""
+    ide = require_text(value, label).lower()
+    if ide not in IDE_LABELS:
+        raise SpecError(f"{label} 必须是 {', '.join(sorted(IDE_LABELS))} 之一")
+    return ide
+
+
+def optional_positive_line(value: Any, label: str) -> int | None:
+    """校验可选跳转行，显式排除 Python 中与整数相等的布尔值"""
+
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise SpecError(f"{label} 必须是正整数")
+    return value
 
 
 def normalize_lines(source: str) -> list[str]:
@@ -94,10 +116,10 @@ def default_context(marks: dict[str, list[int]], line_count: int, radius: int = 
     return sorted(context)
 
 
-def build_idea_href(absolute_path: str, line: int | None) -> str:
+def build_ide_href(absolute_path: str, line: int | None, ide: str) -> str:
     if not absolute_path:
         return ""
-    href = f"idea://open?file={quote(absolute_path, safe='/')}"
+    href = f"{ide}://open?file={quote(absolute_path, safe='/')}"
     if line:
         href += f"&line={line}"
     return href
@@ -193,6 +215,7 @@ def build_file(
     index: int,
     versions: list[dict[str, str]],
     spec_dir: Path,
+    default_ide: str,
 ) -> dict[str, Any]:
     label = f"files[{index}]"
     file_id = require_id(raw.get("id"), f"{label}.id")
@@ -211,7 +234,7 @@ def build_file(
         raise SpecError(f"{label}.versions 与顶层 versions 不一致：" + "；".join(details))
 
     absolute_path = optional_text(raw.get("absolute_path"))
-    # idea:// 必须拿到可直接定位的绝对路径；相对路径只能作为普通文本展示。
+    # IDE deep link 必须拿到可直接定位的绝对路径；相对路径只能作为普通文本展示
     if absolute_path and not Path(absolute_path).is_absolute():
         raise SpecError(f"{label}.absolute_path 必须是绝对路径")
 
@@ -225,9 +248,15 @@ def build_file(
         for version in versions
     }
 
-    focus_line = raw.get("idea_line")
-    if focus_line is not None and (not isinstance(focus_line, int) or isinstance(focus_line, bool) or focus_line < 1):
-        raise SpecError(f"{label}.idea_line 必须是正整数")
+    explicit_ide = normalize_ide(raw.get("ide"), f"{label}.ide")
+    ide = explicit_ide or default_ide or "idea"
+
+    focus_line = optional_positive_line(raw.get("ide_line"), f"{label}.ide_line")
+    legacy_idea_line = optional_positive_line(raw.get("idea_line"), f"{label}.idea_line")
+    if focus_line is not None and legacy_idea_line is not None and focus_line != legacy_idea_line:
+        raise SpecError(f"{label}.ide_line 与兼容字段 idea_line 不一致")
+    if focus_line is None:
+        focus_line = legacy_idea_line
     if focus_line is None:
         focus_line = first_focus_line(raw_versions, version_ids)
 
@@ -246,7 +275,9 @@ def build_file(
         "_displayPathExplicit": bool(explicit_display_path),
         "locationTitle": location_title,
         "absolutePath": absolute_path,
-        "ideaHref": build_idea_href(absolute_path, focus_line),
+        "ideKind": ide,
+        "ideLabel": IDE_LABELS[ide],
+        "ideHref": build_ide_href(absolute_path, focus_line, ide),
         "group": optional_text(raw.get("group"), optional_text(raw.get("repo"))),
         "status": build_status(raw.get("status"), f"{label}.status"),
         "relation": optional_text(raw.get("relation"), "版本关系未标注"),
@@ -260,6 +291,7 @@ def build_file(
 def build_config(spec: dict[str, Any], spec_path: Path) -> dict[str, Any]:
     workspace_id = require_id(spec.get("workspace_id"), "workspace_id")
     versions = read_versions(spec)
+    default_ide = normalize_ide(spec.get("default_ide"), "default_ide")
     files_raw = spec.get("files")
     if not isinstance(files_raw, list) or not files_raw:
         raise SpecError("files 必须是非空数组")
@@ -267,7 +299,13 @@ def build_config(spec: dict[str, Any], spec_path: Path) -> dict[str, Any]:
     files: list[dict[str, Any]] = []
     seen_files: set[str] = set()
     for index, raw in enumerate(files_raw, start=1):
-        item = build_file(require_object(raw, f"files[{index}]"), index, versions, spec_path.parent)
+        item = build_file(
+            require_object(raw, f"files[{index}]"),
+            index,
+            versions,
+            spec_path.parent,
+            default_ide,
+        )
         if item["id"] in seen_files:
             raise SpecError(f"files id 重复：{item['id']}")
         seen_files.add(item["id"])
@@ -347,9 +385,9 @@ def render_static_mount(config: dict[str, Any]) -> str:
 
     current = config["files"][0]
     status = current["status"]
-    path_tag = "a" if current["ideaHref"] else "span"
-    href = f' href="{html.escape(current["ideaHref"], quote=True)}"' if current["ideaHref"] else ""
-    path_classes = "file-location file-link path rw-path" if "&line=" in current["ideaHref"] else "path rw-path"
+    path_tag = "a" if current["ideHref"] else "span"
+    href = f' href="{html.escape(current["ideHref"], quote=True)}"' if current["ideHref"] else ""
+    path_classes = "file-location file-link path rw-path" if "&line=" in current["ideHref"] else "path rw-path"
     nav_items = []
     for index, file in enumerate(config["files"]):
         file_status = file["status"]

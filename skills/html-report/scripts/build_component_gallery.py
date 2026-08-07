@@ -73,16 +73,20 @@ def sample_workspace() -> str:
 
     with tempfile.TemporaryDirectory(prefix="html-report-gallery-") as directory:
         temp_dir = Path(directory)
-        before_path = temp_dir / "ReportBuilder.before.py"
-        after_path = temp_dir / "ReportBuilder.after.py"
-        before_path.write_text("def build(html):\n    return html\n", encoding="utf-8")
+        before_path = temp_dir / "SharedReportBuilder.before.kt"
+        after_path = temp_dir / "SharedReportBuilder.after.kt"
+        before_path.write_text(
+            "fun build(html: String): String {\n    return html\n}\n",
+            encoding="utf-8",
+        )
         after_path.write_text(
-            "def build(html):\n    assembled, _ = assemble_html(html)\n    return assembled\n",
+            "fun build(html: String): String {\n    val assembled = assembleHtml(html)\n    return assembled\n}\n",
             encoding="utf-8",
         )
         spec: dict[str, Any] = {
             "workspace_id": "component-gallery-workspace",
             "title": "Review Workspace",
+            "default_ide": "xcode",
             "versions": [
                 {"id": "before", "label": "Before", "jump_label": "Before"},
                 {"id": "after", "label": "After", "jump_label": "After"},
@@ -95,11 +99,11 @@ def sample_workspace() -> str:
             "files": [
                 {
                     "id": "report-builder",
-                    "filename": "ReportBuilder.py",
-                    "path": "report/ReportBuilder.py",
-                    "display_path": "ReportBuilder.py:2-3",
-                    "absolute_path": "/repo/demo/report/ReportBuilder.py",
-                    "idea_line": 2,
+                    "filename": "SharedReportBuilder.kt",
+                    "path": "ios/shared/SharedReportBuilder.kt",
+                    "display_path": "SharedReportBuilder.kt:2-3",
+                    "absolute_path": "/repo/demo/ios/shared/SharedReportBuilder.kt",
+                    "ide_line": 2,
                     "group": "gallery",
                     "status": {"id": "modified", "label": "已修改", "tone": "warning"},
                     "relation": "Before ≠ After",
@@ -109,12 +113,12 @@ def sample_workspace() -> str:
                     "versions": {
                         "before": {
                             "source_path": str(before_path),
-                            "language": "python",
+                            "language": "kotlin",
                             "marks": {"primary": [2], "secondary": [], "focus": [2]},
                         },
                         "after": {
                             "source_path": str(after_path),
-                            "language": "python",
+                            "language": "kotlin",
                             "marks": {"primary": [2, 3], "secondary": [], "focus": [2]},
                         },
                     },

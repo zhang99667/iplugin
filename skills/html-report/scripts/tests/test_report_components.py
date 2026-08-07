@@ -1033,6 +1033,53 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn("file-location", components)
         self.assertEqual([], self.validate_html(assembled))
 
+    def test_file_location_accepts_xcode_target(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="xcode://open?file=/repo/ios/My%20View.swift&amp;line=42"
+   title="/repo/ios/My View.swift:42-50">My View.swift:42-50</a>
+"""
+        assembled, components = assemble_report.assemble_html(self.report_html("", body))
+
+        self.assertIn("file-location", components)
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_file_location_rejects_unsupported_ide_scheme(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="vscode://open?file=/repo/ios/FeedView.swift&amp;line=42"
+   title="/repo/ios/FeedView.swift:42">FeedView.swift:42</a>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("缺少 IDEA/Xcode 文件和起始行参数" in error for error in errors))
+
+    def test_file_location_rejects_zero_line(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="xcode://open?file=/repo/ios/FeedView.swift&amp;line=0"
+   title="/repo/ios/FeedView.swift:0">FeedView.swift:0</a>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("缺少 IDEA/Xcode 文件和起始行参数" in error for error in errors))
+
+    def test_file_location_rejects_non_ascii_digit_line(self) -> None:
+        body = """
+<a class="file-location file-link"
+   href="xcode://open?file=/repo/ios/FeedView.swift&amp;line=%C2%B2"
+   title="/repo/ios/FeedView.swift:2">FeedView.swift:2</a>
+"""
+        assembled, _ = assemble_report.assemble_html(self.report_html("", body))
+
+        errors = self.validate_html(assembled)
+
+        self.assertTrue(any("缺少 IDEA/Xcode 文件和起始行参数" in error for error in errors))
+
     def test_file_location_rejects_visible_full_path(self) -> None:
         body = """
 <a class="file-location file-link"
@@ -1108,6 +1155,7 @@ class ReportComponentTest(unittest.TestCase):
             spec_path = temp_path / "workspace.json"
             spec = {
                 "workspace_id": "file-location-eval",
+                "default_ide": "idea",
                 "versions": [
                     {"id": "before", "label": "Before"},
                     {"id": "after", "label": "After"},
@@ -1133,10 +1181,304 @@ class ReportComponentTest(unittest.TestCase):
             assembled, components = assemble_report.assemble_html(self.report_html("", fragment))
 
         self.assertIn("file-location", components)
+        self.assertEqual("idea", config["files"][0]["ideKind"])
+        self.assertEqual("IDEA", config["files"][0]["ideLabel"])
+        self.assertTrue(config["files"][0]["ideHref"].startswith("idea://open?"))
+        self.assertNotIn("ideaHref", config["files"][0])
         self.assertIn(">FlowVideoHelper.kt:2</a>", assembled)
         self.assertIn('title="/repo/business/flowvideo/FlowVideoHelper.kt:2"', assembled)
         self.assertNotIn(">/repo/business/flowvideo/FlowVideoHelper.kt:2</a>", assembled)
+        self.assertIn('data-rw-role="ide"', assembled)
+        self.assertIn("openInIde()", assembled)
         self.assertEqual([], self.validate_html(assembled))
+
+    def test_review_workspace_uses_xcode_for_ios_solution_regardless_of_language(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "SharedPresenter.kt"
+            source_path.write_text("class SharedPresenter {\n    val title = \"feed\"\n}\n", encoding="utf-8")
+            spec_path = temp_path / "workspace.json"
+            spec = {
+                "workspace_id": "xcode-location-eval",
+                "default_ide": "xcode",
+                "versions": [
+                    {"id": "before", "label": "Before"},
+                    {"id": "after", "label": "After"},
+                ],
+                "files": [
+                    {
+                        "id": "shared-presenter",
+                        "filename": "SharedPresenter.kt",
+                        "absolute_path": "/repo/ios/shared/SharedPresenter.kt",
+                        "ide_line": 2,
+                        "versions": {
+                            "before": {"source_path": str(source_path), "language": "kotlin", "marks": {"focus": [2]}},
+                            "after": {"source_path": str(source_path), "language": "kotlin", "marks": {"focus": [2]}},
+                        },
+                    }
+                ],
+            }
+
+            config = build_review_workspace.build_config(spec, spec_path)
+            fragment = build_review_workspace.render_fragment(config)
+            assembled, _ = assemble_report.assemble_html(self.report_html("", fragment))
+
+        file_config = config["files"][0]
+        self.assertEqual("xcode", file_config["ideKind"])
+        self.assertEqual("Xcode", file_config["ideLabel"])
+        self.assertEqual(
+            "xcode://open?file=/repo/ios/shared/SharedPresenter.kt&line=2",
+            file_config["ideHref"],
+        )
+        self.assertNotIn("ideaHref", file_config)
+        self.assertIn("Xcode", assembled)
+        self.assertEqual([], self.validate_html(assembled))
+
+    def test_review_workspace_uses_solution_default_and_file_override(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            kotlin_path = temp_path / "FeedRepository.kt"
+            swift_path = temp_path / "FeedView.swift"
+            kotlin_path.write_text("class FeedRepository\n", encoding="utf-8")
+            swift_path.write_text("struct FeedView {}\n", encoding="utf-8")
+            spec = {
+                "workspace_id": "product-default-ide",
+                "default_ide": "xcode",
+                "versions": [
+                    {"id": "before", "label": "Before"},
+                    {"id": "after", "label": "After"},
+                ],
+                "files": [
+                    {
+                        "id": "kotlin-in-ios-solution",
+                        "filename": "FeedRepository.kt",
+                        "absolute_path": "/repo/ios/FeedRepository.kt",
+                        "versions": {
+                            "before": {"source_path": str(kotlin_path), "language": "kotlin"},
+                            "after": {"source_path": str(kotlin_path), "language": "kotlin"},
+                        },
+                    },
+                    {
+                        "id": "idea-override",
+                        "filename": "FeedView.swift",
+                        "absolute_path": "/repo/android/FeedView.swift",
+                        "ide": "idea",
+                        "versions": {
+                            "before": {"source_path": str(swift_path), "language": "swift"},
+                            "after": {"source_path": str(swift_path), "language": "swift"},
+                        },
+                    },
+                ],
+            }
+
+            config = build_review_workspace.build_config(spec, temp_path / "workspace.json")
+
+        self.assertEqual("xcode", config["files"][0]["ideKind"])
+        self.assertEqual("idea", config["files"][1]["ideKind"])
+
+    def test_review_workspace_uses_android_default_for_swift_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "GeneratedBridge.swift"
+            source_path.write_text("struct GeneratedBridge {}\n", encoding="utf-8")
+            spec = {
+                "workspace_id": "android-platform-default",
+                "default_ide": "idea",
+                "versions": [
+                    {"id": "before", "label": "Before"},
+                    {"id": "after", "label": "After"},
+                ],
+                "files": [
+                    {
+                        "id": "generated-bridge",
+                        "filename": "GeneratedBridge.swift",
+                        "absolute_path": "/repo/android/GeneratedBridge.swift",
+                        "versions": {
+                            "before": {"source_path": str(source_path), "language": "swift"},
+                            "after": {"source_path": str(source_path), "language": "swift"},
+                        },
+                    }
+                ],
+            }
+
+            config = build_review_workspace.build_config(spec, temp_path / "workspace.json")
+
+        self.assertEqual("idea", config["files"][0]["ideKind"])
+
+    def test_review_workspace_falls_back_to_idea_without_platform_context(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "FallbackView.swift"
+            source_path.write_text("struct FallbackView {}\n", encoding="utf-8")
+            spec = {
+                "workspace_id": "legacy-idea-fallback",
+                "versions": [
+                    {"id": "before", "label": "Before"},
+                    {"id": "after", "label": "After"},
+                ],
+                "files": [
+                    {
+                        "id": "fallback-view",
+                        "filename": "FallbackView.swift",
+                        "absolute_path": "/repo/ios/FallbackView.swift",
+                        "versions": {
+                            "before": {"source_path": str(source_path), "language": "swift"},
+                            "after": {"source_path": str(source_path), "language": "swift"},
+                        },
+                    }
+                ],
+            }
+
+            config = build_review_workspace.build_config(spec, temp_path / "workspace.json")
+
+        self.assertEqual("idea", config["files"][0]["ideKind"])
+
+    def test_review_workspace_rejects_boolean_legacy_line_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "FeedView.swift"
+            source_path.write_text("struct FeedView {}\n", encoding="utf-8")
+            spec = {
+                "workspace_id": "invalid-line-alias",
+                "versions": [
+                    {"id": "before", "label": "Before"},
+                    {"id": "after", "label": "After"},
+                ],
+                "files": [
+                    {
+                        "id": "feed-view",
+                        "filename": "FeedView.swift",
+                        "ide_line": 1,
+                        "idea_line": True,
+                        "versions": {
+                            "before": {"source_path": str(source_path), "language": "swift"},
+                            "after": {"source_path": str(source_path), "language": "swift"},
+                        },
+                    }
+                ],
+            }
+
+            with self.assertRaisesRegex(build_review_workspace.SpecError, "idea_line 必须是正整数"):
+                build_review_workspace.build_config(spec, temp_path / "workspace.json")
+
+    def test_review_workspace_rejects_mismatched_ide_metadata(self) -> None:
+        pack = {
+            "workspaceId": "mismatched-ide",
+            "storageKey": "html-report-review-workspace:mismatched-ide",
+            "versions": [{"id": "before", "label": "Before"}, {"id": "after", "label": "After"}],
+            "files": [
+                {
+                    "id": "feed-view",
+                    "filename": "FeedView.swift",
+                    "displayPath": "FeedView.swift:2",
+                    "locationTitle": "/repo/ios/FeedView.swift:2",
+                    "absolutePath": "/repo/ios/FeedView.swift",
+                    "ideKind": "xcode",
+                    "ideLabel": "Xcode",
+                    "ideHref": "idea://open?file=/repo/ios/FeedView.swift&line=2",
+                    "versions": {
+                        "before": {
+                            "lines": ["struct FeedView {}"],
+                            "marks": {"primary": [], "secondary": [], "focus": [], "context": [1]},
+                        },
+                        "after": {
+                            "lines": ["struct FeedView {}"],
+                            "marks": {"primary": [], "secondary": [], "focus": [], "context": [1]},
+                        },
+                    },
+                }
+            ],
+        }
+
+        errors = check_html_report.check_review_workspace_pack(pack, 1, "")
+
+        self.assertTrue(any("ideKind 与 ideHref 协议不一致" in error for error in errors))
+
+        pack["files"][0]["ideHref"] = ""
+        pack["files"][0]["ideLabel"] = "IDEA"
+        errors = check_html_report.check_review_workspace_pack(pack, 1, "")
+
+        self.assertTrue(any("ideLabel 与 ideKind 不一致" in error for error in errors))
+
+    def test_review_workspace_checker_rejects_mismatched_location_metadata(self) -> None:
+        marks = {"primary": [], "secondary": [], "focus": [], "context": [1]}
+        pack = {
+            "workspaceId": "mismatched-location",
+            "storageKey": "html-report-review-workspace:mismatched-location",
+            "versions": [{"id": "before", "label": "Before"}, {"id": "after", "label": "After"}],
+            "files": [
+                {
+                    "id": "first",
+                    "filename": "First.kt",
+                    "displayPath": "First.kt:1",
+                    "locationTitle": "/repo/First.kt:1",
+                    "absolutePath": "/repo/First.kt",
+                    "ideKind": "xcode",
+                    "ideLabel": "Xcode",
+                    "ideHref": "xcode://open?file=/repo/First.kt&line=1",
+                    "versions": {
+                        "before": {"lines": ["class First"], "marks": marks},
+                        "after": {"lines": ["class First"], "marks": marks},
+                    },
+                },
+                {
+                    "id": "second",
+                    "filename": "Second.kt",
+                    "displayPath": "Second.kt:2",
+                    "locationTitle": "/repo/Second.kt:2",
+                    "absolutePath": "/repo/Second.kt",
+                    "ideKind": "xcode",
+                    "ideLabel": "Xcode",
+                    "ideHref": "xcode://open?file=/repo/Other.kt&line=2",
+                    "versions": {
+                        "before": {"lines": ["class Second"], "marks": marks},
+                        "after": {"lines": ["class Second"], "marks": marks},
+                    },
+                },
+            ],
+        }
+
+        errors = check_html_report.check_review_workspace_pack(pack, 1, "")
+
+        self.assertTrue(any("ideHref 与 absolutePath 不一致" in error for error in errors))
+
+        pack["files"][1]["ideHref"] = "xcode://open?file=/repo/Second.kt&line=99"
+        errors = check_html_report.check_review_workspace_pack(pack, 1, "")
+
+        self.assertTrue(any("ideHref 与 locationTitle 不一致" in error for error in errors))
+        self.assertTrue(any("ideHref 与 displayPath 不一致" in error for error in errors))
+
+    def test_review_workspace_checker_accepts_legacy_idea_href(self) -> None:
+        marks = {"primary": [], "secondary": [], "focus": [], "context": [1]}
+        pack = {
+            "workspaceId": "legacy-idea-href",
+            "storageKey": "html-report-review-workspace:legacy-idea-href",
+            "versions": [{"id": "before", "label": "Before"}, {"id": "after", "label": "After"}],
+            "files": [
+                {
+                    "id": "legacy-file",
+                    "filename": "Legacy.kt",
+                    "displayPath": "Legacy.kt:1",
+                    "locationTitle": "/repo/Legacy.kt:1",
+                    "absolutePath": "/repo/Legacy.kt",
+                    "ideaHref": "idea://open?file=/repo/Legacy.kt&line=1",
+                    "versions": {
+                        "before": {"lines": ["class Legacy"], "marks": marks},
+                        "after": {"lines": ["class Legacy"], "marks": marks},
+                    },
+                }
+            ],
+        }
+
+        self.assertEqual([], check_html_report.check_review_workspace_pack(pack, 1, ""))
+
+        pack["files"][0]["ideaHref"] = "idea://open?file=/repo/Legacy.kt&line=%C2%B2"
+        errors = check_html_report.check_review_workspace_pack(pack, 1, "")
+        self.assertTrue(any("ideHref 的 line 必须是正整数" in error for error in errors))
+
+        pack["files"][0]["ideaHref"] = []
+        errors = check_html_report.check_review_workspace_pack(pack, 1, "")
+        self.assertTrue(any("ideaHref 必须是字符串" in error for error in errors))
 
     def test_sortable_table_uses_semantic_button_and_runtime(self) -> None:
         body = """

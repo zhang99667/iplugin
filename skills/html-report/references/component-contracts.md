@@ -23,7 +23,7 @@
 | `base` | 默认 | 无 | 完整正文 |
 | `interactions` | 默认 | `base` | `<details>` 原生可用；只失去回到顶部增强 |
 | `table` | `.table-wrap` | `base` | 普通表格可读、可横向滚动 |
-| `file-location` | `.file-location` / `.file-link` | `base` | `idea://` 链接仍可点击 |
+| `file-location` | `.file-location` / `.file-link` | `base` | IDEA / Xcode 链接仍可点击 |
 | `code-block` | `.code-wrap` / `.ascii-diagram` | `base`、`interactions` | 代码仍可选中；只失去复制按钮增强 |
 | `diff-viewer` | `.diff-viewer` | `code-block` | 完整 diff 表格可读 |
 | `media` | `.media-evidence` / `.media-frame` | `base` | 图片和视频仍可直接查看 |
@@ -61,10 +61,18 @@
 可见标签固定为 `文件名:起始行-结束行`；只有同页出现同名文件、确实需要消歧时，才增加
 一级父目录。完整路径只保留在 `href` 和 `title`，避免仓库路径撑破正文。
 
+选择协议时先确定技术方案平台：Android 技术方案内所有文件统一使用 IDEA，iOS 技术方案内
+所有文件统一使用 Xcode，不按单个文件语言或扩展名切换。混合端方案按文件所属端显式选择；
+没有平台上下文时兼容回退 IDEA。
+
 ```html
 <a class="file-location file-link"
-   href="idea://open?file=/repo/business/flowvideo/FlowVideoHelper.kt&amp;line=1050"
-   title="/repo/business/flowvideo/FlowVideoHelper.kt:1050-1070">FlowVideoHelper.kt:1050-1070</a>
+   href="idea://open?file=/repo/android/native/AndroidBridge.h&amp;line=1050"
+   title="/repo/android/native/AndroidBridge.h:1050-1070">AndroidBridge.h:1050-1070</a>
+
+<a class="file-location file-link"
+   href="xcode://open?file=/repo/ios/native/IOSBridge.h&amp;line=42"
+   title="/repo/ios/native/IOSBridge.h:42-50">IOSBridge.h:42-50</a>
 ```
 
 同名文件消歧示例：
@@ -78,7 +86,7 @@ flowvideo/FlowVideoHelper.kt:1050-1070
 - 行范围跳转到起始行，展示和 `title` 保留完整范围。
 - `href` 的文件路径、起始行必须与 `title` 一致。
 - 短标签的文件名、父目录和行范围必须与完整定位一致。
-- 没有绝对路径时使用不可点击的 `.path` 文本，不编造 `idea://` 链接。
+- 没有绝对路径时使用不可点击的 `.path` 文本，不编造 IDE 链接。
 
 ## 5. 代码和 Diff
 

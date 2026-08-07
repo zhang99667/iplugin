@@ -1,6 +1,6 @@
 ---
 name: html-report
-version: 0.7.14
+version: 0.7.15
 tags:
   - report
   - html
@@ -93,6 +93,7 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - 多版本 Review Workspace 只在完整源码关系确实影响判断时加入，限制为 2 到 3 个版本；数据必须由 `build_review_workspace.py` 做行号校验、静态高亮和 raw-text 安全转义。
 - 普通表格必须放进带统一圆角裁切的 `.table-wrap`，表头和单元格显示完整 1px 网格线；只画横向底线不算合格。Diff viewer 自带 `.diff-table` 专用样式，不继承普通表格网格线。
 - 源码定位链接默认只显示 `文件名:起始行-结束行`；同名文件最多增加一级父目录。`href` 和 `title` 保留完整路径及起始行，禁止把完整仓库路径直接铺在正文中。
+- 生成源码定位链接前先确定技术方案平台：Android 技术方案内的所有文件统一使用 IDEA，iOS 技术方案内的所有文件统一使用 Xcode，不再根据单个文件的语言或扩展名切换。混合端方案按文件所属端显式选择；没有平台上下文时兼容回退 IDEA。IDEA 使用 `idea://open?file=...&line=...`，Xcode 使用当前插件约定的 `xcode://open?file=...&line=...`。
 - 媒体证据图片必须以原图链接作为无 JS 回退，并通过 `image-lightbox` 组件支持点击放大；视频继续使用原生 controls，不进入图片灯箱。
 - 所有经装配器生成的新报告默认包含右下角回到顶部按钮；短页面不显示，禁用 JS 时只失去该增强，不影响正文阅读。
 
@@ -110,5 +111,5 @@ SKILL.md 只保留触发、决策和执行路线。生成报告时按需要读�
 - Markdown 来源中的反引号行内代码必须渲染成 `<code>...</code>`，例如 `` `d` `` 或 `` `support_full_screen` `` 不能作为原始反引号文本留在 HTML 正文里。
 - 涉及代码新增、删除或修改时，必须用清晰的变更标识说明每处是新增、删除、修改还是上下文；真实 unified diff 必须用 `scripts/highlight_code.py --lang diff --diff-view` 生成 `.diff-card.diff-viewer`，并原样嵌入输出片段，不要手写 diff 表格、不要拆成普通 `<pre>`、不要把 diff 降级成 `language-diff` 或 `language-text` 代码块。输入包含多个文件时，脚本必须输出每文件一个带 `.diff-file` 标题的卡片。
 - 宽表格、代码块、ASCII 图和长路径必须在窄屏/分屏下可横向滚动或换行，不允许把正文撑出视口。
-- IDE 文件定位链接使用短标签，完整路径只放在 `href` 和 `title`；没有绝对路径时保留不可点击的短路径文本，不编造跳转。
+- IDE 文件定位链接使用短标签，完整路径只放在 `href` 和 `title`；Android 技术方案统一使用 IDEA，iOS 技术方案统一使用 Xcode，不按源码语言切换；没有绝对路径时保留不可点击的短路径文本，不编造跳转。
 - 如果用户指定其他视觉风格，以用户的新要求为准。

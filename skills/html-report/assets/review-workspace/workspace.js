@@ -15,6 +15,16 @@
     return new Set(Array.isArray(values) ? values : []);
   }
 
+  function ideHref(file) {
+    // 新 runtime 优先读取 ideHref，并兼容历史报告中的 ideaHref
+    return file?.ideHref || file?.ideaHref || "";
+  }
+
+  function ideLabel(file) {
+    if (file?.ideLabel) return file.ideLabel;
+    return ideHref(file).startsWith("xcode://") ? "Xcode" : "IDEA";
+  }
+
   function htmlToText(value) {
     const container = document.createElement("div");
     container.innerHTML = value || "";
@@ -113,7 +123,7 @@
           <input class="rw-input rw-line-input" data-rw-role="jump-line" type="number"
             min="1" placeholder="行号" aria-label="跳转行号" />
           <button class="rw-button" data-rw-role="jump" type="button">跳转</button>
-          <button class="rw-button" data-rw-role="idea" type="button">IDEA 打开</button>
+          <button class="rw-button" data-rw-role="ide" type="button">IDE 打开</button>
           <button class="rw-button" data-rw-role="reviewed" type="button">标记已审阅</button>
           <span class="rw-toolbar-spacer"></span>
           <span class="rw-progress" data-rw-role="progress"></span>
@@ -212,7 +222,7 @@
       this.elements["jump-line"].addEventListener("keydown", event => {
         if (event.key === "Enter") this.jumpFromToolbar();
       });
-      this.elements.idea.addEventListener("click", () => this.openInIdea());
+      this.elements.ide.addEventListener("click", () => this.openInIde());
       this.elements.reviewed.addEventListener("click", () => this.toggleReviewed());
 
       this.mountPoint.querySelectorAll("[data-rw-copy-version]").forEach(button => {
@@ -236,7 +246,7 @@
       this.config.versions.forEach(version => this.renderLines(file, version));
       this.renderNav();
       this.updateReviewed();
-      this.updateIdeaButton(file);
+      this.updateIdeButton(file);
       if (jump) requestAnimationFrame(() => this.jumpToFocus());
     }
 
@@ -249,13 +259,14 @@
       titleGroup.appendChild(createElement("h3", "", file.filename));
 
       const meta = createElement("div", "rw-meta");
-      const path = createElement(file.ideaHref ? "a" : "span", "path rw-path", file.displayPath || file.path);
+      const href = ideHref(file);
+      const path = createElement(href ? "a" : "span", "path rw-path", file.displayPath || file.path);
       path.title = file.locationTitle || file.absolutePath || file.path || "";
-      if (file.ideaHref) {
+      if (href) {
         path.classList.add("file-link");
         // 有明确起始行时启用统一 IDE 定位组件；短标签与完整 title 均来自构建期校验数据。
-        if (file.ideaHref.includes("&line=")) path.classList.add("file-location");
-        path.href = file.ideaHref;
+        if (href.includes("&line=")) path.classList.add("file-location");
+        path.href = href;
       }
       meta.appendChild(path);
 
@@ -430,14 +441,18 @@
       }
     }
 
-    updateIdeaButton(file) {
-      this.elements.idea.disabled = !file.ideaHref;
-      this.elements.idea.title = file.ideaHref ? "在 IDEA 中打开当前文件" : "当前文件没有绝对路径";
+    updateIdeButton(file) {
+      const href = ideHref(file);
+      const label = ideLabel(file);
+      this.elements.ide.disabled = !href;
+      this.elements.ide.textContent = `${label} 打开`;
+      this.elements.ide.title = href ? `在 ${label} 中打开当前文件` : "当前文件没有绝对路径";
     }
 
-    openInIdea() {
+    openInIde() {
       const file = this.filesById.get(this.currentId);
-      if (file?.ideaHref) window.location.href = file.ideaHref;
+      const href = ideHref(file);
+      if (href) window.location.href = href;
     }
 
     toggleReviewed() {
