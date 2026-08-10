@@ -729,6 +729,21 @@ def check_code_wrap_blocks(html: str, css: str) -> list[str]:
                     errors.append(f"第 {index} 个 .code-wrap 的语言标签 data-code-lang 不一致")
                 if label_lang and not fragment_text(label_lang.group(2)).strip():
                     errors.append(f"第 {index} 个 .code-wrap 的语言标签不能为空")
+                if not css_rule_has(
+                    css,
+                    (
+                        'html[data-html-report-code-block-ready="true"] .code-wrap:not([data-copy="false"]):hover .code-lang',
+                        'html[data-html-report-code-block-ready="true"] .code-wrap:not([data-copy="false"]):focus-within .code-lang',
+                    ),
+                    ("opacity: 0", "pointer-events: none"),
+                ):
+                    errors.append(f"第 {index} 个 .code-wrap 缺少语言标签到复制按钮的悬停切换")
+                if not css_rule_has(
+                    css,
+                    (".code-toolbar .copy-btn",),
+                    ("position: absolute", "top: 0", "right: 0"),
+                ):
+                    errors.append(f"第 {index} 个 .code-wrap 的复制按钮没有与语言标签共用同一槽位")
             if not css_rule_has(css, (".code-lang",), ("white-space: nowrap", "text-overflow: ellipsis")):
                 errors.append(f"第 {index} 个 .code-wrap 的语言标签缺少截断保护")
     return errors

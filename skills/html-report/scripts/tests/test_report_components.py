@@ -661,8 +661,21 @@ class ReportComponentTest(unittest.TestCase):
         self.assertTrue(
             check_html_report.css_rule_has(
                 css,
-                (".code-wrap:hover .copy-btn", ".code-wrap:focus-within .copy-btn"),
+                (
+                    'html[data-html-report-code-block-ready="true"] .code-wrap:hover .copy-btn',
+                    'html[data-html-report-code-block-ready="true"] .code-wrap:focus-within .copy-btn',
+                ),
                 ("opacity: 1", "pointer-events: auto", "transform: none"),
+            )
+        )
+        self.assertTrue(
+            check_html_report.css_rule_has(
+                css,
+                (
+                    'html[data-html-report-code-block-ready="true"] .code-wrap:not([data-copy="false"]):hover .code-lang',
+                    'html[data-html-report-code-block-ready="true"] .code-wrap:not([data-copy="false"]):focus-within .code-lang',
+                ),
+                ("opacity: 0", "pointer-events: none", "transform: translateY(-2px)"),
             )
         )
         self.assertTrue(
@@ -691,7 +704,7 @@ class ReportComponentTest(unittest.TestCase):
             check_html_report.css_rule_has(
                 css,
                 (".code-toolbar .copy-btn",),
-                ("position: static",),
+                ("position: absolute", "top: 0", "right: 0"),
             )
         )
         self.assertTrue(
@@ -728,6 +741,7 @@ class ReportComponentTest(unittest.TestCase):
         self.assertIn(">Python</span>", no_copy)
         self.assertIn('data-copy="false"', no_copy)
         self.assertNotIn("copy-btn", no_copy)
+        self.assertIn('.code-wrap:not([data-copy="false"])', self.component_css("base", "code-block"))
         self.assertEqual(
             [],
             self.validate_html(self.report_html(self.component_css("base", "code-block"), no_copy)),
@@ -741,6 +755,7 @@ class ReportComponentTest(unittest.TestCase):
         )
         self.assertIn("languageFromCodeWrap", runtime)
         self.assertIn("decorateCodeBlock", runtime)
+        self.assertIn("htmlReportCodeBlockReady", runtime)
         self.assertIn("codeWrap.insertBefore(toolbar, codeWrap.firstChild)", runtime)
         self.assertIn("toolbar.insertBefore(copyButton, label)", runtime)
         self.assertIn("languageAliases", runtime)

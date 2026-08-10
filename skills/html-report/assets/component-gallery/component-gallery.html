@@ -1007,8 +1007,7 @@ pre code {
   display: inline-flex;
   align-items: center;
   max-width: calc(100% - 16px);
-  gap: 6px;
-  overflow: hidden;
+  overflow: visible;
   pointer-events: none;
 }
 .code-lang {
@@ -1029,12 +1028,14 @@ pre code {
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transform: none;
+  transition: opacity .15s, transform .15s;
 }
 .copy-btn {
-  /* 未加载脚本时保留旧版绝对定位，确保历史报告仍可复制 */
+  /* 复制按钮与语言标签共用右上角槽位，复制动作由 code-block runtime 提供 */
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 0;
+  right: 0;
   min-height: 32px;
   padding: 4px 10px;
   font-size: 12px;
@@ -1051,21 +1052,27 @@ pre code {
   transform: translateY(-2px);
   transition: opacity .15s, transform .15s;
 }
-.code-wrap:hover .copy-btn,
-.code-wrap:focus-within .copy-btn,
-.copy-btn:focus-visible {
+html[data-html-report-code-block-ready="true"] .code-wrap:hover .copy-btn,
+html[data-html-report-code-block-ready="true"] .code-wrap:focus-within .copy-btn,
+html[data-html-report-code-block-ready="true"] .copy-btn:focus-visible {
   opacity: 1;
   pointer-events: auto;
   transform: none;
+}
+html[data-html-report-code-block-ready="true"] .code-wrap:not([data-copy="false"]):hover .code-lang,
+html[data-html-report-code-block-ready="true"] .code-wrap:not([data-copy="false"]):focus-within .code-lang {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
 }
 .copy-btn:focus-visible {
   outline: 2px solid #93c5fd;
   outline-offset: 2px;
 }
 .code-toolbar .copy-btn {
-  position: static;
-  top: auto;
-  right: auto;
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 .copy-btn.copied { color: #83b986; border-color: #83b986; }
 .tok-key { color: #d955a2; font-weight: 700; }
@@ -1088,7 +1095,12 @@ pre code {
   width: 100%;
 }
 @media (hover: none) {
-  .copy-btn {
+  html[data-html-report-code-block-ready="true"] .code-wrap:not([data-copy="false"]) .code-lang {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-2px);
+  }
+  html[data-html-report-code-block-ready="true"] .copy-btn {
     opacity: 1;
     pointer-events: auto;
     transform: none;
@@ -1098,6 +1110,9 @@ pre code {
 @media print {
   .copy-btn { display: none !important; }
   .code-lang {
+    opacity: 1;
+    pointer-events: none;
+    transform: none;
     background: #ffffff;
     color: #374151;
     border-color: #d1d5db;
