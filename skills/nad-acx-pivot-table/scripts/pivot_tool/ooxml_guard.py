@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import posixpath
 import re
 import sys
 import zipfile
@@ -14,7 +15,21 @@ from pathlib import Path
 
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+DOC_REL_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+PKG_REL_NS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+PIVOT_CACHE_REL = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+    "pivotCacheDefinition"
+)
+PIVOT_RECORDS_REL = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+    "pivotCacheRecords"
+)
+PIVOT_TABLE_REL = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
+)
 RANGE_REF_RE = re.compile(r"^\$?[A-Z]+\$?(\d+):\$?[A-Z]+\$?(\d+)$")
+PIVOT_PART_RE = re.compile(r"^xl/pivotTables/pivotTable\d+\.xml$")
 
 
 class PivotOoxmlError(ValueError):
@@ -29,6 +44,72 @@ def _read_xml(zf: zipfile.ZipFile, name: str, errors: list[str]) -> ET.Element |
     except ET.ParseError as exc:
         errors.append(f"{name} XML 解析失败: {exc}")
     return None
+
+
+def _rels_part(source_part: str) -> str:
+    """返回某个 OOXML 部件对应的关系部件路径。"""
+    parent, name = posixpath.split(source_part)
+    return posixpath.join(parent, "_rels", f"{name}.rels")
+
+
+def _resolve_target(source_part: str, target: str) -> str:
+    """按 OOXML 关系规则把相对 Target 解析为 zip 内部路径。"""
+    if target.startswith("/"):
+        return target.lstrip("/")
+    return posixpath.normpath(posixpath.join(posixpath.dirname(source_part), target))
+
+
+def _relationships(
+    zf: zipfile.ZipFile,
+    source_part: str,
+    errors: list[str],
+    *,
+    required: bool,
+) -> dict[str, tuple[str, str]]:
+    """读取部件关系，返回 ``rId -> (类型, 目标部件)``。"""
+    rels_part = _rels_part(source_part)
+    if rels_part not in zf.namelist():
+        if required:
+            errors.append(f"缺少 OOXML 关系部件: {rels_part}")
+        return {}
+
+    root = _read_xml(zf, rels_part, errors)
+    relationships: dict[str, tuple[str, str]] = {}
+    if root is None:
+        return relationships
+
+    for relation in root.findall(f"{PKG_REL_NS}Relationship"):
+        rel_id = relation.get("Id", "")
+        rel_type = relation.get("Type", "")
+        target = relation.get("Target", "")
+        if not rel_id or not target:
+            errors.append(f"{rels_part} 存在缺少 Id 或 Target 的关系")
+            continue
+        if rel_id in relationships:
+            errors.append(f"{rels_part} 存在重复关系 Id={rel_id}")
+            continue
+        relationships[rel_id] = (
+            rel_type,
+            _resolve_target(source_part, target),
+        )
+    return relationships
+
+
+def _only_relationship_target(
+    source_part: str,
+    relationships: dict[str, tuple[str, str]],
+    expected_type: str,
+    errors: list[str],
+) -> str | None:
+    """取得指定类型的唯一关系目标，并报告缺失或重复。"""
+    targets = [target for rel_type, target in relationships.values() if rel_type == expected_type]
+    if len(targets) != 1:
+        errors.append(
+            f"{source_part} 的 {expected_type.rsplit('/', 1)[-1]} 关系数量为 "
+            f"{len(targets)}，期望 1"
+        )
+        return None
+    return targets[0]
 
 
 def _int_attr(el: ET.Element | None, attr: str, default: int = 0) -> int:
@@ -256,35 +337,194 @@ def validate_pivot_xlsx(path: str | Path) -> list[str]:
     """返回 PivotTable OOXML 结构错误列表；空列表表示通过。"""
     errors: list[str] = []
     path = Path(path)
-    required_parts = [
-        "xl/workbook.xml",
-        "xl/pivotCache/pivotCacheDefinition1.xml",
-        "xl/pivotCache/pivotCacheRecords1.xml",
-        "xl/pivotTables/pivotTable1.xml",
-        "xl/worksheets/_rels/sheet1.xml.rels",
-        "xl/pivotTables/_rels/pivotTable1.xml.rels",
-        "xl/pivotCache/_rels/pivotCacheDefinition1.xml.rels",
-    ]
 
     try:
         with zipfile.ZipFile(path, "r") as zf:
             names = set(zf.namelist())
-            for part in required_parts:
-                if part not in names:
-                    errors.append(f"缺少 OOXML 部件: {part}")
+            bad_member = zf.testzip()
+            if bad_member:
+                errors.append(f"ZIP 成员校验失败: {bad_member}")
 
-            cache_root = _read_xml(zf, "xl/pivotCache/pivotCacheDefinition1.xml", errors)
-            pivot_root = _read_xml(zf, "xl/pivotTables/pivotTable1.xml", errors)
-            try:
-                pivot_xml = zf.read("xl/pivotTables/pivotTable1.xml").decode("utf-8")
-            except KeyError:
-                pivot_xml = ""
+            workbook_part = "xl/workbook.xml"
+            workbook_root = _read_xml(zf, workbook_part, errors)
+            workbook_rels = _relationships(
+                zf,
+                workbook_part,
+                errors,
+                required=True,
+            )
+
+            # workbook 的 cacheId 是 PivotTable 与 cache definition 之间的权威映射。
+            # 多业务文件允许部件编号不连续，因此只能沿关系解析实际目标。
+            workbook_caches: dict[int, str] = {}
+            pivot_caches = (
+                workbook_root.find(f"{NS}pivotCaches")
+                if workbook_root is not None
+                else None
+            )
+            for cache in _children(pivot_caches, "pivotCache"):
+                raw_cache_id = cache.get("cacheId", "")
+                try:
+                    cache_id = int(raw_cache_id)
+                except ValueError:
+                    errors.append(f"workbook pivotCache cacheId 非法: {raw_cache_id!r}")
+                    continue
+                if cache_id in workbook_caches:
+                    errors.append(f"workbook 存在重复 pivotCache cacheId={cache_id}")
+                    continue
+
+                rel_id = cache.get(f"{DOC_REL_NS}id", "")
+                relation = workbook_rels.get(rel_id)
+                if relation is None:
+                    errors.append(
+                        f"workbook pivotCache cacheId={cache_id} 缺少关系 {rel_id!r}"
+                    )
+                    continue
+                rel_type, target = relation
+                if rel_type != PIVOT_CACHE_REL:
+                    errors.append(
+                        f"workbook pivotCache cacheId={cache_id} 的关系类型不是 "
+                        "pivotCacheDefinition"
+                    )
+                    continue
+                if target not in names:
+                    errors.append(
+                        f"workbook pivotCache cacheId={cache_id} 指向不存在的部件: "
+                        f"{target}"
+                    )
+                workbook_caches[cache_id] = target
+
+            pivot_parts = sorted(name for name in names if PIVOT_PART_RE.fullmatch(name))
+
+            # 从 worksheet 关系发现被实际挂载的透视表，避免只凭文件名判断。
+            mounted_pivots: set[str] = set()
+            for worksheet_part in sorted(
+                name
+                for name in names
+                if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", name)
+            ):
+                worksheet_rels = _relationships(
+                    zf,
+                    worksheet_part,
+                    errors,
+                    required=False,
+                )
+                mounted_pivots.update(
+                    target
+                    for rel_type, target in worksheet_rels.values()
+                    if rel_type == PIVOT_TABLE_REL
+                )
+
+            for pivot_part in pivot_parts:
+                if pivot_part not in mounted_pivots:
+                    errors.append(f"{pivot_part} 未被任何 worksheet 关系引用")
+
+                pivot_root = _read_xml(zf, pivot_part, errors)
+                try:
+                    pivot_xml = zf.read(pivot_part).decode("utf-8")
+                except KeyError:
+                    pivot_xml = ""
+
+                pivot_cache_id: int | None = None
+                raw_cache_id = pivot_root.get("cacheId", "") if pivot_root is not None else ""
+                try:
+                    pivot_cache_id = int(raw_cache_id)
+                except ValueError:
+                    errors.append(f"{pivot_part} cacheId 非法: {raw_cache_id!r}")
+
+                pivot_rels = _relationships(
+                    zf,
+                    pivot_part,
+                    errors,
+                    required=True,
+                )
+                related_cache = _only_relationship_target(
+                    pivot_part,
+                    pivot_rels,
+                    PIVOT_CACHE_REL,
+                    errors,
+                )
+                if related_cache is not None and related_cache not in names:
+                    errors.append(f"{pivot_part} 关系指向不存在的部件: {related_cache}")
+
+                workbook_cache = (
+                    workbook_caches.get(pivot_cache_id)
+                    if pivot_cache_id is not None
+                    else None
+                )
+                if pivot_cache_id is not None and workbook_cache is None:
+                    errors.append(
+                        f"{pivot_part} 的 cacheId={pivot_cache_id} 未在 workbook 中注册"
+                    )
+                elif related_cache is not None and workbook_cache != related_cache:
+                    errors.append(
+                        f"{pivot_part}: cacheId={pivot_cache_id} 对应 workbook 关系 "
+                        f"{workbook_cache}，但透视表关系指向 {related_cache}"
+                    )
+
+                cache_root = (
+                    _read_xml(zf, related_cache, errors)
+                    if related_cache is not None and related_cache in names
+                    else None
+                )
+                cache_errors: list[str] = []
+                cache_fields, calculated_indices = _validate_cache(
+                    cache_root,
+                    cache_errors,
+                )
+                errors.extend(
+                    f"{related_cache or pivot_part}: {error}" for error in cache_errors
+                )
+
+                pivot_errors: list[str] = []
+                _validate_pivot_fields(
+                    pivot_root,
+                    pivot_xml,
+                    cache_fields,
+                    calculated_indices,
+                    pivot_errors,
+                )
+                _validate_layout(pivot_root, pivot_xml, pivot_errors)
+                errors.extend(f"{pivot_part}: {error}" for error in pivot_errors)
+
+                if related_cache is not None and related_cache in names:
+                    cache_rels = _relationships(
+                        zf,
+                        related_cache,
+                        errors,
+                        required=True,
+                    )
+                    records_part = _only_relationship_target(
+                        related_cache,
+                        cache_rels,
+                        PIVOT_RECORDS_REL,
+                        errors,
+                    )
+                    if records_part is not None:
+                        if records_part not in names:
+                            errors.append(
+                                f"{related_cache} 关系指向不存在的部件: {records_part}"
+                            )
+                        else:
+                            _read_xml(zf, records_part, errors)
+
+            orphan_mounted = sorted(mounted_pivots.difference(pivot_parts))
+            for pivot_part in orphan_mounted:
+                errors.append(f"worksheet 关系指向不存在的透视表部件: {pivot_part}")
+
+            referenced_caches = set(workbook_caches.values())
+            actual_caches = {
+                name
+                for name in names
+                if re.fullmatch(
+                    r"xl/pivotCache/pivotCacheDefinition\d+\.xml",
+                    name,
+                )
+            }
+            for cache_part in sorted(actual_caches.difference(referenced_caches)):
+                errors.append(f"{cache_part} 未被 workbook pivotCaches 引用")
     except zipfile.BadZipFile:
         return [f"不是合法 xlsx zip 文件: {path}"]
-
-    cache_fields, calculated_indices = _validate_cache(cache_root, errors)
-    _validate_pivot_fields(pivot_root, pivot_xml, cache_fields, calculated_indices, errors)
-    _validate_layout(pivot_root, pivot_xml, errors)
     return errors
 
 

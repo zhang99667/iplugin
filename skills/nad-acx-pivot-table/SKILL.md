@@ -1,6 +1,6 @@
 ---
 name: nad-acx-pivot-table
-version: 0.1.5
+version: 0.1.6
 description: 专用于生成商业 AB 实验数据分析透视表 xlsx 文件（通过手拼 OOXML XML，绕过 openpyxl 不支持创建透视表的限制）。支持单个 CSV/TXT/XLSX 文件自动生成，以及多个 CSV/TXT/XLSX 文件合并生成（如多天数据合并）。TXT 必须是带表头的分隔符文本（支持逗号、Tab、分号、竖线分隔）。输入文件必须包含以下标准字段：exp_id、event_day、eshow、click、charge、tcharge、conv；部分常见别名（如 total_target_charge → tcharge、total_conv → conv、eshows → eshow 等）会被内置别名表自动映射，未登记的别名可通过 --field-map 手动指定，或由 Step 4b 子串建议自动探测，详见 SKILL.md Step 4。TRIGGER when：用户说"透视表"、"pivot table"、"数据透视"、"AB 测试报表"、"生成 xlsx 透视表"、"合并 csv/txt 生成分析"、"商业 AB 实验数据透视表"、"给这个文件生成透视表"、"合并 Downloads 前 N 个 csv/txt 生成透视表"、"合并最近 N 个 csv/txt 生成透视表"、"用 xxx.csv/xxx.txt 生成透视表"、"合并这 N 个 csv/txt 文件生成透视表，实验名是 xxx"（用户在同一句话里同时给出文件范围 + 实验名，应跳过所有 AskUserQuestion 直接生成），或任何提到"生成/合并"+"透视表/数据透视/AB 实验报表"的自然语言描述（无论是否显式说"商业"或文件路径）。DO NOT TRIGGER when：用户只需读取/展示数据内容、或生成普通格式 xlsx（无透视功能）、或字段语义完全不属于商业 AB 实验数据。
 tags: [excel, pivot-table, xlsx, commercial-ads, ab-test, nad, acx]
 autoInstall: true
@@ -458,7 +458,8 @@ cd "$SCRIPTS" && python3 -m pivot_tool input.csv -p commercial_ab_test -e "实�
 ```
 exp_id  ← exp, eid
 eshow   ← eshows
-click   ← clicks
+click   ← clicks, clk
+charge  ← asp_charge
 tcharge ← total_target_charge
 conv    ← total_convert_num, cv, total_conv
 ```
@@ -584,12 +585,16 @@ cd "$SCRIPTS" && python3 -m pivot_tool.merge_pivots \
   agent.csv agent.json \
   exposure.csv exposure.json \
   lead_live.csv lead_live.json \
+  --hide-data-sheets \
   -o "【0801-0803】【166762】WebPanel半屏统一_原生数据透视表.xlsx"
 ```
 
 - 输入为 `CSV 配置` 交替传参，顺序即工作簿 sheet 顺序
 - 每个业务必须有自己的 JSON 配置（`data_sheet_name`/`pivot_sheet_name` 用业务名区分）
-- 0 行 CSV 会生成空透视表占位，不会导致 Excel 报错
+- 合并入口与单透视表一致：自动处理内置字段别名，并将与计算字段同名的原始列重命名为 `*_source`
+- 默认保留明细 sheet 可见；需要仅展示透视页时传 `--hide-data-sheets`
+- 0 行 CSV 会生成「暂无数据」普通占位 sheet，不注册空 pivot/cache，避免 Excel 修复提示
+- 输出先写同目录临时文件，所有原生透视表通过 OOXML 闸门后再原子替换目标文件
 - 生成后建议用 Excel 打开验证；LibreOffice 对 6 个以上原生透视表的兼容性有限，可能只显示部分透视表，但 Excel 正常
 
 编程接口：
@@ -603,6 +608,7 @@ create_multi_business_pivot(
         ("agent.csv", "agent.json"),
     ],
     "output.xlsx",
+    hide_data_sheets=True,
 )
 ```
 

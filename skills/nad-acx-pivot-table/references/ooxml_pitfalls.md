@@ -92,3 +92,13 @@ CSV 中 int/float 类型列的值可能出现：
 ## 10. pivotField 属性顺序
 
 计算字段的 pivotField 属性必须按此顺序排列：`dataField="1" dragToRow="0" dragToCol="0" dragToPage="0" showAll="0" defaultSubtotal="0"`。`showAll` 必须在 `dragToPage` 之后、`defaultSubtotal` 之前，否则与原脚本生成的 XML 不一致。
+
+## 11. 多透视表必须逐个校验 cacheId 与关系
+
+多业务工作簿中，不能只校验 `pivotTable1.xml`。每个 `pivotTableDefinition@cacheId`
+都必须对应 `workbook.xml` 中的唯一 `pivotCache@cacheId`，后者的 `r:id`
+必须通过 `workbook.xml.rels` 指向实际存在的 cache definition。每个透视表、
+cache definition 和 cache records 也必须各自具备完整的 `.rels` 关系。
+
+`merge_pivots` 可以跳过 0 行业务的 pivot/cache，因此部件编号可能不连续；
+校验器必须从实际 OOXML 关系发现部件，不能假设它们是 `1..N` 连续序列。

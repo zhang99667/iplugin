@@ -7,17 +7,50 @@
 import os
 import re
 import sys
+import tempfile
 import zipfile
+from contextlib import contextmanager
 
+from pivot_tool.aliases import auto_apply_aliases
 from pivot_tool.config import load_config
 from pivot_tool.csv_reader import (
     align_config_to_headers,
     analyze_fields,
     read_file,
 )
+from pivot_tool.ooxml_guard import assert_valid_pivot_xlsx
+from pivot_tool.packager import avoid_calculated_field_conflicts
 from pivot_tool.pivot_cache import build_cache_definition, build_cache_records
 from pivot_tool.pivot_table import build_pivot_table_xml
 from pivot_tool.xml_utils import XML_HEADER, NS_MAIN, NS_REL, col_letter, xml_escape
+
+
+@contextmanager
+def _atomic_xlsx_writer(output_path):
+    """在目标同目录写临时 xlsx，校验通过后再原子替换正式文件。
+
+    同目录保证 ``os.replace`` 不跨文件系统；无论打包还是校验失败，旧输出都
+    不会被截断，遗留的临时文件也会在退出时清理。
+    """
+    output_path = os.fspath(output_path)
+    output_dir = os.path.dirname(os.path.abspath(output_path))
+    output_name = os.path.basename(output_path)
+    fd, temp_path = tempfile.mkstemp(
+        prefix=f".{output_name}.",
+        suffix=".tmp.xlsx",
+        dir=output_dir,
+    )
+    os.close(fd)
+    try:
+        with zipfile.ZipFile(temp_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            yield zf
+        assert_valid_pivot_xlsx(temp_path)
+        os.replace(temp_path, output_path)
+    finally:
+        try:
+            os.unlink(temp_path)
+        except FileNotFoundError:
+            pass
 
 
 def _empty_cache_definition(config):
@@ -117,11 +150,12 @@ def _rebuild_data_sheet(config, headers, rows, ss_index):
     return "\n".join(parts)
 
 
-def create_multi_business_pivot(inputs, output_path):
+def create_multi_business_pivot(inputs, output_path, hide_data_sheets=False):
     """把多个 (CSV, config) 合并为一个多 sheet 透视表工作簿。
 
     inputs: [(csv_path, config_path), ...]，顺序即 sheet 顺序。
     output_path: 输出 xlsx 完整路径。
+    hide_data_sheets: 是否隐藏各业务明细 sheet；默认 False 保持旧行为。
     返回实际输出路径。
     """
     if not inputs:
@@ -131,6 +165,19 @@ def create_multi_business_pivot(inputs, output_path):
     for csv_path, cfg_path in inputs:
         config = load_config(cfg_path)
         headers, rows = read_file(csv_path)
+
+        # 与单表生成共用同一套字段规范化规则，确保同一份数据不会因入口
+        # 不同而出现别名缺失或源字段覆盖计算字段的问题。
+        standard_names = [column.name for column in config.columns]
+        auto_map = auto_apply_aliases(headers, standard_names, None)
+        if auto_map:
+            print(
+                "自动应用别名映射: "
+                + ", ".join(f"{source}→{target}" for source, target in auto_map.items())
+            )
+            headers = [auto_map.get(header, header) for header in headers]
+        headers = avoid_calculated_field_conflicts(headers, config)
+
         align_config_to_headers(config, headers, rows)
         fm = analyze_fields(config, headers, rows)
         built.append({
@@ -171,9 +218,11 @@ def create_multi_business_pivot(inputs, output_path):
     for i, item in enumerate(built):
         pivot_name = item["config"].pivot_sheet_name
         data_name = item["config"].data_sheet_name
+        data_state = ' state="hidden"' if hide_data_sheets else ""
         sheets_xml += (
             f'<sheet name="{xml_escape(pivot_name)}" sheetId="{i * 2 + 1}" r:id="rId{i * 2 + 1}"/>'
-            f'<sheet name="{xml_escape(data_name)}" sheetId="{i * 2 + 2}" r:id="rId{i * 2 + 2}"/>'
+            f'<sheet name="{xml_escape(data_name)}" sheetId="{i * 2 + 2}"{data_state} '
+            f'r:id="rId{i * 2 + 2}"/>'
         )
         rel_items += [
             (
@@ -223,7 +272,7 @@ def create_multi_business_pivot(inputs, output_path):
 
     from pivot_tool.static_xml import build_static_xml
     static = build_static_xml(built[0]["config"])
-    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    with _atomic_xlsx_writer(output_path) as zf:
         for path, content in static.items():
             if path.startswith("xl/worksheets/") or path.startswith("xl/pivotCache/") or path.startswith("xl/pivotTables/"):
                 continue
@@ -330,9 +379,12 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     pairs = []
     out = None
+    hide_data_sheets = False
     i = 0
     while i < len(argv):
-        if argv[i] in ("-o", "--output"):
+        if argv[i] == "--hide-data-sheets":
+            hide_data_sheets = True
+        elif argv[i] in ("-o", "--output"):
             i += 1
             if i >= len(argv):
                 print("缺少 -o 输出路径", file=sys.stderr)
@@ -346,9 +398,17 @@ def main(argv=None):
             i += 1
         i += 1
     if not pairs or not out:
-        print("用法: python -m pivot_tool.merge_pivots CSV1 CFG1 CSV2 CFG2 ... -o out.xlsx", file=sys.stderr)
+        print(
+            "用法: python -m pivot_tool.merge_pivots CSV1 CFG1 CSV2 CFG2 ... "
+            "-o out.xlsx [--hide-data-sheets]",
+            file=sys.stderr,
+        )
         return 2
-    create_multi_business_pivot(pairs, out)
+    create_multi_business_pivot(
+        pairs,
+        out,
+        hide_data_sheets=hide_data_sheets,
+    )
     return 0
 
 

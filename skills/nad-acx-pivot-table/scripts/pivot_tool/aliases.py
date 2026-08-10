@@ -9,7 +9,8 @@
 FIELD_ALIASES: dict[str, list[str]] = {
     "exp_id":  ["exp", "eid"],
     "eshow":   ["eshows"],
-    "click":   ["clicks"],
+    "click":   ["clicks", "clk"],
+    "charge":  ["asp_charge"],
     "tcharge": ["total_target_charge"],
     "conv":    ["total_convert_num", "cv", "total_conv"],
 }
