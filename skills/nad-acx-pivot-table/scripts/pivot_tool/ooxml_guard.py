@@ -17,6 +17,7 @@ from pathlib import Path
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 DOC_REL_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 PKG_REL_NS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+CONTENT_TYPES_NS = "{http://schemas.openxmlformats.org/package/2006/content-types}"
 PIVOT_CACHE_REL = (
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
     "pivotCacheDefinition"
@@ -28,8 +29,32 @@ PIVOT_RECORDS_REL = (
 PIVOT_TABLE_REL = (
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
 )
+STYLES_REL = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"
+)
+STYLES_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"
+)
 RANGE_REF_RE = re.compile(r"^\$?[A-Z]+\$?(\d+):\$?[A-Z]+\$?(\d+)$")
 PIVOT_PART_RE = re.compile(r"^xl/pivotTables/pivotTable\d+\.xml$")
+STYLE_CHILD_ORDER = {
+    name: index
+    for index, name in enumerate(
+        (
+            "numFmts",
+            "fonts",
+            "fills",
+            "borders",
+            "cellStyleXfs",
+            "cellXfs",
+            "cellStyles",
+            "dxfs",
+            "tableStyles",
+            "colors",
+            "extLst",
+        )
+    )
+}
 
 
 class PivotOoxmlError(ValueError):
@@ -141,6 +166,146 @@ def _validate_counts(label: str, parent: ET.Element | None, child_tag: str, erro
     declared = _int_attr(parent, "count", len(children))
     if declared != len(children):
         errors.append(f"{label} count={declared}，实际 {child_tag} 数量={len(children)}")
+
+
+def _validate_index_attr(
+    element: ET.Element,
+    label: str,
+    attr: str,
+    limit: int,
+    errors: list[str],
+) -> None:
+    """校验样式索引，避免 Excel 因越界引用修复整个工作簿。"""
+    raw_value = element.get(attr)
+    if raw_value is None:
+        errors.append(f"{label} 缺少 {attr}")
+        return
+    try:
+        value = int(raw_value)
+    except ValueError:
+        errors.append(f"{label} {attr} 非法: {raw_value!r}")
+        return
+    if value < 0 or value >= limit:
+        errors.append(f"{label} {attr}={value} 越界，可用数量={limit}")
+
+
+def _validate_styles(
+    zf: zipfile.ZipFile,
+    names: set[str],
+    workbook_rels: dict[str, tuple[str, str]],
+    errors: list[str],
+) -> None:
+    """校验 workbook 样式关系、Content Type 和 styles.xml 内部引用。"""
+    styles_part = _only_relationship_target(
+        "xl/workbook.xml",
+        workbook_rels,
+        STYLES_REL,
+        errors,
+    )
+
+    content_types = _read_xml(zf, "[Content_Types].xml", errors)
+    if content_types is not None:
+        style_overrides = [
+            override
+            for override in content_types.findall(f"{CONTENT_TYPES_NS}Override")
+            if override.get("ContentType") == STYLES_CONTENT_TYPE
+        ]
+        if len(style_overrides) != 1:
+            errors.append(
+                "[Content_Types].xml 的 styles Content Type 声明数量为 "
+                f"{len(style_overrides)}，期望 1"
+            )
+        elif styles_part is not None:
+            declared_part = style_overrides[0].get("PartName", "").lstrip("/")
+            if declared_part != styles_part:
+                errors.append(
+                    "styles 关系目标与 Content Type 声明不一致: "
+                    f"{styles_part} vs {declared_part}"
+                )
+
+    if styles_part is None:
+        return
+    if styles_part not in names:
+        errors.append(f"workbook styles 关系指向不存在的部件: {styles_part}")
+        return
+
+    styles_root = _read_xml(zf, styles_part, errors)
+    if styles_root is None:
+        return
+    if styles_root.tag != f"{NS}styleSheet":
+        errors.append(f"{styles_part} 根元素不是 styleSheet")
+        return
+
+    # SpreadsheetML 对 styleSheet 子元素有固定顺序；顺序错误时 Excel 会修复文件。
+    previous_rank = -1
+    for child in styles_root:
+        local_name = child.tag.rsplit("}", 1)[-1]
+        rank = STYLE_CHILD_ORDER.get(local_name)
+        if rank is None:
+            continue
+        if rank < previous_rank:
+            errors.append(f"{styles_part} 子元素顺序非法: {local_name}")
+            break
+        previous_rank = rank
+
+    collections: dict[str, list[ET.Element]] = {}
+    for parent_tag, child_tag in (
+        ("fonts", "font"),
+        ("fills", "fill"),
+        ("borders", "border"),
+        ("cellStyleXfs", "xf"),
+        ("cellXfs", "xf"),
+        ("cellStyles", "cellStyle"),
+    ):
+        parent = styles_root.find(f"{NS}{parent_tag}")
+        if parent is None:
+            errors.append(f"{styles_part} 缺少 {parent_tag}")
+            collections[parent_tag] = []
+            continue
+        if "count" not in parent.attrib:
+            errors.append(f"{styles_part} {parent_tag} 缺少 count")
+        _validate_counts(parent_tag, parent, child_tag, errors)
+        collections[parent_tag] = _children(parent, child_tag)
+
+    for optional_tag, child_tag in (("dxfs", "dxf"), ("tableStyles", "tableStyle")):
+        parent = styles_root.find(f"{NS}{optional_tag}")
+        if parent is not None:
+            _validate_counts(optional_tag, parent, child_tag, errors)
+
+    fonts = collections["fonts"]
+    fills = collections["fills"]
+    borders = collections["borders"]
+    style_xfs = collections["cellStyleXfs"]
+    cell_xfs = collections["cellXfs"]
+    cell_styles = collections["cellStyles"]
+
+    for group_name, xfs in (("cellStyleXfs", style_xfs), ("cellXfs", cell_xfs)):
+        for index, xf in enumerate(xfs):
+            label = f"{group_name}/xf[{index}]"
+            _validate_index_attr(xf, label, "fontId", len(fonts), errors)
+            _validate_index_attr(xf, label, "fillId", len(fills), errors)
+            _validate_index_attr(xf, label, "borderId", len(borders), errors)
+            if group_name == "cellXfs":
+                _validate_index_attr(xf, label, "xfId", len(style_xfs), errors)
+
+    for index, style in enumerate(cell_styles):
+        _validate_index_attr(
+            style,
+            f"cellStyles/cellStyle[{index}]",
+            "xfId",
+            len(style_xfs),
+            errors,
+        )
+
+    normal_styles = [style for style in cell_styles if style.get("name") == "Normal"]
+    if len(normal_styles) != 1:
+        errors.append(f"cellStyles 中 Normal 命名样式数量为 {len(normal_styles)}，期望 1")
+    else:
+        normal = normal_styles[0]
+        if normal.get("xfId") != "0" or normal.get("builtinId") != "0":
+            errors.append(
+                "Normal 命名样式必须声明 xfId=\"0\" builtinId=\"0\""
+            )
 
 
 def _validate_cache(cache_root: ET.Element | None, errors: list[str]) -> tuple[list[ET.Element], set[int]]:
@@ -353,6 +518,7 @@ def validate_pivot_xlsx(path: str | Path) -> list[str]:
                 errors,
                 required=True,
             )
+            _validate_styles(zf, names, workbook_rels, errors)
 
             # workbook 的 cacheId 是 PivotTable 与 cache definition 之间的权威映射。
             # 多业务文件允许部件编号不连续，因此只能沿关系解析实际目标。

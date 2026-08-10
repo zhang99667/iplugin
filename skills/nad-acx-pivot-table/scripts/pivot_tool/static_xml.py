@@ -89,6 +89,10 @@ def build_static_xml(config: PivotConfig) -> dict[str, str]:
             f'<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>\n'
             f'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>\n'
             f'<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>\n'
+            f'<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>\n'
+            f'<dxfs count="0"/>\n'
+            f'<tableStyles count="0" defaultTableStyle="TableStyleMedium2" '
+            f'defaultPivotStyle="{xml_escape(config.pivot_style)}"/>\n'
             f"</styleSheet>"
         ),
         # theme (最小化)

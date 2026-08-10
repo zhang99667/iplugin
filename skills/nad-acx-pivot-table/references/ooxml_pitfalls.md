@@ -9,7 +9,7 @@ cd skills/nad-acx-pivot-table/scripts
 python3 -m pivot_tool.ooxml_guard <output.xlsx>
 ```
 
-这个闸门不是完整 Excel 渲染器，但会检查本文件沉淀过的高风险结构：`refreshOnLoad`、多数据字段的 `colFields/-2` 与 `colItems`、页面筛选字段的 `pageFields hier="-1"`、枚举字段 `items` 覆盖、字符串枚举大小写重复、计算字段属性顺序等。
+这个闸门不是完整 Excel 渲染器，但会检查本文件沉淀过的高风险结构：工作簿 `styles.xml` 与 Normal 命名样式、`refreshOnLoad`、多数据字段的 `colFields/-2` 与 `colItems`、页面筛选字段的 `pageFields hier="-1"`、枚举字段 `items` 覆盖、字符串枚举大小写重复、计算字段属性顺序等。
 
 ## 1. refreshOnLoad — 打开时自动刷新
 
@@ -102,3 +102,21 @@ cache definition 和 cache records 也必须各自具备完整的 `.rels` 关系
 
 `merge_pivots` 可以跳过 0 行业务的 pivot/cache，因此部件编号可能不连续；
 校验器必须从实际 OOXML 关系发现部件，不能假设它们是 `1..N` 连续序列。
+
+## 12. styles.xml 必须包含 Normal 命名样式
+
+工作簿必须通过 `workbook.xml.rels` 唯一引用 `styles.xml`，并在
+`[Content_Types].xml` 中声明 styles Content Type。最小样式表必须按规范顺序包含：
+
+```xml
+<cellStyleXfs count="1"><xf .../></cellStyleXfs>
+<cellXfs count="1"><xf ... xfId="0"/></cellXfs>
+<cellStyles count="1">
+  <cellStyle name="Normal" xfId="0" builtinId="0"/>
+</cellStyles>
+```
+
+仅有 `cellStyleXfs[0]` 不等于声明了 Normal 样式。缺少 `cellStyles/Normal`
+时，Mac Excel 可能提示“发现部分内容有问题”，并在恢复日志中删除
+`workbook.xml` 的样式记录。guard 还必须检查各集合 `count`、`fontId`、
+`fillId`、`borderId`、`xfId` 的边界以及 styleSheet 子元素顺序。

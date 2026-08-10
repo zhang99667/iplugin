@@ -1,3 +1,11 @@
+## [0.22.39] - 2026-08-10
+### Fixed
+- nad-acx-pivot-table: `styles.xml` 补齐 Excel 内建 Normal 命名样式、差异样式和默认表格/透视样式声明，避免 Mac Excel 打开时修复工作簿样式
+- nad-acx-pivot-table: OOXML 闸门新增 styles 关系、Content Type、集合计数、样式索引边界和子元素顺序校验
+
+### Changed
+- nad-acx-pivot-table: 增加样式损坏故障注入测试，skill 从 `0.1.6` 升级到 `0.1.7`，插件从 `0.22.38` 升级到 `0.22.39`
+
 ## [0.22.38] - 2026-08-10
 ### Changed
 - nad-acx-pivot-table: 多业务合并与单透视生成统一字段别名和计算字段冲突处理，补充 `clk` / `asp_charge` 常见别名
