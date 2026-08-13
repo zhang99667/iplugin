@@ -1015,7 +1015,7 @@
       function buildEmbeddedReviewBlock() {
         const json = serializeReviewPack(buildJsonPack());
         return [
-          '  <!' + '-- ' + embeddedReviewStartMarker + ': Agent 读取并逐条处理以下批注。 --' + '>',
+          '  <!' + '-- ' + embeddedReviewStartMarker + ': Agent 读取以下批注；先按用户意图分流：如果用户是在提问或要求解释，直接回答，不修改 HTML；只有用户明确要求修改批注、报告或 HTML 时，才修改同一份 HTML 并写入处理回执。若用户明确指定“回答”或“修改”，以该指令为准。 --' + '>',
           '  <' + 'script type="application/json" id="qaEmbeddedReviewData" data-qa-review-data>',
           json.split('\n').map(line => '  ' + line).join('\n'),
           '  </' + 'script>',

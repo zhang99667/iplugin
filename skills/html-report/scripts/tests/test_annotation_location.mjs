@@ -8,6 +8,15 @@ const annotationSource = readFileSync(
   new URL("../../assets/annotation-mode/annotation.js", import.meta.url),
   "utf8",
 );
+const annotationHtml = readFileSync(
+  new URL("../../assets/annotation-mode/annotation.html", import.meta.url),
+  "utf8",
+);
+
+assert.match(annotationHtml, /问题或解释请求直接回答/);
+assert.match(annotationHtml, /明确要求修改批注、报告或 HTML/);
+assert.match(annotationSource, /先按用户意图分流/);
+assert.match(annotationSource, /用户明确指定“回答”或“修改”/);
 
 
 /**
