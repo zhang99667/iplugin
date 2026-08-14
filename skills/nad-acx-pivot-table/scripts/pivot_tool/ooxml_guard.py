@@ -363,13 +363,21 @@ def _validate_pivot_fields(
         if items is None:
             errors.append(f"枚举 cacheField {cache_field.get('name')!r} 缺少 pivotField/items")
             continue
+        # 仅校验 items@count 还不够：Excel 实际按子节点解析，声明值与内容
+        # 不一致时旧版 Mac Excel 可能在加载 pivotTable 时直接崩溃。
+        _validate_counts(
+            f"pivotField {cache_field.get('name')!r} items",
+            items,
+            "item",
+            errors,
+        )
         expected = _int_attr(shared_items, "count") + 1
         if shared_items.get("containsBlank") == "1":
             expected += 1
-        actual = _int_attr(items, "count", len(_children(items, "item")))
+        actual = len(_children(items, "item"))
         if expected != actual:
             errors.append(
-                f"pivotField {cache_field.get('name')!r} items count={actual}，期望 {expected}"
+                f"pivotField {cache_field.get('name')!r} items 实际数量={actual}，期望 {expected}"
             )
         if not any(item.get("t") == "default" for item in _children(items, "item")):
             errors.append(f"pivotField {cache_field.get('name')!r} items 缺少 default item")

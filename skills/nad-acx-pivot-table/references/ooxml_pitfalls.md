@@ -63,7 +63,14 @@ python3 -m pivot_tool.ooxml_guard <output.xlsx>
 
 数值枚举字段（如 event_day）不受此规则约束——走 containsBlank + `<m/>` + `<item t="blank"/>` 路径仍然合法。
 
-## 7. pivotField items 必须覆盖所有枚举字段
+## 7. row_item_order 是优先排序，不是过滤列表
+
+`pivot_layout.row_item_order` 只用于把指定值移到前面，不能当作枚举白名单。
+生成器会先按配置顺序输出实际存在的值，再按 `sharedItems` 的原始顺序追加
+配置未列出的值；配置中不存在于数据的值会被忽略。这样可以避免业务配置漏写
+新枚举值时把数据行或 `pivotField/items` 静默删掉。
+
+## 8. pivotField items 必须覆盖所有枚举字段
 
 凡是 `sharedItems` 以 `count="N"` 方式声明的枚举字段（不论是否放入 row/col/data/filter 任一 axis），对应 pivotField **都必须生成 `<items>` 列表**：
 
@@ -73,7 +80,11 @@ python3 -m pivot_tool.ooxml_guard <output.xlsx>
 
 **反面教训**：曾尝试"只对 axis 上的字段生成 items，非 axis 字段留空 `<pivotField showAll="0"/>`"。结果 Excel 打开时直接删除整个 pivotTable1.xml，连锁导致 workbook.xml 的 `<pivotCaches>` 引用被清空。原因是 Excel 对枚举 cacheField 预期 pivotField 必有对应 items；缺失会被判为结构损坏。
 
-## 8. 字符串枚举项去重必须大小写不敏感
+`items@count` 必须同时等于实际 `<item>` 子节点数量。只按 sharedItems 数量计算
+声明值、却因部分排序配置少生成子节点，会让旧版 Mac Excel 在加载透视表时崩溃；
+生成后 guard 会同时检查这两个数量。
+
+## 9. 字符串枚举项去重必须大小写不敏感
 
 **规则**：同一字符串 cacheField 的 sharedItems 不能同时出现仅大小写不同的两个项（如 `leftslide` 与 `leftSlide`）。Excel 对 sharedItems 的字符串比较是 case-insensitive，会把它们判定为重复枚举项，直接删除整个 pivotTable（且同样连锁清空 workbook.xml 的 `<pivotCaches>`）。
 
@@ -81,7 +92,7 @@ python3 -m pivot_tool.ooxml_guard <output.xlsx>
 
 **定位方法**：报错特征为 Excel 打开时提示「已删除的功能: /xl/pivotTables/pivotTable1.xml 部分的 数据透视表」+「已删除的记录: /xl/workbook.xml 部分的 工作簿属性」。用 `{v.casefold() for v in sharedItems values}` 统计去重数，若 < 原始 count 即触发此陷阱。
 
-## 9. int/float 列可能含非数值占位符
+## 10. int/float 列可能含非数值占位符
 
 CSV 中 int/float 类型列的值可能出现：
 - `"13.0"` 而非 `"13"`（pandas 导出常见）→ 需 `int(float(val))` 两步转换
@@ -89,11 +100,11 @@ CSV 中 int/float 类型列的值可能出现：
 
 `_col_stats`、`_unique_ordered`、`data_sheet.build_data_sheet_xml` 三处均需容错处理，否则遇到含占位符的列时会崩溃。
 
-## 10. pivotField 属性顺序
+## 11. pivotField 属性顺序
 
 计算字段的 pivotField 属性必须按此顺序排列：`dataField="1" dragToRow="0" dragToCol="0" dragToPage="0" showAll="0" defaultSubtotal="0"`。`showAll` 必须在 `dragToPage` 之后、`defaultSubtotal` 之前，否则与原脚本生成的 XML 不一致。
 
-## 11. 多透视表必须逐个校验 cacheId 与关系
+## 12. 多透视表必须逐个校验 cacheId 与关系
 
 多业务工作簿中，不能只校验 `pivotTable1.xml`。每个 `pivotTableDefinition@cacheId`
 都必须对应 `workbook.xml` 中的唯一 `pivotCache@cacheId`，后者的 `r:id`
@@ -103,7 +114,7 @@ cache definition 和 cache records 也必须各自具备完整的 `.rels` 关系
 `merge_pivots` 可以跳过 0 行业务的 pivot/cache，因此部件编号可能不连续；
 校验器必须从实际 OOXML 关系发现部件，不能假设它们是 `1..N` 连续序列。
 
-## 12. styles.xml 必须包含 Normal 命名样式
+## 13. styles.xml 必须包含 Normal 命名样式
 
 工作簿必须通过 `workbook.xml.rels` 唯一引用 `styles.xml`，并在
 `[Content_Types].xml` 中声明 styles Content Type。最小样式表必须按规范顺序包含：

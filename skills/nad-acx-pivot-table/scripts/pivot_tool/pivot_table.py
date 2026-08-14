@@ -8,6 +8,34 @@ from pivot_tool.csv_reader import FieldMaps
 from pivot_tool.xml_utils import XML_HEADER, NS_MAIN, xml_escape
 
 
+def _ordered_enum_values(enum_items: list, configured_order: list | None) -> list:
+    """返回完整枚举顺序：配置值优先，未配置值按原始顺序追加。
+
+    ``row_item_order`` 表示优先排序，而不是过滤列表。保留每个枚举值
+    恰好一次，既避免重复 ``item``，也确保 sharedItems 中的值不会丢失。
+    """
+    if not configured_order:
+        return list(enum_items)
+
+    def matches(value, configured) -> bool:
+        # 字符串枚举与 cache 的大小写不敏感约束保持一致；数值枚举允许
+        # JSON 中使用字符串表示，避免排序配置因类型差异静默失效。
+        if isinstance(value, str):
+            return str(configured).casefold() == value.casefold()
+        return configured == value or str(configured) == str(value)
+
+    ordered: list = []
+    remaining = list(enum_items)
+    for configured in configured_order:
+        for value in remaining:
+            if matches(value, configured):
+                ordered.append(value)
+                remaining.remove(value)
+                break
+    ordered.extend(remaining)
+    return ordered
+
+
 def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
     """构建 pivotTableDefinition XML。"""
     layout = config.pivot_layout
@@ -57,24 +85,27 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
         # 当 sharedItems 声明 containsBlank="1" 时，items 必须追加 <item t="blank"/>，
         # 否则 items 与 sharedItems 的声明不一致，Excel 会删除整个 pivotTable 部件。
         if fi in fm.enumerated_items:
-            num_items = len(fm.enumerated_items[fi])
-
+            enum_items = fm.enumerated_items[fi]
             field_name = config.all_field_names()[fi]
-            if layout.row_item_order and field_name in layout.row_item_order:
-                order = layout.row_item_order[field_name]
-                enum_items = fm.enumerated_items[fi]
-                item_entries = "".join(
-                    f'<item x="{enum_items.index(v)}"/>' for v in order if v in enum_items
-                )
-            else:
-                item_entries = "".join(f'<item x="{i}"/>' for i in range(num_items))
+            configured_order = (
+                layout.row_item_order.get(field_name)
+                if layout.row_item_order
+                else None
+            )
+            ordered_items = _ordered_enum_values(enum_items, configured_order)
+            item_entries = "".join(
+                f'<item x="{enum_items.index(value)}"/>' for value in ordered_items
+            )
 
             extra = 1  # default item
             if fm.has_blanks.get(fi, False):
                 item_entries += '<item t="blank"/>'
                 extra += 1
             item_entries += '<item t="default"/>'
-            items_xml = f'<items count="{num_items + extra}">{item_entries}</items>'
+            # count 以实际生成的 item 子节点为准，防止配置只列部分枚举值时
+            # 声明数量与 XML 内容不一致，导致旧版 Excel 加载时崩溃。
+            item_count = len(ordered_items) + extra
+            items_xml = f'<items count="{item_count}">{item_entries}</items>'
             pivot_fields.append(f"<pivotField {attr_str}>{items_xml}</pivotField>")
         else:
             pivot_fields.append(f"<pivotField {attr_str}/>")
@@ -95,13 +126,14 @@ def build_pivot_table_xml(config: PivotConfig, fm: FieldMaps) -> str:
         first_row_field = row_indices[0]
         if first_row_field in fm.enumerated_items:
             field_name = config.all_field_names()[first_row_field]
-            if layout.row_item_order and field_name in layout.row_item_order:
-                first_items = [
-                    v for v in layout.row_item_order[field_name]
-                    if v in fm.enumerated_items[first_row_field]
-                ]
-            else:
-                first_items = list(fm.enumerated_items[first_row_field])
+            configured_order = (
+                layout.row_item_order.get(field_name)
+                if layout.row_item_order
+                else None
+            )
+            first_items = _ordered_enum_values(
+                fm.enumerated_items[first_row_field], configured_order
+            )
         else:
             first_items = []
 

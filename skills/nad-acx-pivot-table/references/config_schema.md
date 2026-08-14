@@ -86,7 +86,7 @@
 | `col_fields` | list[str] | 放在列区域的字段名。特殊值 `"__data__"` 表示数据字段标签 |
 | `filter_fields` | list[str] | 放在筛选区域的字段名；生成器会同时写入 `axisPage` 与带 `hier="-1"` 的 `pageFields` |
 | `data_fields` | list[DataFieldDef] | 数据区域字段定义（见下方） |
-| `row_item_order` | dict | 可选。指定行字段值的显示顺序 |
+| `row_item_order` | dict | 可选。指定行字段值的优先显示顺序；未列出的、但实际出现在数据中的枚举值会按原始枚举顺序自动追加，不会被过滤 |
 
 ### data_fields — 数据字段定义
 

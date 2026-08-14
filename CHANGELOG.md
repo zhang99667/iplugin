@@ -1,3 +1,16 @@
+## [0.22.41] - 2026-08-13
+### Fixed
+- nad-acx-pivot-table: `row_item_order` 现在作为优先排序处理，未列出的实际枚举值会自动追加，避免生成的 `pivotField/items` 丢失数据项
+- nad-acx-pivot-table: OOXML 闸门新增 `items@count` 与真实 `<item>` 子节点数量一致性校验，拦截可能导致旧版 Mac Excel 崩溃的工作簿
+
+### Changed
+- nad-acx-pivot-table: 补充部分枚举排序和损坏 `items` 的回归测试；skill 从 `0.1.7` 升级到 `0.1.8`，插件从 `0.22.40` 升级到 `0.22.41`
+
+## [0.22.40] - 2026-08-13
+### Changed
+- html-report: 更新复制批注给 Agent 的交接提示，问题或解释请求直接回答，只有明确要求修改批注、报告或 HTML 时才修改 HTML 并写入处理回执；用户明确指定“回答”或“修改”时优先遵循用户指令
+- html-report: 同步更新批注模式界面提示、参考文档和回归测试，skill 从 `0.7.16` 升级到 `0.7.17`
+
 ## [0.22.39] - 2026-08-10
 ### Fixed
 - nad-acx-pivot-table: `styles.xml` 补齐 Excel 内建 Normal 命名样式、差异样式和默认表格/透视样式声明，避免 Mac Excel 打开时修复工作簿样式
@@ -963,7 +976,3 @@
 - code-reading: 代码阅读与执行链路追踪
 - html-report: HTML 报告生成
 - sql-exp-replace: SQL 实验号与日期批量替换
-## [0.22.40] - 2026-08-13
-### Changed
-- html-report: 更新复制批注给 Agent 的交接提示，问题或解释请求直接回答，只有明确要求修改批注、报告或 HTML 时才修改 HTML 并写入处理回执；用户明确指定“回答”或“修改”时优先遵循用户指令
-- html-report: 同步更新批注模式界面提示、参考文档和回归测试，skill 从 `0.7.16` 升级到 `0.7.17`
