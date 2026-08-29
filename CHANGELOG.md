@@ -1,3 +1,11 @@
+## [0.23.0] - 2026-08-21
+### Added
+- codex-session-export: 新增 Codex CLI 本地会话导出 Skill，支持持久化 rollout JSONL、Session ID、当前/最近会话以及 `codex exec --json` 事件流，默认输出 Markdown
+
+### Changed
+- 插件累计新增 Skill 数增至 23，版本从 `0.22.41` 升级到 `0.23.0`
+- 明确当前只支持 Codex CLI 会话格式；其他 Agent、云端任务和未保留事件流的 `--ephemeral` 任务不在支持范围内
+
 ## [0.22.41] - 2026-08-13
 ### Fixed
 - nad-acx-pivot-table: `row_item_order` 现在作为优先排序处理，未列出的实际枚举值会自动追加，避免生成的 `pivotField/items` 丢失数据项

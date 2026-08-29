@@ -1,0 +1,4 @@
+#!/bin/sh
+# 保持命令入口很薄，让 Skill 和终端始终复用同一个解析器。
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec python3 "$SCRIPT_DIR/export_session.py" "$@"
