@@ -1,6 +1,6 @@
 ---
 name: datapilot-sql-runner
-version: 0.1.3
+version: 0.1.4
 tags: [datapilot, sql, mcp, result, download, pivot-table, chrome, data, baidu, analytics]
 description: DataPilot SQL 跑数结果闭环助手。当用户要求在百度 DataPilot/datapilot 上提交 SQL、批量运行本地 .sql/.SQL 文件、查询任务状态、等待下载结果、下载结果文件，或跑完后直接生成商业 AB 实验透视表时触发；默认使用 DataPilot MCP 完成提交 SQL、查状态、判断可下载和下载结果，并在结果字段匹配时联动 nad-acx-pivot-table 产出 xlsx。只有 MCP 不可用、权限不可恢复、能力不覆盖页面专属设置或用户明确要求浏览器操作时，才读取 references/chrome_fallback.md 回退 Chrome。
 user_invocable: true
@@ -35,6 +35,7 @@ user_invocable: true
 - 实验号：基础号如 `161703`，并保留 `-0` / `-dz` 后缀语义。
 - 交付目标：默认提交并回收任务 ID；如果用户说“等结果/下载结果/出结果/生成透视表”，就进入等待下载和结果产出流程。
 - 输出目录和实验名：生成透视表时优先使用用户给出的实验名；未给出时从 SQL 文件名、实验号和日期范围推断一个可读名称。
+- 失败重试策略：沿同一逻辑 SQL、同一数据日期的 `retry_of` 链统计明确的 `FAILED` / `OVERTIME`；第二次明确失败后，下一次重试必须切换到 DataPilot 的 `PRO引擎`。
 
 ## SQL 预处理
 
@@ -90,6 +91,18 @@ user_invocable: true
 - MCP 已返回 `task_id`，但查询/下载接口不可用，需要通过运行中心按任务 ID 辅助定位状态。
 
 回退时仍要遵守重复提交保护：已经拿到 `task_id` 的 SQL 不得因为状态查询失败而再次提交。
+
+## 失败重试与 PRO 引擎
+
+按逻辑 SQL 和数据日期维护失败链路：从项目 `runs.jsonl` 沿 `retry_of` 统计明确的 `FAILED` / `OVERTIME` 终态。第二次明确失败后，从下一次重试开始改用 Chrome 插件选择 PRO 引擎；`UNKNOWN`、HTTP 500 或接口暂时不可用不计入失败次数，也不能因此重复提交。
+
+1. 打开或接管原有 DataPilot 标签页，确认目标 SQL 和单日日期仍正确。
+2. 在编辑器底部的运行按钮区域，点击主 `run` 按钮右侧的下拉箭头，打开引擎菜单。
+3. 选择 `PRO引擎`，确认运行区域已切换到 PRO 模式后，再点击主 `run` 按钮提交。
+4. 用“触发 PRO 任务”提示、PRO 任务卡片或 `task_type=PRO` 核对提交类型；如果没有产生新任务 ID，先检查引擎选择，不要重复点击提交。
+5. 将实际提交的 SQL 保存为项目 `sql/` 下的新版本，并在 `runs.jsonl` 记录 `task_type=PRO`、`execution_path=WEB`、`retry_of` 和新任务 ID；后续继续按新 task ID 查询和下载。
+
+如果页面没有 PRO 选项、Chrome 插件未连接或需要重新登录，说明阻塞原因并停止，不要静默切回智能引擎。
 
 ## 汇报格式
 

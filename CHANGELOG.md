@@ -1,3 +1,10 @@
+## [0.23.1] - 2026-09-01
+### Changed
+- datapilot-sql-runner: 明确同一逻辑 SQL、同一日期第二次出现 `FAILED` / `OVERTIME` 后，下一次重试切换到 PRO 引擎
+- datapilot-sql-runner: 补充 DataPilot 页面中的 PRO 提交流程，要求从 `run` 右侧下拉箭头选择 `PRO引擎` 后再提交，并核对 PRO 任务类型
+- datapilot-sql-runner: skill 版本升级到 `0.1.4`
+- 插件版本升级到 `0.23.1`
+
 ## [0.23.0] - 2026-08-21
 ### Added
 - codex-session-export: 新增 Codex CLI 本地会话导出 Skill，支持持久化 rollout JSONL、Session ID、当前/最近会话以及 `codex exec --json` 事件流，默认输出 Markdown
