@@ -1,3 +1,8 @@
+## [0.23.2] - 2026-09-04
+### Changed
+- remote-android-build: 远端编译改为 `REMOTE_COMMAND`，默认在 `REMOTE_ROOT` 下执行 `./gradlew :app:assembleDebug`，不再读取 `TASK` / `REMOTE_GRADLE_ARGS`
+- 插件版本升级到 `0.23.2`
+
 ## [0.23.1] - 2026-09-01
 ### Changed
 - datapilot-sql-runner: 明确同一逻辑 SQL、同一日期第二次出现 `FAILED` / `OVERTIME` 后，下一次重试切换到 PRO 引擎

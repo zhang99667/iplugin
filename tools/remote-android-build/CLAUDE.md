@@ -4,7 +4,7 @@
 
 ## 目录约定
 
-- `remote-build.zsh`：主入口，执行配置加载、rsync 同步、远端 Gradle 构建、APK 拉回和本地安装。
+- `remote-build.zsh`：主入口，执行配置加载、rsync 同步、远端编译、APK 拉回和本地安装。远端在 `REMOTE_ROOT` 下执行 `REMOTE_COMMAND`，默认是 `./gradlew :app:assembleDebug`。
 - `init-project.zsh`：项目初始化入口，给 Android Gradle 工程生成 `.remote-buildignore` 和 `.remote-build.zsh`。
 - `remote-buildignore.template`：默认 rsync 排除规则。
 - `remote-build.env.example`：配置示例，方便用户复制或对照。
@@ -15,7 +15,7 @@
 
 ## 维护原则
 
-- 这个工具只实现 P0 远程构建闭环：SSH、rsync、远端 Gradle、本地 adb。
+- 这个工具只实现 P0 远程构建闭环：SSH、rsync、远端编译、本地 adb。
 - 不在本工具里默认引入 Mutagen、Gradle Remote Cache、Tailscale 或 VNC。
 - 不把工程私有配置、签名文件、证书、`local.properties` 同步到远端镜像目录。
 - 默认脚本必须可读、可审计，复杂项目差异放在 `.remote-build.zsh` 配置里，不在主脚本里硬编码某个业务仓库。

@@ -33,7 +33,7 @@ cd /path/to/android-project
 /path/to/iplugin/tools/remote-android-build/init-project.zsh
 ```
 
-如果你的模块名、Gradle task、远端目录或 APK 输出目录不同，编辑生成出来的 `.remote-build.zsh`。
+如果你的模块名、远端编译命令、远端目录或 APK 输出目录不同，编辑生成出来的 `.remote-build.zsh`。
 
 首次运行建议先预览同步内容，不真正编译：
 
@@ -76,8 +76,8 @@ REMOTE_ROOT="~/remote-work/client"
 # 是否同步 .git/.mgit 元数据。
 SYNC_GIT_METADATA="1"
 
-# 远端执行的 Gradle task。
-TASK=":app:assembleDebug"
+# 远端编译命令，在上面的 REMOTE_ROOT 下执行。
+REMOTE_COMMAND="./gradlew :app:assembleDebug"
 
 # 相对 REMOTE_ROOT 的 APK 匹配路径。
 APK_GLOB="app/build/outputs/apk/debug/*.apk"
@@ -95,7 +95,7 @@ INSTALL_APK="1"
 - `LOCAL_ROOT`：本地 Android Gradle 工程根目录。
 - `REMOTE_ROOT`：远端镜像目录，脚本会用 rsync 同步到这里。
 - `SYNC_GIT_METADATA`：`1` 表示同步 `.git/.mgit`，让远端分支、HEAD 和暂存区跟随本地；`0` 表示保留远端自己的 Git 元数据。
-- `TASK`：远端执行的 Gradle task。
+- `REMOTE_COMMAND`：远端编译命令，在 `REMOTE_ROOT` 下执行。默认是 `./gradlew :app:assembleDebug`。SSH 非交互会话通常不加载 alias，`run64` 这类入口需要在远端 PATH 上是真实命令。
 - `APK_GLOB`：相对 `REMOTE_ROOT` 的 APK 匹配表达式。
 - `LOCAL_APK_DIR`：拉回 APK 后存放的本地目录。
 - `INSTALL_APK`：`1` 表示拉回后安装，`0` 表示只拉回不安装。

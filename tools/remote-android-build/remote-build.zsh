@@ -23,20 +23,18 @@ usage() {
   REMOTE              远端 SSH host alias。默认：buildmac
   LOCAL_ROOT          本地 Android Gradle 工程根目录。默认：当前目录
   REMOTE_ROOT         远端镜像目录。默认：~/remote-work/<project>
-  TASK                Gradle task。默认：:app:assembleDebug
+  REMOTE_COMMAND      远端编译命令，在 REMOTE_ROOT 下执行。默认：./gradlew :app:assembleDebug
   APK_GLOB            相对 REMOTE_ROOT 的 APK 匹配表达式。默认：app/build/outputs/apk/debug/*.apk
   LOCAL_APK_DIR       拉回 APK 后存放的本地目录。默认：~/Downloads/android-artifacts
   INSTALL_APK         构建后安装填 1，只拉回填 0。默认：1
   SYNC_GIT_METADATA   是否同步 .git/.mgit 元数据，保持远端分支和 HEAD 与本地一致。默认：1
   ADB_SERIAL          可选的本地 adb 设备 serial
-  REMOTE_GRADLE_ARGS  可选的额外 Gradle 参数
   IGNORE_FILE         可选的 rsync 排除文件
 EOF
 }
 
-# 参数解析只处理脚本自身的开关。Gradle 参数不要混在这里解析，
-# 统一通过 REMOTE_GRADLE_ARGS 传给远端 ./gradlew，避免 shell quoting
-# 规则在本地和远端之间变得不可预测。
+# 参数解析只处理脚本自身的开关。远端编译参数写进 REMOTE_COMMAND，
+# 不要混在这里解析，避免 shell quoting 规则在本地和远端之间变得不可预测。
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --config)
@@ -73,7 +71,7 @@ if [[ -z "$CONFIG_FILE" && -f "$PWD/.remote-build.zsh" ]]; then
   CONFIG_FILE="$PWD/.remote-build.zsh"
 fi
 
-# 配置文件是普通 zsh，允许项目按需设置 REMOTE、TASK、APK_GLOB 等变量。
+# 配置文件是普通 zsh，允许项目按需设置 REMOTE、REMOTE_COMMAND、APK_GLOB 等变量。
 # 这里主动检查文件存在，避免 source 一个空路径或拼错路径时静默退回默认值。
 if [[ -n "$CONFIG_FILE" ]]; then
   if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -84,18 +82,26 @@ if [[ -n "$CONFIG_FILE" ]]; then
 fi
 
 # 统一计算最终配置。默认值只覆盖常见 Android 单 APK debug 构建场景；
-# 复杂项目应该在 .remote-build.zsh 里显式设置 TASK 和 APK_GLOB。
+# 复杂项目应该在 .remote-build.zsh 里显式设置 REMOTE_COMMAND 和 APK_GLOB。
 REMOTE="${REMOTE:-buildmac}"
 LOCAL_ROOT="${LOCAL_ROOT:-$PWD}"
 LOCAL_ROOT="${LOCAL_ROOT:A}"
 PROJECT_NAME="${LOCAL_ROOT:t}"
 REMOTE_ROOT="${REMOTE_ROOT:-~/remote-work/$PROJECT_NAME}"
-TASK="${TASK:-:app:assembleDebug}"
 APK_GLOB="${APK_GLOB:-app/build/outputs/apk/debug/*.apk}"
 LOCAL_APK_DIR="${LOCAL_APK_DIR:-$HOME/Downloads/android-artifacts}"
 INSTALL_APK="${INSTALL_APK:-1}"
 DRY_RUN="${DRY_RUN:-0}"
 SYNC_GIT_METADATA="${SYNC_GIT_METADATA:-1}"
+# 远端编译入口是完整命令，在 REMOTE_ROOT 下执行。未设置时退回常见
+# assembleDebug，不再从 TASK / REMOTE_GRADLE_ARGS 拼装。
+REMOTE_COMMAND="${REMOTE_COMMAND:-./gradlew :app:assembleDebug}"
+REMOTE_COMMAND="${REMOTE_COMMAND#"${REMOTE_COMMAND%%[![:space:]]*}"}"
+REMOTE_COMMAND="${REMOTE_COMMAND%"${REMOTE_COMMAND##*[![:space:]]}"}"
+if [[ -z "$REMOTE_COMMAND" ]]; then
+  echo "REMOTE_COMMAND 不能为空" >&2
+  exit 1
+fi
 
 # 命令行开关优先级高于配置文件。这样即使项目配置 INSTALL_APK=1，
 # 临时执行 --no-install 也能只构建和拉包，不会误装到当前连接的设备。
@@ -105,7 +111,6 @@ fi
 if [[ -n "$DRY_RUN_CLI" ]]; then
   DRY_RUN="$DRY_RUN_CLI"
 fi
-REMOTE_GRADLE_ARGS="${REMOTE_GRADLE_ARGS:-}"
 case "$SYNC_GIT_METADATA" in
   0|1) ;;
   *)
@@ -153,13 +158,12 @@ print_config() {
 REMOTE=$REMOTE
 LOCAL_ROOT=$LOCAL_ROOT
 REMOTE_ROOT=$REMOTE_ROOT
-TASK=$TASK
+REMOTE_COMMAND=$REMOTE_COMMAND
 APK_GLOB=$APK_GLOB
 LOCAL_APK_DIR=$LOCAL_APK_DIR
 INSTALL_APK=$INSTALL_APK
 SYNC_GIT_METADATA=$SYNC_GIT_METADATA
 ADB_SERIAL=${ADB_SERIAL:-}
-REMOTE_GRADLE_ARGS=$REMOTE_GRADLE_ARGS
 IGNORE_FILE=$IGNORE_FILE
 DRY_RUN=$DRY_RUN
 EOF
@@ -255,8 +259,10 @@ fi
 
 # 远端只负责构建，不负责安装手机。这样 Android Studio、Logcat 和真机
 # 仍留在本地 Mac，避免远程桌面/VNC 快捷键和手势问题。
+# REMOTE_COMMAND 在远端 REMOTE_ROOT 下由远端 shell 执行；SSH 非交互
+# 会话通常不加载 alias，run64 这类入口需要在远端 PATH 上是真实命令。
 echo "[3/5] 远端编译"
-ssh "$REMOTE" "cd $remote_root_q && ./gradlew $TASK $REMOTE_GRADLE_ARGS"
+ssh "$REMOTE" "cd $remote_root_q && $REMOTE_COMMAND"
 
 # 构建成功后在远端按修改时间找最新 APK。APK_GLOB 是相对 REMOTE_ROOT
 # 的表达式，适用于常见 app/build/outputs/apk/... 单 APK 输出。

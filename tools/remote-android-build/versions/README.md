@@ -4,6 +4,7 @@
 
 | 版本 | 版本记录 | 关联技术文档 | 说明 |
 | --- | --- | --- | --- |
+| v0.1.4 | `v0.1.4.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 远端编译只认 `REMOTE_COMMAND`，默认在 `REMOTE_ROOT` 下执行 `./gradlew :app:assembleDebug`。 |
 | v0.1.3 | `v0.1.3.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 默认同步 Git 元数据，修正远端分支和 HEAD 滞后问题。 |
 | v0.1.2 | `v0.1.2.md` | 无新增技术文档 | 生成配置补充逐项中文注释。 |
 | v0.1.1 | `v0.1.1.md` | 无新增技术文档 | 输出文案中文化，保留 shell 接口兼容。 |

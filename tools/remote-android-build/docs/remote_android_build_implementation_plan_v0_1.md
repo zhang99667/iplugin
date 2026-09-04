@@ -79,7 +79,7 @@ tools/remote-android-build/
 - 检查本地依赖：`ssh`、`rsync`，需要安装时再检查 `adb`。
 - 创建远端镜像目录。
 - 用 rsync 同步本地工程到远端镜像目录。
-- 远端执行 `./gradlew $TASK $REMOTE_GRADLE_ARGS`。
+- 远端在 `REMOTE_ROOT` 下执行 `REMOTE_COMMAND`；未设置时默认为 `./gradlew :app:assembleDebug`。
 - 查找最新 APK 并拉回本地。
 - 可选执行本地 `adb install -r -d`。
 
@@ -87,6 +87,7 @@ tools/remote-android-build/
 
 - 使用 zsh 而不是 Python：目标流程主要是 SSH、rsync、Gradle 和 adb 编排，shell 更直接。
 - 使用项目级 `.remote-build.zsh`：不同 Android 工程的模块、flavor、APK 输出路径差异较大，配置文件比命令行参数更可维护。
+- 远端编译入口是完整命令：默认 `./gradlew :app:assembleDebug`，项目需要 64 位参数、`run64` 或其他包装脚本时直接改 `REMOTE_COMMAND`。执行目录就是 `REMOTE_ROOT`。
 - 使用 `--delete-delay`：保持远端镜像与本地一致，同时降低同步中断造成半删除状态的概率。
 - 默认同步 `.git` 和 `.mgit`：远端目录是本地工作区镜像，分支、HEAD、index 和构建读取到的 Git 信息应跟随本地；如明确要保留远端自己的 clone，可设置 `SYNC_GIT_METADATA=0`。
 - 安装步骤可关闭：split APK、AAB 和只拉包验证的场景不应被单 APK 安装逻辑阻塞。

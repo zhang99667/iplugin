@@ -1,5 +1,22 @@
 # 变更日志
 
+## 0.1.4
+
+版本记录：`versions/v0.1.4.md`
+
+### 变更
+
+- `remote-build.zsh` 用 `REMOTE_COMMAND` 作为远端编译入口，在 `REMOTE_ROOT` 下执行。
+- 默认命令是 `./gradlew :app:assembleDebug`。不再读取 `TASK` 或 `REMOTE_GRADLE_ARGS`。
+- `init-project.zsh` 和示例配置默认写出 `REMOTE_COMMAND`，不再生成 `TASK`。
+- `--print-config` 和 README 同步改成单命令入口。
+
+### 设计取舍
+
+- 远端只执行一条命令。Gradle task 和额外参数都写进 `REMOTE_COMMAND`。
+- 执行目录固定为 `REMOTE_ROOT`，不再另加 cwd 配置。
+- 不在脚本里解析 `run64` 或加载远端 alias；自定义命令由远端非交互 shell 直接执行。
+
 ## 0.1.3
 
 版本记录：`versions/v0.1.3.md`
