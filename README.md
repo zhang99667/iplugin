@@ -1,6 +1,6 @@
 # iPlugin
 
-toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、组件化 HTML 报告生成、图片/视频证据预览、支持复制交接与 Agent 处理回执的离线批注模式、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、矩阵差异化标记、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开、Codex CLI 本地会话导出的个人研发工作流通用插件。
+toolbox — 代码阅读、爱迪生答题题库、复杂任务委派、结构化询问、Android mock 自测验收、组件化 HTML 报告生成、图片/视频证据预览、支持复制交接与 Agent 处理回执的离线批注模式、SVG 技术图生成、HTML 转 Markdown、联网精选、通用图片生成、SQL 实验替换、商业 SQL 写作、DataPilot SQL 跑数结果闭环、商业 AB 透视表生成、项目/需求总结、Obsidian 分模式写作与编辑审校、iCafe 交付归档、矩阵差异化标记、物料优先实验兜底开关、Karpathy 编码准则、MGIT/EasyBox 多仓辅助、xbuild 源码自动补开、Codex CLI 本地会话导出的个人研发工作流通用插件。
 
 ## 仓库顶层目录结构
 
@@ -52,6 +52,7 @@ iplugin/
 | `obsidian` | 按工作模式与文档类型组织证据和写作合同；指定参考文时强制提取风格画像，完整指南检查概念依赖，并执行结构、文风两轮全篇审查和反馈回归 | "写到 Obsidian"、"参考这篇文章写完整技术指南"、"修改这篇旧笔记并检查全文" |
 | `icafe-delivery-archive` | 查询 iCafe 需求并归档需求描述、技术详设和总结材料 | "把这个详设归档到需求交付"、"根据文档推断是哪个卡片" |
 | `lite-diff-marker` | 给 Android 矩阵差异化改动补齐 @LiteAdd/@LiteModified/@LiteDelete/@BaseSplit 标记 | "给这次改动添加差异化标记" |
+| `material-exp-gate` | 读 git diff 判断新逻辑是否被新物料/字段控制；物料拦不住才加实验开关，不 review 代码 | "检查这些提交的实验开关""物料优先实验兜底""不发新料能不能走线上" |
 | `karpathy-guidelines` | 写代码、重构和 review 时应用简洁、克制、可验证的工程准则 | "按 Karpathy 准则帮我改这段代码" |
 | `mgit` | 百度 MGIT 多仓状态、分支、仓库范围和中间态诊断；执行前预检 Ruby/gem/colored2 等启动依赖；支持结合 EasyBox/xbuild `overlay` / `local` 配置判断开发分支上车和 master 合入时的源码模式范围；多仓写操作需确认 | "整体看一下这套工程状态"、"根据这些改动更新 EasyBox overlay/local" |
 | `xbuild-open-source` | 反查 EasyBox/xbuild 模块映射；显式要求开源码或其他代码任务发现源码缺失时，自动最小补个人 local 配置、精确同步唯一目标仓并继续原任务 | "帮我打开这个 xbuild 仓库源码模式"、"带我读这段代码，缺源码就自动开" |

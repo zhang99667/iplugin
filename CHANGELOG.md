@@ -1,3 +1,10 @@
+## [0.24.0] - 2026-09-29
+### Added
+- material-exp-gate: 新增开关 Skill。读 git diff 判断新逻辑是否被新物料/字段控制，物料拦不住才加实验开关；不 review 代码，不绑定需求
+
+### Changed
+- 插件累计新增 Skill 数增至 24，版本从 `0.23.2` 升级到 `0.24.0`
+
 ## [0.23.2] - 2026-09-04
 ### Changed
 - remote-android-build: 远端编译改为 `REMOTE_COMMAND`，默认在 `REMOTE_ROOT` 下执行 `./gradlew :app:assembleDebug`，不再读取 `TASK` / `REMOTE_GRADLE_ARGS`
