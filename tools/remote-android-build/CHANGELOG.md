@@ -1,5 +1,20 @@
 # 变更日志
 
+## 0.1.7
+
+版本记录：`versions/v0.1.7.md`
+
+### 变更
+
+- 新增项目配置 `PRUNE_BUILD` 和 `PRUNE_BUILD_NAMES`，清理策略可以直接写进 `.remote-build.zsh`。
+- `PRUNE_BUILD` 支持 `stale`、`all`、`off`。命令行 `--prune-build MODE` 覆盖配置。
+- `DELETE_EXCLUDED=1` 仍兼容，等价于 `PRUNE_BUILD=all`。
+
+### 设计取舍
+
+- 日常默认仍是 `stale`：只清已消失模块，保留还在用的 `build/`。
+- 允许清理的目录名白名单默认只有 `build`，避免再误删 `local.properties` 或 `.gradle/`。
+
 ## 0.1.6
 
 版本记录：`versions/v0.1.6.md`

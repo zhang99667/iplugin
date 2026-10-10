@@ -11,6 +11,7 @@ CONFIG_FILE=""
 DRY_RUN_CLI=""
 INSTALL_APK_CLI=""
 DELETE_EXCLUDED_CLI=""
+PRUNE_BUILD_CLI=""
 PRINT_CONFIG=0
 
 # 只保留少量参数，避免把脚本做成复杂构建系统。项目差异通过
@@ -18,7 +19,7 @@ PRINT_CONFIG=0
 usage() {
   cat <<EOF
 用法：
-  remote-build.zsh [--config path] [--dry-run] [--no-install] [--delete-excluded] [--print-config]
+  remote-build.zsh [--config path] [--dry-run] [--no-install] [--prune-build MODE] [--delete-excluded] [--print-config]
 
 环境变量/配置项：
   REMOTE              远端 SSH host alias。默认：buildmac
@@ -29,7 +30,9 @@ usage() {
   LOCAL_APK_DIR       拉回 APK 后存放的本地目录。默认：~/Downloads/android-artifacts
   INSTALL_APK         构建后安装填 1，只拉回填 0。默认：1
   SYNC_GIT_METADATA   是否同步 .git/.mgit 元数据，保持远端分支和 HEAD 与本地一致。默认：1
-  DELETE_EXCLUDED     是否清掉远端全部 build/ 中间产物。默认：0，只清本地已消失模块的残留目录
+  PRUNE_BUILD         远端中间产物清理策略：stale / all / off。默认：stale
+  PRUNE_BUILD_NAMES   允许清理的中间产物目录名，空格分隔。默认：build
+  DELETE_EXCLUDED     兼容旧配置。1 等价于 PRUNE_BUILD=all
   ADB_SERIAL          可选的本地 adb 设备 serial
   IGNORE_FILE         可选的 rsync 排除文件
 EOF
@@ -50,6 +53,15 @@ while [[ $# -gt 0 ]]; do
     --no-install)
       INSTALL_APK_CLI=0
       shift
+      ;;
+    --prune-build)
+      if [[ -z "${2:-}" || "${2}" == -* ]]; then
+        echo "--prune-build 需要 stale、all 或 off" >&2
+        usage >&2
+        exit 2
+      fi
+      PRUNE_BUILD_CLI="$2"
+      shift 2
       ;;
     --delete-excluded)
       DELETE_EXCLUDED_CLI=1
@@ -99,6 +111,8 @@ LOCAL_APK_DIR="${LOCAL_APK_DIR:-$HOME/Downloads/android-artifacts}"
 INSTALL_APK="${INSTALL_APK:-1}"
 DRY_RUN="${DRY_RUN:-0}"
 SYNC_GIT_METADATA="${SYNC_GIT_METADATA:-1}"
+PRUNE_BUILD="${PRUNE_BUILD:-}"
+PRUNE_BUILD_NAMES="${PRUNE_BUILD_NAMES:-build}"
 DELETE_EXCLUDED="${DELETE_EXCLUDED:-0}"
 # 远端编译入口是完整命令，在 REMOTE_ROOT 下执行。未设置时退回常见
 # assembleDebug，不再从 TASK / REMOTE_GRADLE_ARGS 拼装。
@@ -120,6 +134,10 @@ if [[ -n "$DRY_RUN_CLI" ]]; then
 fi
 if [[ -n "$DELETE_EXCLUDED_CLI" ]]; then
   DELETE_EXCLUDED="$DELETE_EXCLUDED_CLI"
+  PRUNE_BUILD="all"
+fi
+if [[ -n "$PRUNE_BUILD_CLI" ]]; then
+  PRUNE_BUILD="$PRUNE_BUILD_CLI"
 fi
 case "$SYNC_GIT_METADATA" in
   0|1) ;;
@@ -135,6 +153,27 @@ case "$DELETE_EXCLUDED" in
     exit 1
     ;;
 esac
+# 旧配置只有 DELETE_EXCLUDED=0/1。没写 PRUNE_BUILD 时，1 表示清全部
+# build/，0 表示只清已消失模块。新配置直接写 stale / all / off。
+if [[ -z "$PRUNE_BUILD" ]]; then
+  if [[ "$DELETE_EXCLUDED" == "1" ]]; then
+    PRUNE_BUILD="all"
+  else
+    PRUNE_BUILD="stale"
+  fi
+fi
+case "$PRUNE_BUILD" in
+  stale|all|off) ;;
+  *)
+    echo "PRUNE_BUILD 只能是 stale、all 或 off：$PRUNE_BUILD" >&2
+    exit 1
+    ;;
+esac
+if [[ "$PRUNE_BUILD" == "all" ]]; then
+  DELETE_EXCLUDED="1"
+else
+  DELETE_EXCLUDED="0"
+fi
 
 # 优先使用项目自己的 .remote-buildignore；如果项目还没初始化，则退回到
 # 工具目录里的模板。这样可以直接 dry-run 一个未初始化项目，也能让项目
@@ -143,6 +182,27 @@ IGNORE_FILE="${IGNORE_FILE:-$LOCAL_ROOT/.remote-buildignore}"
 if [[ ! -f "$IGNORE_FILE" ]]; then
   IGNORE_FILE="$SCRIPT_DIR/remote-buildignore.template"
 fi
+
+# 只允许清理普通目录名，例如 build、.cxx。不要把路径、通配符或
+# local.properties / .gradle 这类文件写进来，避免误删 SDK 配置。
+prune_build_names=("${(@s: :)PRUNE_BUILD_NAMES}")
+prune_build_names=("${(@)prune_build_names:#}")
+if [[ ${#prune_build_names[@]} -eq 0 ]]; then
+  echo "PRUNE_BUILD_NAMES 不能为空" >&2
+  exit 1
+fi
+for prune_name in "${prune_build_names[@]}"; do
+  if [[ ! "$prune_name" =~ '^[A-Za-z0-9._-]+$' ]]; then
+    echo "PRUNE_BUILD_NAMES 只能是普通目录名，例如 build 或 .cxx：$prune_name" >&2
+    exit 1
+  fi
+  case "$prune_name" in
+    .|..|.git|.gradle|.mgit|.idea)
+      echo "PRUNE_BUILD_NAMES 不能包含 $prune_name" >&2
+      exit 1
+      ;;
+  esac
+done
 
 # 依赖检查放在真正执行前，报错尽量早。adb 只有在需要安装 APK 时才检查，
 # 允许用户在没有本地 Android 设备环境的机器上只做远程构建和拉包。
@@ -168,15 +228,29 @@ remote_path_expr() {
   fi
 }
 
-# rsync 排除了 **/build/，所以不会删这些目录。关掉 overlay 或切分支后，
-# 本地模块没了，远端还留着 build/，父目录就删不掉。这里只处理 build/
-# 中间产物，绝不碰 local.properties、.gradle/ 或其他 ignore 文件。
+# rsync 排除了 **/build/ 这类中间产物目录，所以不会自己删它们。
+# 关掉 overlay 或切分支后，本地模块没了，远端还留着这些目录，父目录
+# 就删不掉。这里只处理 PRUNE_BUILD_NAMES 里的中间产物，绝不碰
+# local.properties、.gradle/ 或其他 ignore 文件。
 # stale：本地父目录已经不存在，把远端整个残留模块删掉。
-# all：每个还在的模块也清掉 build/，相当于远端 clean，不删源码和 SDK 配置。
+# all：每个还在的模块也清掉这些中间产物目录，相当于远端 clean。
+# off：完全不预清理，保持旧行为。
 is_safe_relative_path() {
   local p="$1"
   [[ -n "$p" ]] || return 1
   [[ "$p" != /* && "$p" != *..* ]]
+}
+
+is_prune_build_dir() {
+  local rel="$1"
+  local name="${rel##*/}"
+  local allowed
+  for allowed in "${prune_build_names[@]}"; do
+    if [[ "$name" == "$allowed" ]]; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 # 本地已经没有这个模块时，沿着路径往上收到最高一层缺失目录。
@@ -201,18 +275,33 @@ stale_module_root() {
 
 collect_remote_build_prune_targets() {
   local mode="$1"
-  local rel parent stale
+  local rel parent name stale name_pred
   local -a targets=()
+  local prune_name
+
+  if [[ "$mode" == "off" ]]; then
+    return 0
+  fi
+
+  # 目录名已经校验过，只含字母数字、点、下划线和短横线，可以直接拼进远端 find。
+  name_pred=""
+  for prune_name in "${prune_build_names[@]}"; do
+    if [[ -n "$name_pred" ]]; then
+      name_pred+=" -o "
+    fi
+    name_pred+="-name $prune_name"
+  done
 
   while IFS= read -r -d '' rel; do
     rel="${rel#./}"
-    [[ "$rel" == "build" || "$rel" == */build ]] || continue
+    is_prune_build_dir "$rel" || continue
+    name="${rel##*/}"
     if [[ "$mode" == "all" ]]; then
       is_safe_relative_path "$rel" || continue
       targets+=("$rel")
       continue
     fi
-    parent="${rel%/build}"
+    parent="${rel%/$name}"
     # 工程根上的 build/ 本地父目录永远存在，默认保留给增量编译。
     [[ -n "$parent" && "$parent" != "$rel" ]] || continue
     is_safe_relative_path "$parent" || continue
@@ -220,7 +309,7 @@ collect_remote_build_prune_targets() {
     if [[ -n "$stale" ]]; then
       targets+=("$stale")
     fi
-  done < <(ssh "$REMOTE" "cd $remote_root_q && find . \\( -name .git -o -name .gradle \\) -prune -o -type d -name build -print0 -prune")
+  done < <(ssh "$REMOTE" "cd $remote_root_q && find . \\( -name .git -o -name .gradle \\) -prune -o -type d \\( $name_pred \\) -print0 -prune")
 
   targets=("${(u)targets[@]}")
   print -r -- "${(F)targets}"
@@ -241,7 +330,7 @@ prune_remote_build_targets() {
     echo "  $p"
   done
   if [[ "$DRY_RUN" == "1" ]]; then
-    echo "DRY_RUN=1：只列出远端 build 清理目标，未删除。"
+    echo "DRY_RUN=1：只列出远端中间产物清理目标，未删除。"
     return 0
   fi
 
@@ -265,6 +354,8 @@ APK_GLOB=$APK_GLOB
 LOCAL_APK_DIR=$LOCAL_APK_DIR
 INSTALL_APK=$INSTALL_APK
 SYNC_GIT_METADATA=$SYNC_GIT_METADATA
+PRUNE_BUILD=$PRUNE_BUILD
+PRUNE_BUILD_NAMES=$PRUNE_BUILD_NAMES
 DELETE_EXCLUDED=$DELETE_EXCLUDED
 ADB_SERIAL=${ADB_SERIAL:-}
 IGNORE_FILE=$IGNORE_FILE
@@ -309,23 +400,26 @@ ssh "$REMOTE" "mkdir -p $remote_root_q"
 
 # 同步源码到远端。--delete-delay 会删除远端本地已经不存在的文件，
 # 但延迟到传输结束后执行，降低中途失败导致远端处于半删除状态的概率。
-# rsync 排除了 **/build/，所以不会自己清这些目录。同步前只处理 build/
-# 中间产物：默认清本地已消失模块的残留目录；--delete-excluded 才清全部
-# build/。local.properties、.gradle/ 和其他 ignore 文件一律保留。
+# rsync 排除了 **/build/ 这类中间产物目录，所以不会自己清它们。
+# 同步前按 PRUNE_BUILD 处理：stale 清本地已消失模块；all 清全部这些
+# 目录；off 完全不预清理。local.properties、.gradle/ 一律保留。
 # 首次使用前建议 DRY_RUN=1，确认排除规则不会删掉远端需要保留的文件。
 if [[ "$SYNC_GIT_METADATA" == "1" ]]; then
   echo "[2/5] 同步源码和 Git 元数据"
 else
   echo "[2/5] 同步源码（保留远端 Git 元数据）"
 fi
-if [[ "$DELETE_EXCLUDED" == "1" ]]; then
-  prune_mode="all"
-  prune_label="清理远端全部 build/ 中间产物"
+case "$PRUNE_BUILD" in
+  all) prune_label="清理远端全部中间产物目录（$PRUNE_BUILD_NAMES）" ;;
+  stale) prune_label="清理远端已消失模块的残留中间产物（$PRUNE_BUILD_NAMES）" ;;
+  *) prune_label="" ;;
+esac
+if [[ "$PRUNE_BUILD" == "off" ]]; then
+  echo "PRUNE_BUILD=off：跳过远端中间产物预清理"
+  prune_list=""
 else
-  prune_mode="stale"
-  prune_label="清理远端已消失模块的残留 build/"
+  prune_list="$(collect_remote_build_prune_targets "$PRUNE_BUILD")"
 fi
-prune_list="$(collect_remote_build_prune_targets "$prune_mode")"
 prune_targets=("${(@f)prune_list}")
 if [[ ${#prune_targets[@]} -eq 1 && -z "${prune_targets[1]}" ]]; then
   prune_targets=()

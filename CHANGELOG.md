@@ -1,3 +1,8 @@
+## [0.24.3] - 2026-10-10
+### Changed
+- remote-android-build: 远端中间产物清理策略可写进 `.remote-build.zsh`。新增 `PRUNE_BUILD`（`stale` / `all` / `off`）和 `PRUNE_BUILD_NAMES`；`--prune-build MODE` 覆盖配置。`DELETE_EXCLUDED=1` 仍兼容，等价于 `PRUNE_BUILD=all`
+- 插件版本升级到 `0.24.3`
+
 ## [0.24.2] - 2026-10-10
 ### Changed
 - remote-android-build: 同步前只清理远端 `build/` 中间产物。默认清已消失模块的残留目录；`--delete-excluded` 只表示清全部 `build/`，不再删除 `local.properties` 或 `.gradle/`

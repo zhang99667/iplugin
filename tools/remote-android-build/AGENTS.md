@@ -49,6 +49,6 @@ python3 scripts/validate-plugin.py
 ## 风险边界
 
 - `rsync --delete-delay` 会删除远端镜像中本地已不存在的文件；首次运行必须建议用户先执行 `DRY_RUN=1`。
-- 不要把 rsync `--delete-excluded` 传给 ignore 全表。只清理远端 `build/` 中间产物，保留 `local.properties` 和 `.gradle/`。
+- 不要把 rsync `--delete-excluded` 传给 ignore 全表。只按 `PRUNE_BUILD` / `PRUNE_BUILD_NAMES` 清理中间产物目录，保留 `local.properties` 和 `.gradle/`。
 - `REMOTE_ROOT` 必须被视为可丢弃镜像，不应存放远端私有 secrets。
 - `adb install -r -d` 只覆盖普通 debug 安装场景；split APK、AAB、签名冲突需要项目配置或人工处理。

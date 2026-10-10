@@ -59,10 +59,10 @@ ADB_SERIAL=device-serial /path/to/iplugin/tools/remote-android-build/remote-buil
 /path/to/iplugin/tools/remote-android-build/remote-build.zsh --config .remote-build.zsh --no-install
 ```
 
-关掉 overlay 或切分支后，本地模块没了、远端还留着 `build/` 时，脚本默认会先清这些已消失模块的残留目录，再同步。这不会删 `local.properties` 或 `.gradle/`。如果要连还在用的模块的 `build/` 一起清掉，相当于远端 clean，再临时打开：
+关掉 overlay 或切分支后，本地模块没了、远端还留着 `build/` 时，脚本默认按 `PRUNE_BUILD=stale` 先清这些已消失模块的残留目录，再同步。这不会删 `local.properties` 或 `.gradle/`。如果要连还在用的模块的 `build/` 一起清掉，相当于远端 clean，把配置改成 `PRUNE_BUILD="all"`，或临时传：
 
 ```bash
-/path/to/iplugin/tools/remote-android-build/remote-build.zsh --config .remote-build.zsh --delete-excluded
+/path/to/iplugin/tools/remote-android-build/remote-build.zsh --config .remote-build.zsh --prune-build all
 ```
 
 ## 常用配置
@@ -94,8 +94,11 @@ LOCAL_APK_DIR="$HOME/Downloads/android-artifacts"
 # 是否在拉回 APK 后安装到本地连接的 Android 设备。
 INSTALL_APK="1"
 
-# 是否清掉远端全部 build/ 中间产物。默认只清已消失模块的残留目录。
-DELETE_EXCLUDED="0"
+# 远端中间产物清理策略：stale / all / off。
+PRUNE_BUILD="stale"
+
+# 允许清理的中间产物目录名，空格分隔。
+PRUNE_BUILD_NAMES="build"
 ```
 
 字段说明：
@@ -108,7 +111,9 @@ DELETE_EXCLUDED="0"
 - `APK_GLOB`：相对 `REMOTE_ROOT` 的 APK 匹配表达式。
 - `LOCAL_APK_DIR`：拉回 APK 后存放的本地目录。
 - `INSTALL_APK`：`1` 表示拉回后安装，`0` 表示只拉回不安装。
-- `DELETE_EXCLUDED`：`0` 表示只清本地已消失模块的残留 `build/` 目录；`1` 表示清掉远端全部 `build/` 中间产物，相当于远端 clean。两种模式都不会删除 `local.properties` 或 `.gradle/`。命令行 `--delete-excluded` 会覆盖成 `1`。
+- `PRUNE_BUILD`：`stale` 只清本地已消失模块的残留目录；`all` 清掉远端全部 `build/`，相当于远端 clean；`off` 完全不预清理。命令行 `--prune-build MODE` 会覆盖配置。
+- `PRUNE_BUILD_NAMES`：允许清理的中间产物目录名，空格分隔，默认 `build`。不会删除 `local.properties` 或 `.gradle/`。
+- `DELETE_EXCLUDED`：兼容旧配置。`1` 等价于 `PRUNE_BUILD=all`；新项目请直接写 `PRUNE_BUILD`。
 
 如果项目输出 split APK，先设置 `INSTALL_APK=0`，把 APK 目录拉回后手动执行 `adb install-multiple`。等某个项目有稳定规则后，再在该项目配置里扩展专用安装逻辑。
 
@@ -120,4 +125,4 @@ DELETE_EXCLUDED="0"
 - 如果 `adb install` 报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`，优先统一两台 Mac 的 debug keystore；不统一时只能首次切换时卸载旧包。
 - 如果使用 Git worktree 或其他把 `.git` 指向外部目录的特殊布局，先用 `DRY_RUN=1` 确认同步内容；必要时把 `SYNC_GIT_METADATA` 设为 `0` 并通过 Gradle 参数显式传入版本信息。
 - 首次使用 `--delete-delay` 前务必先跑 `DRY_RUN=1`，确认不会删除远端需要保留的文件。
-- 不要用 rsync 的 `--delete-excluded`。它会把 ignore 里的 `local.properties`、`.gradle/` 一起删掉。脚本只单独清理 `build/` 中间产物。
+- 不要用 rsync 的 `--delete-excluded`。它会把 ignore 里的 `local.properties`、`.gradle/` 一起删掉。脚本只按 `PRUNE_BUILD` / `PRUNE_BUILD_NAMES` 清理中间产物目录。

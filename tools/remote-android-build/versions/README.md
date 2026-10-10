@@ -4,6 +4,7 @@
 
 | 版本 | 版本记录 | 关联技术文档 | 说明 |
 | --- | --- | --- | --- |
+| v0.1.7 | `v0.1.7.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 清理策略可写进 `.remote-build.zsh`：`PRUNE_BUILD` / `PRUNE_BUILD_NAMES`。 |
 | v0.1.6 | `v0.1.6.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 只清远端 `build/` 中间产物；默认清已消失模块，开关才清全部 `build/`。 |
 | v0.1.5 | `v0.1.5.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 新增可选 `--delete-excluded`，默认仍保留远端 `build/`、`.gradle/`。 |
 | v0.1.4 | `v0.1.4.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 远端编译只认 `REMOTE_COMMAND`，默认在 `REMOTE_ROOT` 下执行 `./gradlew :app:assembleDebug`。 |
