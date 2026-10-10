@@ -1,3 +1,8 @@
+## [0.24.1] - 2026-10-10
+### Changed
+- remote-android-build: 新增可选 `--delete-excluded` / `DELETE_EXCLUDED`，默认仍保留远端 `build/` 和 `.gradle/`；关掉 overlay 或切分支后残留 `build/` 卡住已消失模块时再临时打开
+- 插件版本升级到 `0.24.1`
+
 ## [0.24.0] - 2026-09-29
 ### Added
 - material-exp-gate: 新增开关 Skill。读 git diff 判断新逻辑是否被新物料/字段控制，物料拦不住才加实验开关；不 review 代码，不绑定需求

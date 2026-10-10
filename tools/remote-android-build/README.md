@@ -59,6 +59,12 @@ ADB_SERIAL=device-serial /path/to/iplugin/tools/remote-android-build/remote-buil
 /path/to/iplugin/tools/remote-android-build/remote-build.zsh --config .remote-build.zsh --no-install
 ```
 
+如果 rsync 报 `unlinkat: Directory not empty`，通常是本地已经关掉 overlay 或切走分支，远端还留着被 ignore 的 `build/`。默认不会删这些目录。需要清掉残留模块时再临时打开：
+
+```bash
+/path/to/iplugin/tools/remote-android-build/remote-build.zsh --config .remote-build.zsh --delete-excluded
+```
+
 ## 常用配置
 
 `.remote-build.zsh` 是普通 zsh 配置文件：
@@ -87,6 +93,9 @@ LOCAL_APK_DIR="$HOME/Downloads/android-artifacts"
 
 # 是否在拉回 APK 后安装到本地连接的 Android 设备。
 INSTALL_APK="1"
+
+# 是否让 rsync 删除远端被 ignore 排除的文件。默认保留远端 build/。
+DELETE_EXCLUDED="0"
 ```
 
 字段说明：
@@ -99,6 +108,7 @@ INSTALL_APK="1"
 - `APK_GLOB`：相对 `REMOTE_ROOT` 的 APK 匹配表达式。
 - `LOCAL_APK_DIR`：拉回 APK 后存放的本地目录。
 - `INSTALL_APK`：`1` 表示拉回后安装，`0` 表示只拉回不安装。
+- `DELETE_EXCLUDED`：`1` 表示 rsync 同时删除远端被 ignore 排除的文件，包括 `build/` 和 `.gradle/`；`0` 表示保留这些目录做增量编译。命令行 `--delete-excluded` 会覆盖成 `1`。
 
 如果项目输出 split APK，先设置 `INSTALL_APK=0`，把 APK 目录拉回后手动执行 `adb install-multiple`。等某个项目有稳定规则后，再在该项目配置里扩展专用安装逻辑。
 
@@ -110,3 +120,4 @@ INSTALL_APK="1"
 - 如果 `adb install` 报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`，优先统一两台 Mac 的 debug keystore；不统一时只能首次切换时卸载旧包。
 - 如果使用 Git worktree 或其他把 `.git` 指向外部目录的特殊布局，先用 `DRY_RUN=1` 确认同步内容；必要时把 `SYNC_GIT_METADATA` 设为 `0` 并通过 Gradle 参数显式传入版本信息。
 - 首次使用 `--delete-delay` 前务必先跑 `DRY_RUN=1`，确认不会删除远端需要保留的文件。
+- 默认不加 `--delete-excluded`。只有远端残留的 `build/` 把已消失模块卡住时，才临时打开 `--delete-excluded`；打开后远端 `.gradle/` 缓存也会被清掉。

@@ -10,6 +10,7 @@ SCRIPT_DIR="${0:A:h}"
 CONFIG_FILE=""
 DRY_RUN_CLI=""
 INSTALL_APK_CLI=""
+DELETE_EXCLUDED_CLI=""
 PRINT_CONFIG=0
 
 # 只保留少量参数，避免把脚本做成复杂构建系统。项目差异通过
@@ -17,7 +18,7 @@ PRINT_CONFIG=0
 usage() {
   cat <<EOF
 用法：
-  remote-build.zsh [--config path] [--dry-run] [--no-install] [--print-config]
+  remote-build.zsh [--config path] [--dry-run] [--no-install] [--delete-excluded] [--print-config]
 
 环境变量/配置项：
   REMOTE              远端 SSH host alias。默认：buildmac
@@ -28,6 +29,7 @@ usage() {
   LOCAL_APK_DIR       拉回 APK 后存放的本地目录。默认：~/Downloads/android-artifacts
   INSTALL_APK         构建后安装填 1，只拉回填 0。默认：1
   SYNC_GIT_METADATA   是否同步 .git/.mgit 元数据，保持远端分支和 HEAD 与本地一致。默认：1
+  DELETE_EXCLUDED     是否让 rsync 删除远端被 ignore 排除的文件。默认：0
   ADB_SERIAL          可选的本地 adb 设备 serial
   IGNORE_FILE         可选的 rsync 排除文件
 EOF
@@ -47,6 +49,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-install)
       INSTALL_APK_CLI=0
+      shift
+      ;;
+    --delete-excluded)
+      DELETE_EXCLUDED_CLI=1
       shift
       ;;
     --print-config)
@@ -93,6 +99,7 @@ LOCAL_APK_DIR="${LOCAL_APK_DIR:-$HOME/Downloads/android-artifacts}"
 INSTALL_APK="${INSTALL_APK:-1}"
 DRY_RUN="${DRY_RUN:-0}"
 SYNC_GIT_METADATA="${SYNC_GIT_METADATA:-1}"
+DELETE_EXCLUDED="${DELETE_EXCLUDED:-0}"
 # 远端编译入口是完整命令，在 REMOTE_ROOT 下执行。未设置时退回常见
 # assembleDebug，不再从 TASK / REMOTE_GRADLE_ARGS 拼装。
 REMOTE_COMMAND="${REMOTE_COMMAND:-./gradlew :app:assembleDebug}"
@@ -111,10 +118,20 @@ fi
 if [[ -n "$DRY_RUN_CLI" ]]; then
   DRY_RUN="$DRY_RUN_CLI"
 fi
+if [[ -n "$DELETE_EXCLUDED_CLI" ]]; then
+  DELETE_EXCLUDED="$DELETE_EXCLUDED_CLI"
+fi
 case "$SYNC_GIT_METADATA" in
   0|1) ;;
   *)
     echo "SYNC_GIT_METADATA 只能是 0 或 1：$SYNC_GIT_METADATA" >&2
+    exit 1
+    ;;
+esac
+case "$DELETE_EXCLUDED" in
+  0|1) ;;
+  *)
+    echo "DELETE_EXCLUDED 只能是 0 或 1：$DELETE_EXCLUDED" >&2
     exit 1
     ;;
 esac
@@ -163,6 +180,7 @@ APK_GLOB=$APK_GLOB
 LOCAL_APK_DIR=$LOCAL_APK_DIR
 INSTALL_APK=$INSTALL_APK
 SYNC_GIT_METADATA=$SYNC_GIT_METADATA
+DELETE_EXCLUDED=$DELETE_EXCLUDED
 ADB_SERIAL=${ADB_SERIAL:-}
 IGNORE_FILE=$IGNORE_FILE
 DRY_RUN=$DRY_RUN
@@ -206,13 +224,22 @@ ssh "$REMOTE" "mkdir -p $remote_root_q"
 
 # 同步源码到远端。--delete-delay 会删除远端本地已经不存在的文件，
 # 但延迟到传输结束后执行，降低中途失败导致远端处于半删除状态的概率。
+# 默认不加 --delete-excluded，这样 ignore 里的 build/、.gradle/ 会留在远端
+# 做增量编译。关掉 overlay 或切分支后，这些排除目录会把已消失模块卡住，
+# 此时再临时打开 DELETE_EXCLUDED=1 / --delete-excluded。
 # 首次使用前建议 DRY_RUN=1，确认排除规则不会删掉远端需要保留的文件。
 if [[ "$SYNC_GIT_METADATA" == "1" ]]; then
   echo "[2/5] 同步源码和 Git 元数据"
 else
   echo "[2/5] 同步源码（保留远端 Git 元数据）"
 fi
+if [[ "$DELETE_EXCLUDED" == "1" ]]; then
+  echo "已启用 --delete-excluded：远端被 ignore 排除的目录也会删除，包括 build/ 和 .gradle/"
+fi
 rsync_args=(-az --delete-delay --human-readable)
+if [[ "$DELETE_EXCLUDED" == "1" ]]; then
+  rsync_args+=(--delete-excluded)
+fi
 if command rsync --info=help >/dev/null 2>&1; then
   rsync_args+=(--info=stats1,progress2)
 else

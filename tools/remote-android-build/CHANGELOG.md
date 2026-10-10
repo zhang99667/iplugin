@@ -1,5 +1,20 @@
 # 变更日志
 
+## 0.1.5
+
+版本记录：`versions/v0.1.5.md`
+
+### 变更
+
+- `remote-build.zsh` 新增可选 `--delete-excluded` / `DELETE_EXCLUDED`。
+- 默认仍不加 `--delete-excluded`，保留远端 `build/`、`.gradle/` 做增量编译。
+- 关掉 overlay 或切分支后，远端残留 `build/` 把已消失模块卡住时，可临时打开这个开关。
+
+### 设计取舍
+
+- 不把 `--delete-excluded` 设成默认。日常增量编译需要远端 `build/`。
+- 命令行开关覆盖配置文件，方便只清一次残留，不必改项目配置。
+
 ## 0.1.4
 
 版本记录：`versions/v0.1.4.md`
