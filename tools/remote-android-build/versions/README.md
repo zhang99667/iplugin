@@ -4,6 +4,7 @@
 
 | 版本 | 版本记录 | 关联技术文档 | 说明 |
 | --- | --- | --- | --- |
+| v0.1.6 | `v0.1.6.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 只清远端 `build/` 中间产物；默认清已消失模块，开关才清全部 `build/`。 |
 | v0.1.5 | `v0.1.5.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 新增可选 `--delete-excluded`，默认仍保留远端 `build/`、`.gradle/`。 |
 | v0.1.4 | `v0.1.4.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 远端编译只认 `REMOTE_COMMAND`，默认在 `REMOTE_ROOT` 下执行 `./gradlew :app:assembleDebug`。 |
 | v0.1.3 | `v0.1.3.md` | `../docs/remote_android_build_implementation_plan_v0_1.md` | 默认同步 Git 元数据，修正远端分支和 HEAD 滞后问题。 |

@@ -1,3 +1,8 @@
+## [0.24.2] - 2026-10-10
+### Changed
+- remote-android-build: 同步前只清理远端 `build/` 中间产物。默认清已消失模块的残留目录；`--delete-excluded` 只表示清全部 `build/`，不再删除 `local.properties` 或 `.gradle/`
+- 插件版本升级到 `0.24.2`
+
 ## [0.24.1] - 2026-10-10
 ### Changed
 - remote-android-build: 新增可选 `--delete-excluded` / `DELETE_EXCLUDED`，默认仍保留远端 `build/` 和 `.gradle/`；关掉 overlay 或切分支后残留 `build/` 卡住已消失模块时再临时打开

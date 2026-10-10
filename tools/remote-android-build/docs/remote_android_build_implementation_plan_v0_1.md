@@ -89,7 +89,7 @@ tools/remote-android-build/
 - 使用项目级 `.remote-build.zsh`：不同 Android 工程的模块、flavor、APK 输出路径差异较大，配置文件比命令行参数更可维护。
 - 远端编译入口是完整命令：默认 `./gradlew :app:assembleDebug`，项目需要 64 位参数、`run64` 或其他包装脚本时直接改 `REMOTE_COMMAND`。执行目录就是 `REMOTE_ROOT`。
 - 使用 `--delete-delay`：保持远端镜像与本地一致，同时降低同步中断造成半删除状态的概率。
-- 默认不加 `--delete-excluded`：ignore 里的 `build/`、`.gradle/` 留在远端做增量编译。关掉 overlay 或切分支后，残留 `build/` 会把已消失模块卡住，此时再临时打开 `--delete-excluded` / `DELETE_EXCLUDED=1`。
+- 同步前只清理远端 `build/` 中间产物：默认清本地已消失模块的残留目录；`--delete-excluded` 才清全部 `build/`。不要把 rsync `--delete-excluded` 传给 ignore 全表，否则会删掉 `local.properties` 和 `.gradle/`。
 - 默认同步 `.git` 和 `.mgit`：远端目录是本地工作区镜像，分支、HEAD、index 和构建读取到的 Git 信息应跟随本地；如明确要保留远端自己的 clone，可设置 `SYNC_GIT_METADATA=0`。
 - 安装步骤可关闭：split APK、AAB 和只拉包验证的场景不应被单 APK 安装逻辑阻塞。
 
@@ -98,7 +98,8 @@ tools/remote-android-build/
 | 风险 | 影响 | 处理 |
 | --- | --- | --- |
 | rsync 删除远端私有文件 | 签名、local.properties 或临时配置丢失 | secrets 放在 `REMOTE_ROOT` 外，首次运行 `DRY_RUN=1` |
-| 默认不删 ignore 目录 | 本地模块消失后，远端残留 `build/` 导致 `Directory not empty` | 临时打开 `--delete-excluded`；不要把它设成默认 |
+| rsync 排除 `**/build/` | 本地模块消失后，远端残留 `build/` 导致 `Directory not empty` | 同步前只清这些残留模块目录，不删 SDK 配置 |
+| rsync `--delete-excluded` | 会把 `local.properties`、`.gradle/` 一起删掉 | 不要把这个 rsync 开关传给 ignore 全表 |
 | debug 签名不一致 | 覆盖安装失败 | 统一 debug keystore，或首次切换时卸载旧包 |
 | Git 元数据同步变慢 | 首次同步或分支切换时传输较多对象 | 默认保证正确性；明确不需要时设置 `SYNC_GIT_METADATA=0` |
 | 远端 Git 元数据滞后 | 版本号、commit id 或分支名错误 | 保持默认 `SYNC_GIT_METADATA=1`；关闭后需自行维护远端 clone 或传入版本信息 |

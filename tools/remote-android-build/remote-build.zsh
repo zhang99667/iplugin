@@ -29,7 +29,7 @@ usage() {
   LOCAL_APK_DIR       拉回 APK 后存放的本地目录。默认：~/Downloads/android-artifacts
   INSTALL_APK         构建后安装填 1，只拉回填 0。默认：1
   SYNC_GIT_METADATA   是否同步 .git/.mgit 元数据，保持远端分支和 HEAD 与本地一致。默认：1
-  DELETE_EXCLUDED     是否让 rsync 删除远端被 ignore 排除的文件。默认：0
+  DELETE_EXCLUDED     是否清掉远端全部 build/ 中间产物。默认：0，只清本地已消失模块的残留目录
   ADB_SERIAL          可选的本地 adb 设备 serial
   IGNORE_FILE         可选的 rsync 排除文件
 EOF
@@ -168,6 +168,91 @@ remote_path_expr() {
   fi
 }
 
+# rsync 排除了 **/build/，所以不会删这些目录。关掉 overlay 或切分支后，
+# 本地模块没了，远端还留着 build/，父目录就删不掉。这里只处理 build/
+# 中间产物，绝不碰 local.properties、.gradle/ 或其他 ignore 文件。
+# stale：本地父目录已经不存在，把远端整个残留模块删掉。
+# all：每个还在的模块也清掉 build/，相当于远端 clean，不删源码和 SDK 配置。
+is_safe_relative_path() {
+  local p="$1"
+  [[ -n "$p" ]] || return 1
+  [[ "$p" != /* && "$p" != *..* ]]
+}
+
+# 本地已经没有这个模块时，沿着路径往上收到最高一层缺失目录。
+# 例如远端还留着 story/lib-feed-story/build，本地整个 story/ 都没了，
+# 就删 story/，而不是只删最底层那个 build。
+stale_module_root() {
+  local parent="$1"
+  local best=""
+  local cand="$parent"
+  while [[ -n "$cand" ]]; do
+    if [[ -e "$LOCAL_ROOT/$cand" ]]; then
+      break
+    fi
+    best="$cand"
+    if [[ "$cand" != */* ]]; then
+      break
+    fi
+    cand="${cand%/*}"
+  done
+  print -r -- "$best"
+}
+
+collect_remote_build_prune_targets() {
+  local mode="$1"
+  local rel parent stale
+  local -a targets=()
+
+  while IFS= read -r -d '' rel; do
+    rel="${rel#./}"
+    [[ "$rel" == "build" || "$rel" == */build ]] || continue
+    if [[ "$mode" == "all" ]]; then
+      is_safe_relative_path "$rel" || continue
+      targets+=("$rel")
+      continue
+    fi
+    parent="${rel%/build}"
+    # 工程根上的 build/ 本地父目录永远存在，默认保留给增量编译。
+    [[ -n "$parent" && "$parent" != "$rel" ]] || continue
+    is_safe_relative_path "$parent" || continue
+    stale="$(stale_module_root "$parent")"
+    if [[ -n "$stale" ]]; then
+      targets+=("$stale")
+    fi
+  done < <(ssh "$REMOTE" "cd $remote_root_q && find . \\( -name .git -o -name .gradle \\) -prune -o -type d -name build -print0 -prune")
+
+  targets=("${(u)targets[@]}")
+  print -r -- "${(F)targets}"
+}
+
+prune_remote_build_targets() {
+  local -a targets=()
+  local p
+  local label="$1"
+  shift
+  targets=("$@")
+  if [[ ${#targets[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  echo "$label：${#targets[@]} 个"
+  for p in "${targets[@]}"; do
+    echo "  $p"
+  done
+  if [[ "$DRY_RUN" == "1" ]]; then
+    echo "DRY_RUN=1：只列出远端 build 清理目标，未删除。"
+    return 0
+  fi
+
+  printf '%s\n' "${targets[@]}" | ssh "$REMOTE" "cd $remote_root_q && while IFS= read -r rel; do
+    case \"\$rel\" in
+      ''|/*|*..*) echo \"拒绝删除不安全路径：\$rel\" >&2; exit 1 ;;
+    esac
+    rm -rf -- \"\$rel\"
+  done"
+}
+
 # --print-config 用于只读检查最终配置，不连接远端、不执行 rsync。
 # 这能快速确认 CLI 参数覆盖、配置文件 source 和默认值是否符合预期。
 print_config() {
@@ -224,9 +309,9 @@ ssh "$REMOTE" "mkdir -p $remote_root_q"
 
 # 同步源码到远端。--delete-delay 会删除远端本地已经不存在的文件，
 # 但延迟到传输结束后执行，降低中途失败导致远端处于半删除状态的概率。
-# 默认不加 --delete-excluded，这样 ignore 里的 build/、.gradle/ 会留在远端
-# 做增量编译。关掉 overlay 或切分支后，这些排除目录会把已消失模块卡住，
-# 此时再临时打开 DELETE_EXCLUDED=1 / --delete-excluded。
+# rsync 排除了 **/build/，所以不会自己清这些目录。同步前只处理 build/
+# 中间产物：默认清本地已消失模块的残留目录；--delete-excluded 才清全部
+# build/。local.properties、.gradle/ 和其他 ignore 文件一律保留。
 # 首次使用前建议 DRY_RUN=1，确认排除规则不会删掉远端需要保留的文件。
 if [[ "$SYNC_GIT_METADATA" == "1" ]]; then
   echo "[2/5] 同步源码和 Git 元数据"
@@ -234,12 +319,20 @@ else
   echo "[2/5] 同步源码（保留远端 Git 元数据）"
 fi
 if [[ "$DELETE_EXCLUDED" == "1" ]]; then
-  echo "已启用 --delete-excluded：远端被 ignore 排除的目录也会删除，包括 build/ 和 .gradle/"
+  prune_mode="all"
+  prune_label="清理远端全部 build/ 中间产物"
+else
+  prune_mode="stale"
+  prune_label="清理远端已消失模块的残留 build/"
 fi
+prune_list="$(collect_remote_build_prune_targets "$prune_mode")"
+prune_targets=("${(@f)prune_list}")
+if [[ ${#prune_targets[@]} -eq 1 && -z "${prune_targets[1]}" ]]; then
+  prune_targets=()
+fi
+prune_remote_build_targets "$prune_label" "${prune_targets[@]}"
+
 rsync_args=(-az --delete-delay --human-readable)
-if [[ "$DELETE_EXCLUDED" == "1" ]]; then
-  rsync_args+=(--delete-excluded)
-fi
 if command rsync --info=help >/dev/null 2>&1; then
   rsync_args+=(--info=stats1,progress2)
 else

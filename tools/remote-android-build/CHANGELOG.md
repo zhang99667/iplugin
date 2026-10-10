@@ -1,5 +1,21 @@
 # 变更日志
 
+## 0.1.6
+
+版本记录：`versions/v0.1.6.md`
+
+### 变更
+
+- 同步前只清理远端 `build/` 中间产物，不再把 rsync `--delete-excluded` 传给 ignore 全表。
+- 默认清本地已消失模块的残留目录，避免 `Directory not empty` 卡住同步。
+- `--delete-excluded` 只表示清掉远端全部 `build/`，相当于远端 clean；不删 `local.properties` 和 `.gradle/`。
+
+### 设计取舍
+
+- rsync `--delete-excluded` 太猛，会把 SDK 配置和 Gradle 缓存一起删掉。
+- 残留模块目录必须删，因为 exclude 了 `**/build/` 后 rsync 自己删不掉。
+- 还在用的模块默认保留 `build/`，继续做增量编译。
+
 ## 0.1.5
 
 版本记录：`versions/v0.1.5.md`

@@ -74,9 +74,9 @@ LOCAL_APK_DIR="\$HOME/Downloads/android-artifacts"
 # 是否在拉回 APK 后安装到本地连接的 Android 设备。1 表示安装，0 表示只拉回。
 INSTALL_APK="1"
 
-# 是否让 rsync 删除远端被 ignore 排除的文件。默认 0，保留远端 build/、.gradle/
-# 做增量编译。关掉 overlay 或切分支后，残留 build/ 会把已消失模块卡住，
-# 可临时改成 1，或命令行传 --delete-excluded。
+# 是否清掉远端全部 build/ 中间产物。默认 0：只清本地已消失模块的残留目录，
+# 保留还在用的模块的 build/、.gradle/ 和 local.properties。需要远端 clean
+# 时再改成 1，或命令行传 --delete-excluded；这个开关不会删 SDK 配置。
 DELETE_EXCLUDED="0"
 
 # 本地连接多台 Android 设备时使用。
